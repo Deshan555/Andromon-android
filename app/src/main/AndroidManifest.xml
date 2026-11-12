@@ -1,0 +1,268 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- Data the PC can read/write through the companion -->
+    <uses-permission android:name="android.permission.READ_SMS" />
+    <uses-permission android:name="android.permission.SEND_SMS" />
+    <uses-permission android:name="android.permission.READ_CONTACTS" />
+    <uses-permission android:name="android.permission.WRITE_CONTACTS" />
+    <uses-permission android:name="android.permission.READ_CALL_LOG" />
+    <!-- Restoring a call log backup from the PC (calls.restore). Restoring SMS has no permission:
+         it works through the WRITE_SMS app-op, which Droid Desk allows over adb. -->
+    <uses-permission android:name="android.permission.WRITE_CALL_LOG" />
+    <!-- Calendar tab in Droid Desk: read calendars and events; add events from an .ics file or a
+         backup (attendees are never written, so no invitations go out) -->
+    <uses-permission android:name="android.permission.READ_CALENDAR" />
+    <uses-permission android:name="android.permission.WRITE_CALENDAR" />
+    <!-- Call alerts on the PC: see incoming calls (READ_PHONE_STATE), answer or decline them -->
+    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+    <uses-permission android:name="android.permission.ANSWER_PHONE_CALLS" />
+    <!-- Photos and Music tabs in Droid Desk: the media index and thumbnails (Android 13+;
+         older versions use READ_EXTERNAL_STORAGE below) -->
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
+    <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
+
+    <!-- Foreground service that keeps the USB link alive -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
+    <!-- Prerequisite for the connectedDevice service type on Android 14+ -->
+    <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Phone links › Find my phone (Links.kt): vibrate while ringing, and show the "Found it"
+         screen over the lock screen -->
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+
+    <!--
+      Phone-care tools, used only when the person opens them on the phone. The PC link above
+      never touches the network: it stays on the USB socket.
+    -->
+    <!-- Network screen: connection details, speed test, ping, DNS lookup -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <!-- Receive screen: Wi‑Fi file receive (only while the person has it turned on). Multicast
+         for discovery, plus Wi‑Fi/wake locks that keep a running transfer fast. -->
+    <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <!-- Direct link: a temporary private hotspot (LocalOnlyHotspot) for one transfer. Android
+         requires "Nearby devices" (13+) or location (8–12) for it; the app never reads location. -->
+    <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
+    <!-- PC link › Wi‑Fi connection switch: turns Android's Wireless debugging on/off. Apps can't
+         get this permission themselves; Droid Desk grants it over USB during "Use this phone
+         without the cable" (pm grant), and Android only allows that from the computer. -->
+    <uses-permission android:name="android.permission.WRITE_SECURE_SETTINGS"
+        tools:ignore="ProtectedPermissions" />
+    <uses-permission android:name="android.permission.NEARBY_WIFI_DEVICES"
+        android:usesPermissionFlags="neverForLocation"
+        tools:targetApi="33" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"
+        android:maxSdkVersion="32" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"
+        android:maxSdkVersion="32" />
+    <!-- Memory screen: "Boost" (only works on Android 13 and older) -->
+    <uses-permission android:name="android.permission.KILL_BACKGROUND_PROCESSES" />
+    <!-- Cleaner screen: scan and delete junk on shared storage and SD cards (Droid Desk grants
+         "All files access" over adb; otherwise the person allows it in Settings) -->
+    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE"
+        tools:ignore="ScopedStorage" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="29" />
+    <!-- Cleaner screen: total size of all apps' caches (usage access, an app-op) -->
+    <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS"
+        tools:ignore="ProtectedPermissions" />
+
+    <!-- The floating "Recording" badge while Droid Desk records a test on the computer (its Test
+         automation tab). "Display over other apps" is allowed by Droid Desk over adb. -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+
+    <!-- App Manager: open Android's own uninstall confirmation for apps the person picks -->
+    <uses-permission android:name="android.permission.REQUEST_DELETE_PACKAGES" />
+
+    <!-- Junk Cleaner (SD Maid SE's CorpseFinder): a leftover folder can only be told apart from a
+         folder of an installed app when every installed app is visible. Without it the leftover
+         search is skipped. -->
+    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"
+        tools:ignore="QueryAllPackagesPermission" />
+
+    <!-- Battery screen › History: keeps the 15-minute sampling job (BatteryJob) scheduled across
+         restarts. No boot receiver; JobScheduler needs this permission for setPersisted. -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!-- Hardware test › Microphone: records a few seconds and plays them back; asked for when the
+         person starts that test, never saved or sent. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <!-- Hardware test › Earpiece: routes a test tone to the call speaker for two seconds -->
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+    <!-- Hardware test: whether Bluetooth is switched on (Android 11 and older ask for this just
+         to read the state; newer versions don't) -->
+    <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
+
+    <uses-feature android:name="android.hardware.microphone" android:required="false" />
+    <uses-feature android:name="android.hardware.bluetooth" android:required="false" />
+    <uses-feature android:name="android.hardware.telephony" android:required="false" />
+    <uses-feature android:name="android.hardware.wifi" android:required="false" />
+
+    <!-- Boost and App Manager: see which installed apps have a launcher icon (Android 11+ package visibility) -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent>
+    </queries>
+
+    <application
+        android:allowBackup="false"
+        android:enableOnBackInvokedCallback="true"
+        android:requestLegacyExternalStorage="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="Droid Desk Companion"
+        android:supportsRtl="true"
+        android:theme="@style/AppTheme">
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:launchMode="singleTop"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!--
+          Exported only so `adb shell am start-foreground-service` can start it, and guarded by
+          DUMP, a permission the adb shell has but normal apps cannot get.
+        -->
+        <service
+            android:name=".CompanionService"
+            android:exported="true"
+            android:foregroundServiceType="connectedDevice"
+            android:permission="android.permission.DUMP" />
+
+        <!-- RAM manager: the shell/root helper (ShellHelper.kt) sends its port and token here when it
+             starts. DUMP keeps every other app from sending a fake one. -->
+        <receiver
+            android:name=".HelperReceiver"
+            android:exported="true"
+            android:permission="android.permission.DUMP" />
+
+        <!-- Phone notifications on the PC. Android binds it only after the person (or Droid Desk,
+             over adb) allows "Notification access"; it passes nothing on unless a PC is listening. -->
+        <service
+            android:name=".NotifListener"
+            android:exported="true"
+            android:label="Droid Desk: notifications on your computer"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
+
+        <!-- Wi‑Fi receive. Started only by this app (Receive screen and its notifications). -->
+        <service
+            android:name=".ReceiveService"
+            android:exported="false"
+            android:foregroundServiceType="connectedDevice" />
+
+        <!-- ===== Wi‑Fi send (WifiSend.kt, SendService.kt, ShareActivity.kt, SendScreen.kt) ===== -->
+        <!-- Keeps a transfer the person started running in the background. Outbound connections
+             only. Started only by this app (the Send button). -->
+        <service
+            android:name=".SendService"
+            android:exported="false"
+            android:foregroundServiceType="connectedDevice" />
+        <!-- "Share › Droid Desk" in other apps: queues the shared files, text or links for Wi‑Fi
+             send and opens the Send screen. Nothing is sent until the person picks a device and
+             taps Send. No screen of its own; also hosts Android's file and photo pickers. -->
+        <activity
+            android:name=".ShareActivity"
+            android:exported="true"
+            android:label="Droid Desk"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar"
+            android:excludeFromRecents="true"
+            android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|keyboard|keyboardHidden|navigation|uiMode|density|fontScale|locale|layoutDirection">
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <action android:name="android.intent.action.SEND_MULTIPLE" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="*/*" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+            </intent-filter>
+        </activity>
+        <!-- ===== end of Wi‑Fi send ===== -->
+
+        <!-- ===== Phone links (Links.kt, ClipSendActivity.kt, Tiles.kt) ===== -->
+        <!-- Reads the clipboard once it has the focus and passes it to the PC, then closes.
+             Exported only so Droid Desk can open it over adb ("Get phone's clipboard"), and
+             guarded by DUMP, which the adb shell has but normal apps cannot get. -->
+        <activity
+            android:name=".ClipSendActivity"
+            android:exported="true"
+            android:permission="android.permission.DUMP"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar"
+            android:label="Send clipboard to PC"
+            android:noHistory="true"
+            android:excludeFromRecents="true"
+            android:taskAffinity=""
+            android:launchMode="singleInstance" />
+        <!-- Find my phone: the "Found it" screen, opened by our own notification only. -->
+        <activity
+            android:name=".RingActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:taskAffinity=""
+            android:launchMode="singleInstance"
+            android:showWhenLocked="true"
+            android:turnScreenOn="true" />
+        <!-- Buttons on the "From your computer" and Find my phone notifications. -->
+        <receiver android:name=".LinkReceiver" android:exported="false" />
+        <!-- Quick-settings tiles. Only the system may bind them. -->
+        <service
+            android:name=".LinkTile"
+            android:exported="true"
+            android:icon="@drawable/ic_desktop"
+            android:label="PC link"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+        <service
+            android:name=".ReceiveTile"
+            android:exported="true"
+            android:icon="@drawable/ic_down"
+            android:label="Receive files"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+        <service
+            android:name=".ClipTile"
+            android:exported="true"
+            android:icon="@drawable/ic_copy"
+            android:label="Send clipboard to PC"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+        <!-- ===== end of Phone links ===== -->
+
+        <!-- Battery history: samples level, temperature and voltage about every 15 minutes
+             (BatteryLog.kt). Only the system's JobScheduler can start it. -->
+        <service
+            android:name=".BatteryJob"
+            android:exported="false"
+            android:permission="android.permission.BIND_JOB_SERVICE" />
+    </application>
+</manifest>

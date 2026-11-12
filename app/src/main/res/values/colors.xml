@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Brand palette: lime #E3F786, green #9CD237, ink #292A2C and white on a light grey page. Cards are
+  off-white; one hero card per screen carries the lime-to-green gradient. The old pastel names are
+  kept (screens use them for small accents) and map onto two lime tints. Dark-mode values live in
+  values-night/colors.xml.
+-->
+<resources>
+    <color name="bg">#FFE6E6E4</color>
+    <color name="surface">#FFF5F5F3</color>
+    <color name="ink">#FF292A2C</color>
+    <color name="ink_soft">#FF6C6D70</color>
+    <color name="ink_faint">#FFA4A5A7</color>
+    <color name="line">#FFDCDCD9</color>
+    <color name="fab">#FF292A2C</color>
+    <color name="on_fab">#FFFFFFFF</color>
+    <color name="ripple">#14000000</color>
+    <color name="badge">#FFFFFFFF</color>
+    <color name="shadow">#1F000000</color>
+    <!-- White glass over the colour-blocked screens, and the darker chip on pastel cards -->
+    <color name="glass">#A6FFFFFF</color>
+    <color name="glass_strong">#E6FFFFFF</color>
+    <color name="chip">#0F000000</color>
+
+    <!-- Pastels -->
+    <color name="salmon">#FFEEF6CF</color>
+    <color name="peach">#FFEEF6CF</color>
+    <color name="lavender">#FFE3F786</color>
+    <color name="mint">#FFE3F786</color>
+    <color name="coral">#FFEEF6CF</color>
+    <color name="yellow">#FFE3F786</color>
+    <color name="pink">#FFEEF6CF</color>
+    <color name="olive">#FFE3F786</color>
+    <color name="sky">#FFE3F786</color>
+    <color name="cream">#FFEEF6CF</color>
+    <color name="magenta">#FF6FA51B</color>
+    <color name="chart">#FF9CD237</color>
+    <color name="marker">#FFE2504C</color>
+
+    <!-- Older names, mapped onto the pastels (used across screens) -->
+    <color name="green">#FFE3F786</color>
+    <color name="green_tile">#FFEEF6CF</color>
+    <color name="green_dot">#FF9CD237</color>
+    <color name="peach_tile">#FFEEF6CF</color>
+    <color name="peach_dot">#FFE8774E</color>
+    <color name="purple">#FFE3F786</color>
+    <color name="purple_strong">#FFEEF6CF</color>
+    <color name="good">#FF5F8F12</color>
+    <color name="good_bg">#FFE3F786</color>
+    <color name="yellow_tile">#FFEEF6CF</color>
+    <color name="blue">#FFE3F786</color>
+    <color name="blue_tile">#FFEEF6CF</color>
+    <color name="blue_line">#FF7DB81F</color>
+    <color name="yellow_line">#FFD9A514</color>
+    <color name="danger">#FFD9443F</color>
+    <color name="accent">#FF292A2C</color>
+    <color name="accent_strong">#FF292A2C</color>
+    <color name="accent_track">#80FFFFFF</color>
+    <color name="lime">#FF292A2C</color>
+    <color name="on_lime">#FFFFFFFF</color>
+
+    <!-- Category colours (storage breakdown, junk groups) -->
+    <color name="cat_blue">#FF292A2C</color>
+    <color name="cat_salmon">#FF9CD237</color>
+    <color name="cat_yellow">#FFC6EC50</color>
+    <color name="cat_teal">#FF6FA51B</color>
+    <color name="cat_green">#FFB7B8BA</color>
+    <color name="cat_purple">#FF6C6D70</color>
+    <color name="cat_grey">#FFC9CACB</color>
+
+    <!-- Bottom bar: black pill with a raised white centre button -->
+    <color name="nav_bg">#FF292A2C</color>
+    <color name="nav_icon">#FFFFFFFF</color>
+    <color name="nav_active">#FFFFFFFF</color>
+    <color name="centre_bg">#FFFFFFFF</color>
+    <color name="centre_icon">#FF292A2C</color>
+    <color name="centre_active">#FF292A2C</color>
+
+    <!-- Launcher icon: same in light and dark -->
+    <color name="launcher_bg">#FFE3F786</color>
+    <color name="launcher_fg">#FF292A2C</color>
+
+    <!-- Hero card gradient (top-left to bottom-right) -->
+    <color name="hero_start">#FFEAF9A8</color>
+    <color name="hero">#FFC6EC50</color>
+    <color name="hero_end">#FFA3D63B</color>
+</resources>
