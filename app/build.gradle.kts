@@ -17,8 +17,8 @@ android {
         minSdk = 26          // Android 8.0: foreground-service start API used by the PC
         targetSdk = 36
         // Keep in sync with COMPANION_VERSION in pc/src/app.js
-        versionCode = 24
-        versionName = "0.24.0"
+        versionCode = 29
+        versionName = "0.29.0"
     }
 
     buildTypes {
