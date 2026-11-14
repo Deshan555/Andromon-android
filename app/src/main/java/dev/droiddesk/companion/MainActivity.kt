@@ -34,8 +34,8 @@ class MainActivity : Activity() {
         /** Intent extra: name of the screen to open (e.g. "Receive" from a notification). */
         const val EXTRA_SCREEN = "screen"
         /** Bottom bar height above the system navigation bar, and how far the centre button rises above it. */
-        private const val NAV_H = 60
-        private const val NAV_GAP = 12
+        private const val NAV_H = 64
+        private const val NAV_GAP = 0
         /** Intent extra: a Wi‑Fi receive request to accept once the app is on screen. */
         const val EXTRA_ACCEPT = "accept"
     }
@@ -178,7 +178,7 @@ class MainActivity : Activity() {
             // The open screen's icon sits on a white rounded square; the others are white on the dark pill.
             item.icon.setImageDrawable(ui.icon(s.navIcon, ui.color(if (active) R.color.centre_icon else R.color.nav_icon)))
             item.icon.background = if (active) ui.rounded(ui.color(R.color.nav_active), 16)
-                else ui.pressable(ui.rounded(Color.TRANSPARENT, 16))
+                else null
             item.icon.isSelected = active
         }
         updateBackHandling()
@@ -186,30 +186,35 @@ class MainActivity : Activity() {
     }
 
     /**
-     * Floating dark pill, centred above the system navigation bar: one icon per main screen, the
-     * open one on a white rounded square.
+     * Dark bar docked to the bottom edge, full width with rounded top corners (it runs on behind the
+     * system navigation bar): one icon per main screen, evenly spaced, the open one on a white
+     * rounded square.
      */
     private fun buildNav(): FrameLayout {
         val bar = ui.row {
-            background = ui.rounded(ui.color(R.color.nav_bg), 22)
-            gravity = Gravity.CENTER_VERTICAL
-            val p = ui.dp(6)
-            setPadding(p, p, p, p)
-            ui.elevate(this, 8)
+            background = android.graphics.drawable.GradientDrawable().apply {
+                setColor(ui.color(R.color.nav_bg))
+                val r = ui.dp(24).toFloat()
+                cornerRadii = floatArrayOf(r, r, r, r, 0f, 0f, 0f, 0f)
+            }
+            gravity = Gravity.TOP
         }
         navBar = bar
         val box = FrameLayout(this)
-        box.addView(bar, FrameLayout.LayoutParams(-2, ui.dp(NAV_H), Gravity.TOP or Gravity.CENTER_HORIZONTAL))
+        box.addView(bar, FrameLayout.LayoutParams(-1, -1))
         for (name in navOrder) {
             val i = screenIndex(name)
             val icon = ImageView(this).apply {
                 val p = ui.dp(13)
                 setPadding(p, p, p, p)
-                contentDescription = screens[i].name
-                setOnClickListener { show(i) }
             }
             navItems += NavItem(i, icon, null)
-            bar.addView(icon, LinearLayout.LayoutParams(ui.dp(48), ui.dp(48)).apply { marginStart = if (bar.childCount == 0) 0 else ui.dp(4) })
+            // The whole cell is the touch target; the icon sits centred in it.
+            bar.addView(FrameLayout(this).apply {
+                contentDescription = screens[i].name
+                setOnClickListener { show(i) }
+                addView(icon, FrameLayout.LayoutParams(ui.dp(48), ui.dp(48), Gravity.CENTER))
+            }, LinearLayout.LayoutParams(0, ui.dp(NAV_H), 1f))
         }
         return box
     }
@@ -248,7 +253,9 @@ class MainActivity : Activity() {
         // Docked: full width, flush with the bottom edge; the bar grows by the system bar's height.
         nav.layoutParams.height = ui.dp(NAV_H + NAV_GAP) + b
         nav.requestLayout()
+        // Docked: flush with the bottom edge; the bar grows by the system bar's height.
         val bottom = if (keyboard) imeBottom + ui.dp(24) else b + ui.dp(NAV_H + NAV_GAP + 20)
+        navBar.setPadding(ui.dp(8) + l, 0, ui.dp(8) + r, b)
         // 20dp sides leave room for the cards' soft shadows.
         if (current >= 0) screens[current].view.setPadding(ui.dp(20) + l, ui.dp(16) + t, ui.dp(20) + r, bottom)
     }
@@ -266,11 +273,11 @@ class MainActivity : Activity() {
             val mask = WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS or
                 WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS
             window.insetsController?.setSystemBarsAppearance(
-                if (night) 0 else mask, mask)
+                if (night) 0 else WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS, mask) // nav icons stay light: they sit on the dark bar
         } else {
             var flags = View.SYSTEM_UI_FLAG_LAYOUT_STABLE or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN or
                 View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-            if (!night) flags = flags or View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR or View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
+            if (!night) flags = flags or View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
             window.decorView.systemUiVisibility = flags
         }
     }

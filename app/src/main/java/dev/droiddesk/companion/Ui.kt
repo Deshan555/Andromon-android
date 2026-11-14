@@ -139,15 +139,15 @@ internal class Ui(private val ctx: Context) {
             setOnClickListener { onClick() }
         }
 
-    /** One-line screen header: back button, the screen's short name in large type, optional action button. */
-    fun topBar(title: String, onBack: () -> Unit, actionIcon: Int? = null, actionLabel: String? = null,
+    /** One-line screen header: the screen's short name in large type and an optional action button. ([onBack] is unused now.) */
+    fun topBar(title: String, @Suppress("UNUSED_PARAMETER") onBack: () -> Unit, actionIcon: Int? = null, actionLabel: String? = null,
                onAction: (() -> Unit)? = null): Pair<LinearLayout, ImageView?> {
         var action: ImageView? = null
         val bar = row {
-            addView(circleButton(R.drawable.ic_back, "Back", onClick = onBack), lp(w = dp(42), h = dp(42)))
+            // No back button: the bottom bar and Android's own Back gesture leave the screen.
             addView(text(28f, color(R.color.ink), light) {
                 text = title; letterSpacing = -0.02f; maxLines = 1; ellipsize = TextUtils.TruncateAt.END
-            }, lp(w = 0, weight = 1f, start = 14))
+            }, lp(w = 0, weight = 1f, start = 2))
             if (actionIcon != null && onAction != null) {
                 action = circleButton(actionIcon, actionLabel ?: title, onClick = onAction)
                 addView(action, lp(w = dp(42), h = dp(42), start = 8))

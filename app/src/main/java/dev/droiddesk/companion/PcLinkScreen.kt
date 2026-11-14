@@ -53,8 +53,8 @@ internal class PcLinkScreen(host: MainActivity) : Screen(host) {
     /** One data-count row in the link card. */
     private class Count(val value: TextView, val uri: Uri, val permission: String)
 
-    private lateinit var linkDot: View
     private lateinit var linkState: TextView
+    private lateinit var linkSub: TextView
     private lateinit var linkSwitch: Switch
     private lateinit var wifiSub: TextView
     private lateinit var wifiPill: TextView
@@ -66,14 +66,15 @@ internal class PcLinkScreen(host: MainActivity) : Screen(host) {
 
     override fun build(): View = ui.column {
         addView(ui.topBar("PC link", host::goHome).first)
-        addView(linkStack(), ui.lp(top = 26))
-        addView(ui.section("How to connect"), ui.lp(top = 28))
-        addView(stepsCard(), ui.lp(top = 12))
-        addView(ui.section("Connect over Wi‑Fi"), ui.lp(top = 28))
+        addView(linkCard(), ui.lp(top = 18))
+        addView(usbCard(), ui.lp(top = 12))
         addView(wirelessCard(), ui.lp(top = 12))
-        addView(ui.section("Permissions"), ui.lp(top = 28))
         addView(permissionsCard(), ui.lp(top = 12))
-        addView(privacyNote(), ui.lp(top = 12))
+        addView(ui.text(12f, color(R.color.ink_faint)) {
+            text = "Your messages, contacts and call log only go to Droid Desk, on computers you connect or pair."
+            gravity = Gravity.CENTER
+            setLineSpacing(ui.dp(2).toFloat(), 1f)
+        }, ui.lp(top = 16))
     }
 
     override fun onShow() {
@@ -89,66 +90,57 @@ internal class PcLinkScreen(host: MainActivity) : Screen(host) {
 
     // ---------- sections ----------
 
-    /** "Events with Friends": an olive card stacked on two tilted cards peeking out behind it. */
-    private fun linkStack() = FrameLayout(host).apply {
-        clipChildren = false
-        fun peek(bg: Int, icon: Int, left: Int, right: Int, top: Int, tilt: Float) = FrameLayout(context).apply {
-            background = ui.rounded(color(bg), 24)
-            rotation = tilt
-            addView(ui.iconView(icon, color(R.color.ink)), FrameLayout.LayoutParams(ui.dp(18), ui.dp(18), Gravity.TOP or Gravity.END).apply {
-                topMargin = ui.dp(12); rightMargin = ui.dp(18)
-            })
-        }.also {
-            addView(it, FrameLayout.LayoutParams(-1, ui.dp(90)).apply { leftMargin = ui.dp(left); rightMargin = ui.dp(right); topMargin = ui.dp(top) })
-        }
-        peek(R.color.pink, R.drawable.ic_sms, 70, 40, 0, -3f)
-        peek(R.color.sky, R.drawable.ic_usb, 24, 12, 22, 2f)
-
-        val card = ui.heroCard(14) {
-            addView(ui.row {
-                setPadding(ui.dp(6), ui.dp(4), 0, ui.dp(4))
-                addView(ui.column {
-                    addView(ui.text(22f, color(R.color.ink), ui.light) { text = "Droid Desk link"; letterSpacing = -0.02f })
-                    val (r, d, l) = ui.dotLabel()
-                    linkDot = d; linkState = l
-                    l.setTextColor(color(R.color.ink))
-                    addView(r, ui.lp(top = 6))
-                }, ui.lp(w = 0, weight = 1f))
-                linkSwitch = ui.toggle { togglePcLink() }
-                addView(linkSwitch, ui.lp(w = WRAP_CONTENT, start = 8))
-            })
-            listOf(
-                Triple("Messages", R.drawable.ic_sms, Telephony.Sms.CONTENT_URI to Manifest.permission.READ_SMS),
-                Triple("Contacts", R.drawable.ic_person, ContactsContract.Contacts.CONTENT_URI to Manifest.permission.READ_CONTACTS),
-                Triple("Call log", R.drawable.ic_call, CallLog.Calls.CONTENT_URI to Manifest.permission.READ_CALL_LOG),
-            ).forEachIndexed { i, (label, icon, source) ->
-                val (row, value) = ui.listPill(icon, label)
-                value.text = "–"
-                addView(row, ui.lp(top = if (i == 0) 14 else 8))
-                counts += Count(value, source.first, source.second)
-            }
-        }
-        addView(card, FrameLayout.LayoutParams(-1, -2).apply { topMargin = ui.dp(46) })
+    /** The hero card: is the link on, the switch, and how much the PC can read. */
+    private fun linkCard() = ui.heroCard(18) {
+        addView(ui.row {
+            gravity = Gravity.CENTER_VERTICAL
+            addView(ui.chipIcon(R.drawable.ic_desktop))
+            addView(ui.text(15f, color(R.color.ink), ui.medium) { text = "Droid Desk link" }, ui.lp(w = 0, weight = 1f, start = 10))
+            linkSwitch = ui.toggle { togglePcLink() }
+            addView(linkSwitch, ui.lp(w = WRAP_CONTENT, start = 8))
+        })
+        linkState = ui.text(44f, color(R.color.ink), ui.regular) { letterSpacing = -0.03f; maxLines = 1 }
+        addView(linkState, ui.lp(top = 14))
+        linkSub = ui.text(13f, color(R.color.ink), ui.medium)
+        addView(linkSub, ui.lp(top = 6))
+        val (nums, values) = ui.numbers(listOf("Messages", "Contacts", "Calls"))
+        listOf(
+            Telephony.Sms.CONTENT_URI to Manifest.permission.READ_SMS,
+            ContactsContract.Contacts.CONTENT_URI to Manifest.permission.READ_CONTACTS,
+            CallLog.Calls.CONTENT_URI to Manifest.permission.READ_CALL_LOG,
+        ).forEachIndexed { i, source -> counts += Count(values[i], source.first, source.second) }
+        addView(nums, ui.lp(top = 20))
     }
 
-    private fun stepsCard() = ui.glassCard(16) {
+    /** USB: one line, with the four steps tucked behind "How". */
+    private fun usbCard() = ui.glassCard(16) {
+        val steps = ui.column { visibility = View.GONE }
+        val how = ui.pill("How", color(R.color.surface), color(R.color.ink)).apply { textSize = 13f; minHeight = ui.dp(34) }
+        val (head, sub) = ui.cardHeader(R.drawable.ic_usb, "USB cable") { addView(how, ui.lp(w = WRAP_CONTENT, start = 8)) }
+        sub.text = "Plug in, then click Connect in Droid Desk"
+        addView(head)
         listOf(
-            "Connect this phone to your computer with a USB cable that carries data.",
-            "Turn on Developer options › USB debugging on the phone.",
+            "Use a USB cable that carries data.",
+            "Turn on Developer options › USB debugging.",
             "Open Droid Desk on the computer and click Connect.",
-            "Allow USB debugging when the phone asks. Tick “Always allow” to skip this next time.",
+            "Tap Allow when the phone asks.",
         ).forEachIndexed { i, step ->
-            addView(ui.row {
-                gravity = Gravity.TOP
-                addView(ui.text(14f, color(R.color.on_fab), ui.medium) {
+            steps.addView(ui.row {
+                gravity = Gravity.CENTER_VERTICAL
+                addView(ui.text(13f, color(R.color.on_fab), ui.medium) {
                     text = "${i + 1}"
                     gravity = Gravity.CENTER
                     background = ui.circle(color(R.color.fab))
-                }, ui.lp(w = ui.dp(28), h = ui.dp(28)))
-                addView(ui.text(14f, color(R.color.ink)) { text = step; setLineSpacing(ui.dp(2).toFloat(), 1f) },
-                    ui.lp(w = 0, weight = 1f, start = 12).apply { topMargin = ui.dp(3) })
-            }, ui.lp(top = if (i == 0) 0 else 14))
+                }, ui.lp(w = ui.dp(24), h = ui.dp(24)))
+                addView(ui.text(14f, color(R.color.ink)) { text = step }, ui.lp(w = 0, weight = 1f, start = 12))
+            }, ui.lp(top = 12))
         }
+        addView(steps, ui.lp(top = 4))
+        fun show(open: Boolean) {
+            steps.visibility = if (open) View.VISIBLE else View.GONE
+            ui.stylePill(how, if (open) "Hide" else "How", color(R.color.surface), color(R.color.ink)) { show(!open) }
+        }
+        show(false)
     }
 
     /**
@@ -157,8 +149,8 @@ internal class PcLinkScreen(host: MainActivity) : Screen(host) {
      * debugging › Pair device with QR code. This card shows how far along the phone is.
      */
     private fun wirelessCard() = ui.glassCard(16) {
-        val (head, sub) = ui.cardHeader(R.drawable.ic_wifi, "Without a cable")
-        wifiSub = sub.apply { maxLines = 8; ellipsize = null; setLineSpacing(ui.dp(2).toFloat(), 1f) }
+        val (head, sub) = ui.cardHeader(R.drawable.ic_wifi, "Wi‑Fi")
+        wifiSub = sub.apply { maxLines = 3; ellipsize = null; setLineSpacing(ui.dp(2).toFloat(), 1f) }
         addView(head)
         wifiPill = ui.pill("", 0, 0).apply { textSize = 13f; minHeight = ui.dp(36) }
         addView(wifiPill, ui.lp(w = WRAP_CONTENT, top = 12))
@@ -174,20 +166,17 @@ internal class PcLinkScreen(host: MainActivity) : Screen(host) {
         wifiPill.visibility = View.VISIBLE
         when {
             Build.VERSION.SDK_INT < 30 -> {
-                wifiSub.text = "Needs Android 11 or later. On this phone, use the USB cable."
+                wifiSub.text = "Needs Android 11 or later"
                 wifiPill.visibility = View.GONE
             }
             canSwitch && devOn -> {
-                wifiSub.text = if (wifiOn) "On. Open Droid Desk on your computer (same Wi‑Fi) and click this phone to connect. " +
-                    "Turn it off when you're done."
-                else "Turn on to use Droid Desk without the cable, on the same Wi‑Fi as your computer. " +
-                    "If the phone asks “Allow wireless debugging on this network?”, tap Allow."
+                wifiSub.text = if (wifiOn) "On · click this phone in Droid Desk (same Wi‑Fi)"
+                else "Use Droid Desk without the cable, on the same Wi‑Fi"
                 if (wifiOn) ui.stylePill(wifiPill, "Turn off Wi‑Fi connection", color(R.color.surface), color(R.color.ink), null) { setAdbWifi(false) }
                 else ui.stylePill(wifiPill, "Turn on Wi‑Fi connection", color(R.color.fab), color(R.color.on_fab), R.drawable.ic_wifi) { setAdbWifi(true) }
             }
             else -> {
-                wifiSub.text = "One-time setup: connect this phone to your computer with the USB cable, open Droid Desk " +
-                    "and click “Use this phone without the cable”. After that, turn it on here with one tap."
+                wifiSub.text = "Set up once over USB: in Droid Desk, click “Use this phone without the cable”"
                 if (devOn) ui.stylePill(wifiPill, "Set up manually instead", color(R.color.surface), color(R.color.ink), null, open(Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS))
                 else wifiPill.visibility = View.GONE
             }
@@ -217,14 +206,6 @@ internal class PcLinkScreen(host: MainActivity) : Screen(host) {
         addView(permList)
     }
 
-    private fun privacyNote(): View {
-        val (row, label) = ui.insight(R.drawable.ic_shield, color(R.color.mint))
-        label.text = "Messages, contacts and call log only go to Droid Desk: over the USB cable, or over " +
-            "Android's encrypted Wireless debugging to computers you paired. Otherwise the network is used " +
-            "only for network tests and, while you have it on, Wi‑Fi receive."
-        return row
-    }
-
     // ---------- state ----------
 
     private fun togglePcLink() {
@@ -238,9 +219,9 @@ internal class PcLinkScreen(host: MainActivity) : Screen(host) {
 
     private fun refresh() {
         val on = CompanionService.running
-        linkState.text = if (on) "Ready · USB or Wireless debugging" else "Paused · turn on to connect"
+        linkState.text = if (on) "Ready" else "Paused"
+        linkSub.text = if (on) "Droid Desk can connect over USB or Wi‑Fi" else "Turn on to let Droid Desk connect"
         refreshWireless()
-        linkDot.background = ui.circle(color(if (on) R.color.green_dot else R.color.peach_dot))
         linkSwitch.isChecked = on
         linkSwitch.contentDescription = if (on) "Stop PC connection" else "Start PC connection"
 
@@ -286,7 +267,7 @@ internal class PcLinkScreen(host: MainActivity) : Screen(host) {
         val snapshot = counts.toList()
         background({ snapshot.map { count(it.uri, it.permission) } }) { r ->
             val counts = r.getOrNull() ?: return@background
-            snapshot.zip(counts).forEach { (row, n) -> row.value.text = n?.let(numbers::format) ?: "No access" }
+            snapshot.zip(counts).forEach { (row, n) -> row.value.text = n?.let(numbers::format) ?: "–" }
         }
     }
 
