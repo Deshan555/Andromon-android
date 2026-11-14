@@ -35,6 +35,7 @@ internal class SettingsScreen(host: MainActivity) : Screen(host) {
     private lateinit var filesValue: TextView
     private lateinit var usageValue: TextView
     private lateinit var notifyValue: TextView
+    private val privileged by lazy { PrivilegedPanel(host) }
 
     override fun build(): View = ui.column {
         addView(ui.topBar("Settings", host::goHome).first)
@@ -78,6 +79,9 @@ internal class SettingsScreen(host: MainActivity) : Screen(host) {
                 .text = ""
         }, ui.lp(top = 12))
 
+        // Privileged access: Shizuku, the Droid Desk helper, root (PrivilegedPanel.kt)
+        privileged.addTo(this)
+
         addView(ui.section("About"), ui.lp(top = 26))
         addView(ui.glassCard(6) {
             val version = runCatching { host.packageManager.getPackageInfo(host.packageName, 0).versionName }.getOrNull()
@@ -85,11 +89,13 @@ internal class SettingsScreen(host: MainActivity) : Screen(host) {
                 version?.let { "v$it" } ?: ""
             valueRow(R.drawable.ic_shield, "Your data", "What the app reads and where it goes") { showPrivacy() }.text = ""
             valueRow(R.drawable.ic_lock, "Licence", "Free software under the GNU GPL version 3") { showLicence() }.text = "GPL-3.0"
-            valueRow(R.drawable.ic_file, "Third-party notices", "SD Maid SE, Poppins font and Material icons") { showThirdParty() }.text = ""
+            valueRow(R.drawable.ic_file, "Third-party notices", "SD Maid SE, SuperFreezZ, Shizuku-API, Poppins and Lucide icons") { showThirdParty() }.text = ""
         }, ui.lp(top = 12))
     }
 
-    override fun onShow() = refresh()
+    override fun onShow() { refresh(); privileged.onShow() }
+
+    override fun onHide() = privileged.onHide()
 
     override fun onPermissionsResult() = refresh()
 
@@ -245,11 +251,25 @@ internal class SettingsScreen(host: MainActivity) : Screen(host) {
                     "The Junk Cleaner's cleaning rules (System Cleaner filters and CorpseFinder) and its " +
                     "leftover-folder database are ported from SD Maid SE by the SD Maid SE authors " +
                     "(github.com/d4rken-org/sdmaid-se), GNU GPL version 3.\n\n" +
+                    "SuperFreezZ\n" +
+                    "The Freezer's freeze modes, its “not used for a while” rule, the freeze on screen off and the " +
+                    "accessibility method are ported from SuperFreezZ, Copyright (c) 2018 Hocuri " +
+                    "(gitlab.com/SuperFreezZ/SuperFreezZ), GNU GPL version 3 or later.\n\n" +
+                    "Shizuku-API\n" +
+                    "The library used to reach the Shizuku app (dev.rikka.shizuku:api and provider 13.1.5), " +
+                    "Copyright (c) 2021 RikkaW, MIT License: permission is granted, free of charge, to use, copy, modify, " +
+                    "merge, publish, distribute, sublicense and sell copies of the software, provided this copyright and " +
+                    "permission notice is included. The software is provided “as is”, without warranty of any kind.\n\n" +
                     "Poppins font\n" +
                     "Copyright 2020 The Poppins Project Authors. SIL Open Font License 1.1. " +
                     "This app includes it subset to Latin characters.\n\n" +
+                    "Lucide icons\n" +
+                    "The app's icons are from Lucide (lucide.dev), Copyright (c) Lucide Icons and Contributors, " +
+                    "ISC License: permission to use, copy, modify and distribute is granted, provided the copyright " +
+                    "and permission notice appear in all copies. Some Lucide icons derive from Feather, " +
+                    "Copyright (c) 2013-present Cole Bemis, MIT License. Provided “as is”, without warranty.\n\n" +
                     "Material icons\n" +
-                    "Many of the app's icons are based on Material Icons, Copyright Google LLC, " +
+                    "The launcher icon and the Freeze shortcut icon are based on Material Icons, Copyright Google LLC, " +
                     "licensed under the Apache License, Version 2.0."))
             .setNeutralButton("Font licence") { _, _ -> textDialog("SIL Open Font License 1.1", raw(R.raw.poppins_ofl, "SIL Open Font License 1.1")) }
             .setPositiveButton("Apache 2.0") { _, _ -> textDialog("Apache License 2.0", raw(R.raw.apache_2_0, "https://www.apache.org/licenses/LICENSE-2.0")) }

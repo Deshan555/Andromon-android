@@ -63,6 +63,8 @@ internal class MemoryScreen(host: MainActivity) : Screen(host) {
     // RAM manager
     /** The running helper (protocol version, runs as root), or null when it isn't running. */
     private var helper: Pair<Int, Boolean>? = null
+    /** Which backend that is (Shizuku, Droid Desk helper, root), for the note under the list. */
+    @Volatile private var access: Privileged.Active? = null
     private var checking = false
     private var loading = false
     private var busy = false
@@ -282,8 +284,7 @@ internal class MemoryScreen(host: MainActivity) : Screen(host) {
 
     private fun helperNote(): String {
         val total = running.sumOf { it.bytes }
-        val how = if (helper?.second == true) "with root" else "through Droid Desk, until the phone restarts"
-        return "${running.size} apps use ${fmtSize(total)}. Full access is on $how. Tap an app for its App info."
+        return "${running.size} apps use ${fmtSize(total)}. Full access is on ${access?.how() ?: "through the helper"}. Tap an app for its App info."
     }
 
     // ---------- turning it on (no helper) ----------
@@ -296,13 +297,16 @@ internal class MemoryScreen(host: MainActivity) : Screen(host) {
             addView(ui.text(14f, color(R.color.ink)) {
                 setLineSpacing(ui.dp(2).toFloat(), 1f)
                 text = "Android only lets an app see its own processes. To list the apps in memory and stop them, " +
-                    "this app borrows the rights of ADB (or root) through a small helper.\n\n" +
+                    "this app borrows the rights of ADB (or root).\n\n" +
+                    "Without a computer: with the Shizuku app (Settings › Privileged access).\n\n" +
                     "With a computer: connect this phone to Droid Desk and click “Turn on” next to " +
                     "“Phone RAM manager” on its Overview page. It stays on until the phone restarts, " +
                     "even after you unplug."
             }, ui.lp(top = 14))
             unlockNote = ui.text(13f, color(R.color.ink_soft)) { visibility = View.GONE }
             addView(unlockNote, ui.lp(top = 10))
+            addView(ui.pill("Use Shizuku", color(R.color.fab), color(R.color.on_fab), R.drawable.ic_key) { host.show("Settings") },
+                ui.lp(w = WRAP_CONTENT, top = 12))
             if (ShellHelperClient.hasSu()) {
                 rootBtn = ui.pill("Use root instead", color(R.color.fab), color(R.color.on_fab), R.drawable.ic_shield) { startRoot() }
                 addView(rootBtn, ui.lp(w = WRAP_CONTENT, top = 12))
@@ -344,7 +348,10 @@ internal class MemoryScreen(host: MainActivity) : Screen(host) {
     private fun checkHelper() {
         if (checking) return
         checking = true
-        background({ ShellHelperClient.ping(host) }) { r ->
+        background({
+            // Any privileged backend will do (Shizuku, the PC-started helper, root): see Privileged.
+            Privileged.active(host).also { access = it }?.let { PrivilegedCommands.VERSION to it.root }
+        }) { r ->
             checking = false
             val h = r.getOrNull()?.takeIf { it.first >= 1 }
             val was = helper

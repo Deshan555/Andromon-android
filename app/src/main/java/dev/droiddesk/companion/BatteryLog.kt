@@ -214,7 +214,7 @@ internal object BatteryUse {
     /** Blocks. Throws [ShellHelperClient.Unavailable] without the helper, [OldHelper] for an old one. */
     fun load(ctx: Context): Result {
         val text = try {
-            ShellHelperClient.call(ctx, "batteryUse") as String
+            Privileged.call(ctx, "batteryUse") as String
         } catch (e: ShellHelperClient.Unavailable) {
             throw e
         } catch (e: IOException) {

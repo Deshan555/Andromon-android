@@ -258,6 +258,19 @@
         </service>
         <!-- ===== end of Phone links ===== -->
 
+        <!-- ===== Privileged access: Shizuku (ShizukuAccess.kt, PrivilegedService.kt) ===== -->
+        <!-- How the Shizuku app hands this app its binder. Exported because Shizuku (another app)
+             calls it; INTERACT_ACROSS_USERS_FULL keeps normal apps out: only Shizuku's own
+             process (shell or root) holds it. From the Shizuku-API documentation. -->
+        <provider
+            android:name="rikka.shizuku.ShizukuProvider"
+            android:authorities="${applicationId}.shizuku"
+            android:multiprocess="false"
+            android:enabled="true"
+            android:exported="true"
+            android:permission="android.permission.INTERACT_ACROSS_USERS_FULL" />
+        <!-- ===== end of Privileged access ===== -->
+
         <!-- Battery history: samples level, temperature and voltage about every 15 minutes
              (BatteryLog.kt). Only the system's JobScheduler can start it. -->
         <service

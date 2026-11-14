@@ -184,7 +184,7 @@ internal object PermissionAudit {
         val out = HashMap<String, Long?>()
         for (op in ops) {
             val res = try {
-                ShellHelperClient.call(ctx, "appOps", JSONObject().put("op", op).put("pkgs", JSONArray(pkgs))) as JSONObject
+                Privileged.call(ctx, "appOps", JSONObject().put("op", op).put("pkgs", JSONArray(pkgs))) as JSONObject
             } catch (e: ShellHelperClient.Unavailable) {
                 throw e
             } catch (e: IOException) {
@@ -363,12 +363,12 @@ internal class PermissionsScreen(host: MainActivity) : Screen(host) {
             if (use != null) {
                 lastUse = use.getOrNull()
                 lastUseNote = when (val e = use.exceptionOrNull()) {
-                    null -> "Last use comes from Android's app-ops record (appops get, through the Droid Desk helper). Android only " +
+                    null -> "Last use comes from Android's app-ops record (appops get, through Shizuku or the Droid Desk helper). Android only " +
                         "keeps the most recent use, and not forever."
                     is ShellHelperClient.Unavailable -> "When each app last used this isn't shown: apps can't read that. It appears " +
-                        "while the Droid Desk helper is on (Droid Desk on your computer: Overview › Phone RAM manager)."
+                        "with privileged access. " + Privileged.HOW_TO
                     is PermissionAudit.OldHelper -> "Last-use times need a newer helper: turn it off and on again in Droid Desk " +
-                        "(Overview › Phone RAM manager)."
+                        "(Overview › Phone RAM manager), or use Shizuku (Settings › Privileged access)."
                     else -> "Last-use times couldn't be read: ${e.message}"
                 }
             }

@@ -38,7 +38,8 @@ internal object ShellHelperClient {
         "CLASSPATH=$apkPath setsid app_process /system/bin --nice-name=${ShellHelper.SOCKET} " +
             "${ShellHelper::class.java.name} </dev/null >/dev/null 2>&1 &"
 
-    class Unavailable : IOException("The RAM manager helper isn't running")
+    /** No privileged backend can be reached (see [Privileged]): neither Shizuku nor this helper. */
+    class Unavailable(why: String = "The Droid Desk helper isn't running") : IOException(why)
 
     private fun prefs(ctx: Context) = ctx.getSharedPreferences("shell_helper", Context.MODE_PRIVATE)
 
@@ -126,11 +127,11 @@ internal object RamManager {
     // "u0a42" (app of user 0), "u0a397i345" (isolated process of that app), "u150a469" (another user)
     private val APP_UID = Regex("""^u(\d+)a(\d+)""")
 
-    /** Apps with processes in memory, biggest first. Needs the helper. */
+    /** Apps with processes in memory, biggest first. Needs privileged access ([Privileged]). */
     fun load(ctx: Context): List<RunningApp> {
-        val lru = ShellHelperClient.call(ctx, "lru") as String
+        val lru = Privileged.call(ctx, "lru") as String
         val rss = HashMap<Int, Long>()
-        for (line in (ShellHelperClient.call(ctx, "ps") as String).lineSequence().drop(1)) {
+        for (line in (Privileged.call(ctx, "ps") as String).lineSequence().drop(1)) {
             val parts = line.trim().split(Regex("\\s+"))
             val pid = parts.getOrNull(0)?.toIntOrNull() ?: continue
             rss[pid] = (parts.getOrNull(1)?.toLongOrNull() ?: 0L) * 1024
@@ -178,10 +179,10 @@ internal object RamManager {
     /** Labels and icons, kept between refreshes: loading them is the slow part. */
     private val looks = HashMap<String, Triple<String, Drawable?, Boolean>>()
 
-    fun forceStop(ctx: Context, pkg: String) { ShellHelperClient.call(ctx, "forceStop", JSONObject().put("pkg", pkg)) }
+    fun forceStop(ctx: Context, pkg: String) { Privileged.call(ctx, "forceStop", JSONObject().put("pkg", pkg)) }
 
     /** Closes every app that isn't in use or needed; they start again when opened. */
-    fun freeMemory(ctx: Context) { ShellHelperClient.call(ctx, "killAll") }
+    fun freeMemory(ctx: Context) { Privileged.call(ctx, "killAll") }
 
     fun availMem(ctx: Context): Long =
         ActivityManager.MemoryInfo().also { ctx.getSystemService(ActivityManager::class.java).getMemoryInfo(it) }.availMem

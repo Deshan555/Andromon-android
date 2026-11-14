@@ -31,6 +31,9 @@ android {
         }
     }
 
+    // Privileged access › Shizuku: the UserService interface (IPrivilegedService.aidl).
+    buildFeatures { aidl = true }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
@@ -39,4 +42,13 @@ android {
 
 kotlin {
     compilerOptions { jvmTarget.set(JvmTarget.JVM_17) }
+}
+
+// The app's only library: Shizuku-API (MIT), for Privileged access through the Shizuku app
+// (ShizukuAccess.kt). Its androidx.annotation dependency is compile-time annotations only and is
+// left out, so the app still ships no AndroidX code.
+dependencies {
+    val shizuku = "13.1.5"
+    implementation("dev.rikka.shizuku:api:$shizuku") { exclude(group = "androidx.annotation") }
+    implementation("dev.rikka.shizuku:provider:$shizuku") { exclude(group = "androidx.annotation") }
 }

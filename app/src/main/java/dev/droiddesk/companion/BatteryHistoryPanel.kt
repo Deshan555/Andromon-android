@@ -260,11 +260,11 @@ internal class BatteryHistoryPanel(private val host: MainActivity) {
             val why = when (val e = r.exceptionOrNull()) {
                 is ShellHelperClient.Unavailable ->
                     "Not available right now. Android doesn't let apps read other apps' battery use, so this needs the " +
-                        "Droid Desk helper (the same one the RAM manager uses). Turn it on from Droid Desk on your computer: " +
-                        "Overview › Phone RAM manager. It stays on until the phone restarts. Nothing is shown here without it."
+                        "rights of adb: Shizuku, or the Droid Desk helper the RAM manager uses. " + Privileged.HOW_TO +
+                        " Nothing is shown here without it."
                 is BatteryUse.OldHelper ->
                     "The helper that is running is from an older version of this app. Turn it off and on again in Droid Desk " +
-                        "(Overview › Phone RAM manager), or restart the phone and turn it on again."
+                        "(Overview › Phone RAM manager), restart the phone, or use Shizuku (Settings › Privileged access)."
                 else -> "Couldn't read Android's battery statistics: ${e?.message ?: "unknown error"}"
             }
             appsBox.addView(appsNote(why))
@@ -300,8 +300,8 @@ internal class BatteryHistoryPanel(private val host: MainActivity) {
                 }, ui.lp(w = 0, weight = 1f, start = 12))
             }, ui.lp(top = if (i == 0) 0 else 12))
         }
-        appsBox.addView(appsNote("Android's own estimate since the last full charge (dumpsys batterystats, read through the " +
-            "Droid Desk helper)." + (if (res.computedMah != null) " The percentage is the share of everything Android counted." else "") +
+        appsBox.addView(appsNote("Android's own estimate since the last full charge (dumpsys batterystats, read through " +
+            "Shizuku or the Droid Desk helper)." + (if (res.computedMah != null) " The percentage is the share of everything Android counted." else "") +
             " Estimates differ between phones."), ui.lp(top = 14))
     }
 }
