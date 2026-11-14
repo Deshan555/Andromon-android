@@ -186,6 +186,7 @@ class BatteryJob : JobService() {
     override fun onStartJob(params: JobParameters?): Boolean {
         thread(isDaemon = true) {
             BatteryLog.record(applicationContext)
+            runCatching { PowerWatch.onJobTick(applicationContext) } // fallback for the battery-level triggers
             runCatching { jobFinished(params, false) }
         }
         return true

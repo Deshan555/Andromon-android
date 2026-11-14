@@ -101,6 +101,11 @@
          to read the state; newer versions don't) -->
     <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
 
+    <!-- Freezer and Battery saver (PowerWatch.kt): the "Battery watch" foreground service that
+         hears "screen off" and battery changes while one of the automatic options is on. It is
+         restarted after a phone restart through RECEIVE_BOOT_COMPLETED above. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+
     <uses-feature android:name="android.hardware.microphone" android:required="false" />
     <uses-feature android:name="android.hardware.bluetooth" android:required="false" />
     <uses-feature android:name="android.hardware.telephony" android:required="false" />
@@ -270,6 +275,65 @@
             android:exported="true"
             android:permission="android.permission.INTERACT_ACROSS_USERS_FULL" />
         <!-- ===== end of Privileged access ===== -->
+
+        <!-- ===== Freezer and Battery saver (Freezer.kt, FreezeAccessibility.kt, PowerWatch.kt) ===== -->
+        <!-- "Freeze now": no screen of its own. Not exported: opened only by this app, its pinned
+             home-screen shortcut and its quick-settings tile. -->
+        <activity
+            android:name=".FreezeActivity"
+            android:exported="false"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar"
+            android:label="Freeze now"
+            android:excludeFromRecents="true"
+            android:taskAffinity=""
+            android:launchMode="singleTask"
+            android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|keyboard|keyboardHidden|navigation|uiMode|density|fontScale|locale|layoutDirection" />
+        <!-- The Freezer's accessibility method, for phones without Shizuku, the helper or root:
+             presses "Force stop" in Android's App info. Only Android can bind it, and only after
+             the person switches it on in Accessibility settings; it sees Settings windows only and
+             acts only when the person also turned the method on in the Freezer. -->
+        <service
+            android:name=".FreezeAccessibilityService"
+            android:exported="true"
+            android:label="@string/freeze_accessibility_label"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/freeze_accessibility" />
+        </service>
+        <!-- "Battery watch": runs only while an automatic option is on, with a visible
+             notification. Started only by this app. -->
+        <service
+            android:name=".PowerWatchService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Listens for screen off/on and battery changes, which Android only delivers to running apps, for the freeze, deep-sleep and charging-alert options the person turned on" />
+        </service>
+        <!-- Restarts the watch after a phone restart or an app update, and receives the delayed
+             screen-off freeze alarm. Not exported: only Android and this app can send to it. -->
+        <receiver android:name=".PowerReceiver" android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
+        <!-- Quick-settings tile "Freeze now". Only the system may bind it. -->
+        <service
+            android:name=".FreezeTile"
+            android:exported="true"
+            android:icon="@drawable/ic_snow"
+            android:label="Freeze now"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+        <!-- ===== end of Freezer and Battery saver ===== -->
 
         <!-- Battery history: samples level, temperature and voltage about every 15 minutes
              (BatteryLog.kt). Only the system's JobScheduler can start it. -->

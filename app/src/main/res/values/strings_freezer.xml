@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  SPDX-License-Identifier: GPL-3.0-only
+  Copyright (C) 2026 The Droid Desk authors
+  Texts Android shows in its own Accessibility settings for the Freezer's accessibility method.
+-->
+<resources>
+    <string name="freeze_accessibility_label">Droid Desk: freeze apps</string>
+    <string name="freeze_accessibility_summary">Presses “Force stop” for you when you freeze apps</string>
+    <string name="freeze_accessibility_description">Lets the Freezer in Droid Desk Companion stop apps for you on phones without Shizuku, the Droid Desk helper or root.\n\nWhat it does: when you tap “Freeze now”, the app opens Android\'s App info screen for each app to freeze, and this service presses “Force stop”, “OK” and Back there.\n\nWhat it can see: only windows of Android\'s Settings app, to find those buttons. It reads nothing in other apps, nothing you type, and sends nothing anywhere.\n\nIt does nothing unless you turned on “Accessibility method” in the Freezer and a freeze is running. Press the power button to stop a run.</string>
+</resources>

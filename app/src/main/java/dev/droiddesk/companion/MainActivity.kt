@@ -51,7 +51,8 @@ class MainActivity : Activity() {
     private val screens: List<Screen> by lazy {
         listOf(HomeScreen(this), MemoryScreen(this), CleanerScreen(this), NetworkScreen(this), ReceiveScreen(this),
             BatteryScreen(this), AppsScreen(this), SettingsScreen(this), PcLinkScreen(this),
-            StorageScreen(this), PermissionsScreen(this), HardwareScreen(this))
+            StorageScreen(this), PermissionsScreen(this), HardwareScreen(this),
+            FreezerScreen(this), SaverScreen(this))
     }
     /** Screens in the bottom bar, left to right. */
     private val navOrder = listOf("Home", "PC link", "Cleaner", "Network", "Receive", "Settings")
@@ -76,6 +77,7 @@ class MainActivity : Activity() {
         if (Prefs.startLinkOnOpen(this) || intent?.getBooleanExtra("autostart", false) == true) CompanionService.start(this)
         ui = Ui(this)
         BatteryLog.schedule(this) // battery history keeps sampling while the app is closed
+        PowerWatch.sync(this) // the "Battery watch" service, only when an automatic freeze/saver option is on
 
         scroll = ScrollView(this).apply {
             isVerticalScrollBarEnabled = false
@@ -251,11 +253,11 @@ class MainActivity : Activity() {
         val keyboard = imeBottom > b
         nav.visibility = if (keyboard) View.GONE else View.VISIBLE
         // Docked: full width, flush with the bottom edge; the bar grows by the system bar's height.
-        nav.layoutParams.height = ui.dp(NAV_H + NAV_GAP) + b
-        nav.requestLayout()
         // Docked: flush with the bottom edge; the bar grows by the system bar's height.
-        val bottom = if (keyboard) imeBottom + ui.dp(24) else b + ui.dp(NAV_H + NAV_GAP + 20)
+        nav.layoutParams.height = ui.dp(NAV_H + NAV_GAP) + b
         navBar.setPadding(ui.dp(8) + l, 0, ui.dp(8) + r, b)
+        nav.requestLayout()
+        val bottom = if (keyboard) imeBottom + ui.dp(24) else b + ui.dp(NAV_H + NAV_GAP + 20)
         // 20dp sides leave room for the cards' soft shadows.
         if (current >= 0) screens[current].view.setPadding(ui.dp(20) + l, ui.dp(16) + t, ui.dp(20) + r, bottom)
     }

@@ -22,8 +22,9 @@ import android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
 import android.widget.TextView
 
 /**
- * Battery level, condition and details as Android reports them. The power-saving rows show the
- * current system setting and open it: apps can't switch these on or off themselves.
+ * Battery level, condition and details as Android reports them. Battery Saver is a real switch
+ * when the app may change it ([BatterySaver]); Dark theme shows the current setting and opens it.
+ * The Saver and Freezer screens open from here.
  */
 internal class BatteryScreen(host: MainActivity) : Screen(host) {
 
@@ -39,7 +40,7 @@ internal class BatteryScreen(host: MainActivity) : Screen(host) {
     private lateinit var condSub: TextView
     private lateinit var condCard: View
     private lateinit var details: LinearLayout
-    private lateinit var saverState: TextView
+    private lateinit var saverSwitch: android.widget.Switch
     private lateinit var darkState: TextView
     private var receiver: BroadcastReceiver? = null
     private val history by lazy { BatteryHistoryPanel(host) }
@@ -90,8 +91,16 @@ internal class BatteryScreen(host: MainActivity) : Screen(host) {
 
         addView(ui.section("Power saving"), ui.lp(top = 26))
         addView(ui.glassCard(6) {
-            saverState = settingRow(R.drawable.ic_leaf, "Battery Saver", "Limits background activity to save power",
-                Settings.ACTION_BATTERY_SAVER_SETTINGS)
+            // A real switch (BatterySaver.kt): needs WRITE_SECURE_SETTINGS or privileged access;
+            // without either, the Saver screen opens and says what is missing.
+            val rows = UiRows(host, ui)
+            saverSwitch = rows.switch(this, R.drawable.ic_leaf, "Battery Saver", "Limits background activity to save power") { on ->
+                switchSaver(on)
+            }.switch!!
+            rows.value(this, R.drawable.ic_moon, "Battery saver tools", "Deep sleep, charging alerts, app limits, what is awake") {
+                host.show("Saver")
+            }
+            rows.value(this, R.drawable.ic_snow, "Freezer", "Stop apps that run without being used") { host.show("Freezer") }
             darkState = settingRow(R.drawable.ic_moon, "Dark theme", "Saves power on OLED screens",
                 Settings.ACTION_DISPLAY_SETTINGS)
             settingRow(R.drawable.ic_apps, "App battery use", "See which apps use the most",
@@ -179,11 +188,18 @@ internal class BatteryScreen(host: MainActivity) : Screen(host) {
             details.addView(row, ui.lp(top = if (i == 0) 0 else 12))
         }
 
-        saverState.text = if (b.powerSave) "On" else "Off"
-        saverState.setTextColor(color(if (b.powerSave) R.color.good else R.color.ink_soft))
+        saverSwitch.isChecked = b.powerSave
         val night = (host.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
         darkState.text = if (night) "On" else "Off"
         darkState.setTextColor(color(if (night) R.color.good else R.color.ink_soft))
+    }
+
+    private fun switchSaver(on: Boolean) {
+        background({ BatterySaver.setSaver(host, on); Thread.sleep(500) }) { r ->
+            // Not allowed, or the phone didn't follow (charging, or a maker's own power saving mode):
+            // the Saver screen explains what is needed.
+            if (r.isFailure || BatterySaver.saverOn(host) != on) host.show("Saver") else show(null)
+        }
     }
 
     private fun duration(ms: Long): String {

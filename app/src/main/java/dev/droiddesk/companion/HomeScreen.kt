@@ -252,8 +252,10 @@ internal class HomeScreen(host: MainActivity) : Screen(host) {
         val hardware = ui.tile(color(R.color.surface), "Hardware", R.drawable.ic_tools) { host.show("Hardware") }
         hardware.sub.text = "Screen, sound, sensors and more"
         linkTile = ui.tile(color(R.color.surface), "PC link", R.drawable.ic_desktop) { host.show("PC link") }
+        val freezer = ui.tile(color(R.color.surface), "Freezer", R.drawable.ic_snow) { host.show("Freezer") }
+        freezer.sub.text = "Stop apps you aren't using"
         return ui.column {
-            listOf(linkTile, memTile, junk, batteryTile, netTile, apps, storage, perms, hardware).chunked(2).forEachIndexed { r, pair ->
+            listOf(linkTile, memTile, junk, batteryTile, freezer, netTile, apps, storage, perms, hardware).chunked(2).forEachIndexed { r, pair ->
                 addView(ui.row {
                     pair.forEachIndexed { i, t -> addView(t.box, ui.lp(w = 0, h = ui.dp(148), weight = 1f, start = if (i == 0) 0 else 12)) }
                 }, ui.lp(top = if (r == 0) 0 else 12))
