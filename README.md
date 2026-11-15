@@ -8,6 +8,8 @@ It also has phone-care tools people use on the phone itself (see [Phone-care scr
 
 Users don't install it themselves. Droid Desk pushes it over USB the first time someone opens Messages, Contacts, Call log, Photos or Music. It also gives Droid Desk's Photos and Music tabs the phone's media index and thumbnails (`media.*` below; needs the photos/videos/music permissions, which Droid Desk grants at install).
 
+**Using the app?** The [user guide](docs/USER_GUIDE.md) shows every screen with screenshots and explains each option.
+
 ## How it works
 
 ```
