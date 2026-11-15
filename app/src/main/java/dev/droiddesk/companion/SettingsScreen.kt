@@ -28,6 +28,10 @@ internal class SettingsScreen(host: MainActivity) : Screen(host) {
     override val navColor = R.color.bg
 
     private lateinit var themeValue: TextView
+    private lateinit var textSizeValue: TextView
+    private lateinit var contrastSwitch: Switch
+    private lateinit var boldSwitch: Switch
+    private lateinit var motionSwitch: Switch
     private lateinit var linkSwitch: Switch
     private lateinit var largeValue: TextView
     private lateinit var rulesValue: TextView
@@ -36,6 +40,8 @@ internal class SettingsScreen(host: MainActivity) : Screen(host) {
     private lateinit var usageValue: TextView
     private lateinit var notifyValue: TextView
     private val privileged by lazy { PrivilegedPanel(host) }
+    /** A larger text size is chosen: rows show their whole subtitle instead of cutting it at two lines. */
+    private val bigText = Prefs.textSize(host) != Prefs.TextSize.SYSTEM
 
     override fun build(): View = ui.column {
         addView(ui.topBar("Settings", host::goHome).first)
@@ -43,6 +49,24 @@ internal class SettingsScreen(host: MainActivity) : Screen(host) {
         addView(ui.section("Appearance"), ui.lp(top = 28))
         addView(ui.glassCard(6) {
             themeValue = valueRow(R.drawable.ic_moon, "Theme", "Light, dark or the same as your phone") { pickTheme() }
+        }, ui.lp(top = 12))
+
+        // Each of these redraws the app (like Theme), so the switches only act on a real change.
+        addView(ui.section("Accessibility"), ui.lp(top = 26))
+        addView(ui.glassCard(6) {
+            textSizeValue = valueRow(R.drawable.ic_text_size, "Text size", "Makes the text in this app bigger") { pickTextSize() }
+            contrastSwitch = switchRow(R.drawable.ic_contrast, "High contrast", "Grey text and thin lines become as dark as the main text") { on ->
+                if (on != Prefs.highContrast(host)) { Prefs.setHighContrast(host, on); host.recreate() }
+            }
+            boldSwitch = switchRow(R.drawable.ic_bold, "Bold text", "Heavier letters everywhere in the app") { on ->
+                if (on != Prefs.boldText(host)) { Prefs.setBoldText(host, on); host.recreate() }
+            }
+            motionSwitch = switchRow(R.drawable.ic_motion, "Reduce motion", "Gauges jump to their value and pages don't glide when they scroll") { on ->
+                Prefs.setReduceMotion(host, on)
+            }
+            valueRow(R.drawable.ic_accessibility, "Phone accessibility settings", "TalkBack, magnification, colour correction and more") {
+                runCatching { host.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) }
+            }.text = ""
         }, ui.lp(top = 12))
 
         addView(ui.section("PC link"), ui.lp(top = 26))
@@ -101,6 +125,10 @@ internal class SettingsScreen(host: MainActivity) : Screen(host) {
 
     private fun refresh() {
         themeValue.text = Prefs.theme(host).label
+        textSizeValue.text = Prefs.textSize(host).label
+        contrastSwitch.isChecked = Prefs.highContrast(host)
+        boldSwitch.isChecked = Prefs.boldText(host)
+        motionSwitch.isChecked = Prefs.reduceMotionPref(host)
         linkSwitch.isChecked = Prefs.startLinkOnOpen(host)
         largeValue.text = sizeLabel(Prefs.largeFileMb(host))
         val rules = Prefs.CLEANING_RULES
@@ -123,7 +151,11 @@ internal class SettingsScreen(host: MainActivity) : Screen(host) {
 
     /** Icon, title and subtitle; returns the value text shown on the right. */
     private fun LinearLayout.valueRow(icon: Int, title: String, sub: String, onClick: (() -> Unit)?): TextView {
-        val value = ui.text(13f, color(R.color.ink_soft), ui.medium) { maxLines = 1 }
+        // At a larger text size the value may wrap, so the title and subtitle keep most of the row.
+        val value = ui.text(13f, color(R.color.ink_soft), ui.medium) {
+            maxLines = if (bigText) 2 else 1
+            if (bigText) { maxWidth = ui.dp(104); gravity = android.view.Gravity.END }
+        }
         addView(baseRow(icon, title, sub, onClick) {
             addView(value, ui.lp(w = WRAP_CONTENT, start = 8))
             if (onClick != null) addView(ui.iconView(R.drawable.ic_chevron_right, color(R.color.ink_faint)),
@@ -134,7 +166,9 @@ internal class SettingsScreen(host: MainActivity) : Screen(host) {
 
     private fun LinearLayout.switchRow(icon: Int, title: String, sub: String, onToggle: (Boolean) -> Unit): Switch {
         val sw = ui.toggle().apply { setOnCheckedChangeListener { _, on -> onToggle(on) } }
-        addView(baseRow(icon, title, sub, { sw.toggle() }) { addView(sw, ui.lp(w = WRAP_CONTENT, start = 8)) })
+        val row = baseRow(icon, title, sub, { sw.toggle() }) { addView(sw, ui.lp(w = WRAP_CONTENT, start = 8)) }
+        asOneSwitch(row, sw, title, sub)
+        addView(row)
         return sw
     }
 
@@ -145,11 +179,25 @@ internal class SettingsScreen(host: MainActivity) : Screen(host) {
         addView(ui.column {
             addView(ui.text(15f, color(R.color.ink), ui.medium) { text = title; maxLines = 2 })
             addView(ui.text(12f, color(R.color.ink_soft)) {
-                text = sub; maxLines = 2; ellipsize = TextUtils.TruncateAt.END; setLineSpacing(ui.dp(1).toFloat(), 1f)
+                text = sub; maxLines = if (bigText) 6 else 2; ellipsize = TextUtils.TruncateAt.END; setLineSpacing(ui.dp(1).toFloat(), 1f)
             }, ui.lp(top = 2))
         }, ui.lp(w = 0, weight = 1f, start = 12))
         trailing()
         if (onClick != null) setOnClickListener { onClick() }
+    }
+
+    /** A screen reader reads [row] as one item ("High contrast, off, switch") instead of stopping on the switch separately. */
+    private fun asOneSwitch(row: View, sw: Switch, title: String, sub: String) {
+        sw.importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+        row.accessibilityDelegate = object : View.AccessibilityDelegate() {
+            override fun onInitializeAccessibilityNodeInfo(v: View, info: android.view.accessibility.AccessibilityNodeInfo) {
+                super.onInitializeAccessibilityNodeInfo(v, info)
+                info.className = Switch::class.java.name
+                info.isCheckable = true
+                info.isChecked = sw.isChecked
+                info.contentDescription = "$title. $sub"
+            }
+        }
     }
 
     // ---------- actions ----------
@@ -164,6 +212,22 @@ internal class SettingsScreen(host: MainActivity) : Screen(host) {
                 if (which != current) {
                     Prefs.setTheme(host, options[which])
                     host.recreate() // reloads every colour; the Settings screen is restored
+                }
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    private fun pickTextSize() {
+        val options = Prefs.TextSize.values()
+        val current = options.indexOf(Prefs.textSize(host))
+        AlertDialog.Builder(host)
+            .setTitle("Text size")
+            .setSingleChoiceItems(options.map { it.label }.toTypedArray(), current) { d, which ->
+                d.dismiss()
+                if (which != current) {
+                    Prefs.setTextSize(host, options[which])
+                    host.recreate() // every text is measured again at the new size
                 }
             }
             .setNegativeButton("Cancel", null)
@@ -269,7 +333,7 @@ internal class SettingsScreen(host: MainActivity) : Screen(host) {
                     "and permission notice appear in all copies. Some Lucide icons derive from Feather, " +
                     "Copyright (c) 2013-present Cole Bemis, MIT License. Provided “as is”, without warranty.\n\n" +
                     "Material icons\n" +
-                    "The launcher icon and the Freeze shortcut icon are based on Material Icons, Copyright Google LLC, " +
+                    "The Freeze shortcut icon is based on Material Icons, Copyright Google LLC, " +
                     "licensed under the Apache License, Version 2.0."))
             .setNeutralButton("Font licence") { _, _ -> textDialog("SIL Open Font License 1.1", raw(R.raw.poppins_ofl, "SIL Open Font License 1.1")) }
             .setPositiveButton("Apache 2.0") { _, _ -> textDialog("Apache License 2.0", raw(R.raw.apache_2_0, "https://www.apache.org/licenses/LICENSE-2.0")) }

@@ -61,14 +61,19 @@ class MainActivity : Activity() {
     private var imeBottom = 0
     private var backCallback: Any? = null
 
-    /** Light / Dark from Settings: override the night bit before any resources are loaded. */
+    /**
+     * Light / Dark and the text size from Settings: override the night bit and the font scale before
+     * any resources are loaded. The text size multiplies the phone's own font size.
+     */
     override fun attachBaseContext(base: Context) {
         super.attachBaseContext(base)
-        Prefs.nightOverride(base)?.let { night ->
-            applyOverrideConfiguration(Configuration().apply {
-                uiMode = Configuration.UI_MODE_TYPE_NORMAL or night
-            })
-        }
+        val night = Prefs.nightOverride(base)
+        val scale = Prefs.textSize(base).scale
+        if (night == null && scale == 1f) return
+        applyOverrideConfiguration(Configuration().apply {
+            if (night != null) uiMode = Configuration.UI_MODE_TYPE_NORMAL or night
+            if (scale != 1f) fontScale = base.resources.configuration.fontScale * scale
+        })
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -119,7 +124,7 @@ class MainActivity : Activity() {
         screenIndex(name).takeIf { it >= 0 }?.let(::show)
     }
 
-    internal fun scrollToTop() = scroll.smoothScrollTo(0, 0)
+    internal fun scrollToTop() = if (Prefs.reduceMotion(this)) scroll.scrollTo(0, 0) else scroll.smoothScrollTo(0, 0)
 
     internal fun show(name: String) = screenIndex(name).takeIf { it >= 0 }?.let(::show)
 

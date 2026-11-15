@@ -53,15 +53,29 @@ internal class Ui(private val ctx: Context) {
     private val density = ctx.resources.displayMetrics.density
 
     fun dp(v: Number): Int = (v.toFloat() * density).roundToInt()
-    fun color(id: Int): Int = ctx.getColor(id)
+    // Settings › Accessibility. Read once: changing one recreates the activity, and with it this Ui.
+    private val highContrast = Prefs.highContrast(ctx)
+    private val boldText = Prefs.boldText(ctx)
+
+    /** With high contrast on, grey text, faint marks and hairlines step up to the next stronger colour. */
+    fun color(id: Int): Int = ctx.getColor(if (!highContrast) id else when (id) {
+        R.color.ink_soft -> R.color.ink
+        R.color.ink_faint, R.color.line -> R.color.ink_soft
+        else -> id
+    })
 
     // Poppins (res/font, subset to Latin). "bold" is SemiBold, the heaviest weight the design uses.
-    val light: Typeface = ctx.resources.getFont(R.font.poppins_light)
+    // With bold text on, every weight moves one step heavier.
+    private fun font(normal: Int, heavier: Int): Typeface = ctx.resources.getFont(if (boldText) heavier else normal)
+    val light: Typeface = font(R.font.poppins_light, R.font.poppins_regular)
     /** The brand look has no italics: the second part of a heading is set upright like the first. */
     val lightItalic: Typeface = light
-    val regular: Typeface = ctx.resources.getFont(R.font.poppins_regular)
-    val medium: Typeface = ctx.resources.getFont(R.font.poppins_medium)
+    val regular: Typeface = font(R.font.poppins_regular, R.font.poppins_medium)
+    val medium: Typeface = font(R.font.poppins_medium, R.font.poppins_semibold)
     val bold: Typeface = ctx.resources.getFont(R.font.poppins_semibold)
+
+    /** Marks a title as a heading, so a screen reader can jump from one section to the next. */
+    private fun <T : View> T.asHeading(): T = apply { if (Build.VERSION.SDK_INT >= 28) isAccessibilityHeading = true }
 
     // ---------- drawables ----------
 
@@ -103,7 +117,7 @@ internal class Ui(private val ctx: Context) {
     fun pageTitle(title: String) = text(30f, color(R.color.ink), light) {
         text = title
         letterSpacing = -0.02f
-    }
+    }.asHeading()
 
     /**
      * Big expressive heading, "Activities *just for your* taste": [plain] upright, [italic] in
@@ -120,7 +134,7 @@ internal class Ui(private val ctx: Context) {
             }
             append(after)
         }
-    }
+    }.asHeading()
 
     /** No shadows in this look; kept so callers can still ask for a lift (e.g. the nav button). */
     fun <T : View> elevate(v: T, dpVal: Number = 6): T = v.apply {
@@ -147,7 +161,7 @@ internal class Ui(private val ctx: Context) {
             // No back button: the bottom bar and Android's own Back gesture leave the screen.
             addView(text(28f, color(R.color.ink), light) {
                 text = title; letterSpacing = -0.02f; maxLines = 1; ellipsize = TextUtils.TruncateAt.END
-            }, lp(w = 0, weight = 1f, start = 2))
+            }.asHeading(), lp(w = 0, weight = 1f, start = 2))
             if (actionIcon != null && onAction != null) {
                 action = circleButton(actionIcon, actionLabel ?: title, onClick = onAction)
                 addView(action, lp(w = dp(42), h = dp(42), start = 8))
@@ -158,7 +172,7 @@ internal class Ui(private val ctx: Context) {
 
     /** "Audience Flow                Filter ›" style section heading. */
     fun section(title: String, init: LinearLayout.() -> Unit = {}) = row {
-        addView(text(22f, color(R.color.ink), light) { text = title; letterSpacing = -0.02f }, lp(w = 0, weight = 1f))
+        addView(text(22f, color(R.color.ink), light) { text = title; letterSpacing = -0.02f }.asHeading(), lp(w = 0, weight = 1f))
         init()
     }
 
@@ -637,6 +651,7 @@ internal class Ring(ctx: Context) : View(ctx) {
             if (target == field && animator == null) return
             field = target
             animator?.cancel()
+            if (Prefs.reduceMotion(context)) { animator = null; shown = target; invalidate(); return } // Settings › Accessibility
             animator = ValueAnimator.ofFloat(shown, target).apply {
                 duration = 700; interpolator = DecelerateInterpolator()
                 addUpdateListener { shown = it.animatedValue as Float; invalidate() }

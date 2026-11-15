@@ -45,6 +45,33 @@ internal object Prefs {
     fun saveData(ctx: Context) = sp(ctx).getBoolean("save_data", false)
     fun setSaveData(ctx: Context, on: Boolean) = sp(ctx).edit().putBoolean("save_data", on).apply()
 
+    // ---------- accessibility (Settings › Accessibility) ----------
+
+    /** Text size inside this app, on top of the phone's own font size. */
+    enum class TextSize(val label: String, val scale: Float) {
+        SYSTEM("Same as phone", 1f), LARGE("Large", 1.15f), LARGER("Larger", 1.3f), LARGEST("Largest", 1.5f)
+    }
+
+    fun textSize(ctx: Context): TextSize =
+        runCatching { TextSize.valueOf(sp(ctx).getString("a11y_text", null) ?: "SYSTEM") }.getOrDefault(TextSize.SYSTEM)
+    fun setTextSize(ctx: Context, t: TextSize) = sp(ctx).edit().putString("a11y_text", t.name).apply()
+
+    /** Grey secondary text and thin lines are drawn in the main text colour instead. */
+    fun highContrast(ctx: Context) = sp(ctx).getBoolean("a11y_contrast", false)
+    fun setHighContrast(ctx: Context, on: Boolean) = sp(ctx).edit().putBoolean("a11y_contrast", on).apply()
+
+    /** Every text weight is one step heavier. */
+    fun boldText(ctx: Context) = sp(ctx).getBoolean("a11y_bold", false)
+    fun setBoldText(ctx: Context, on: Boolean) = sp(ctx).edit().putBoolean("a11y_bold", on).apply()
+
+    fun reduceMotionPref(ctx: Context) = sp(ctx).getBoolean("a11y_motion", false)
+    fun setReduceMotion(ctx: Context, on: Boolean) = sp(ctx).edit().putBoolean("a11y_motion", on).apply()
+
+    /** True when animations should be skipped: switched off here, or "Remove animations" is on in the phone's settings. */
+    fun reduceMotion(ctx: Context): Boolean = reduceMotionPref(ctx) || runCatching {
+        android.provider.Settings.Global.getFloat(ctx.contentResolver, android.provider.Settings.Global.ANIMATOR_DURATION_SCALE, 1f) == 0f
+    }.getOrDefault(false)
+
     /** The uiMode to force for the chosen theme, or null to follow the phone. */
     fun nightOverride(ctx: Context): Int? = when (theme(ctx)) {
         Theme.SYSTEM -> null
