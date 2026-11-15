@@ -46,7 +46,7 @@ internal object Privileged {
 
     /** Short pointer for "this isn't available" messages. */
     const val HOW_TO = "Turn it on with Shizuku (Settings › Privileged access, no computer needed) or from Droid Desk on " +
-        "your computer (Overview › Phone RAM manager)."
+        "your computer (Shizuku › Phone RAM manager)."
 
     private fun sp(ctx: Context) = ctx.getSharedPreferences("settings", Context.MODE_PRIVATE)
 

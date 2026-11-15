@@ -300,7 +300,7 @@ internal class MemoryScreen(host: MainActivity) : Screen(host) {
                     "this app borrows the rights of ADB (or root).\n\n" +
                     "Without a computer: with the Shizuku app (Settings › Privileged access).\n\n" +
                     "With a computer: connect this phone to Droid Desk and click “Turn on” next to " +
-                    "“Phone RAM manager” on its Overview page. It stays on until the phone restarts, " +
+                    "“Phone RAM manager” on its Shizuku page. It stays on until the phone restarts, " +
                     "even after you unplug."
             }, ui.lp(top = 14))
             unlockNote = ui.text(13f, color(R.color.ink_soft)) { visibility = View.GONE }

@@ -48,7 +48,7 @@ internal class PrivilegedPanel(private val host: MainActivity) {
             finish = rows.value(this, R.drawable.ic_check, "Finish setup without a computer", "") { finishSetup() }
             rows.note(this, "Stopping and freezing apps, the RAM manager, per-app battery use, Deep sleep and app limits need the " +
                 "rights of adb (or root). Shizuku lends them on the phone itself; Droid Desk on your computer can start a helper " +
-                "for the same purpose (Overview › Phone RAM manager). Either way only fixed, built-in commands are run, and only " +
+                "for the same purpose (Shizuku › Phone RAM manager). Either way only fixed, built-in commands are run, and only " +
                 "by this app.")
         }, ui.lp(top = 12))
     }
@@ -140,7 +140,7 @@ internal class PrivilegedPanel(private val host: MainActivity) {
             .setTitle("How to start Shizuku")
             .setMessage(wireless +
                 "From a computer:\n" +
-                "Connect the phone to Droid Desk and click “Start Shizuku” on its Overview page. Or, with adb installed, run:\n" +
+                "Connect the phone to Droid Desk and click “Start Shizuku” on its Shizuku page. Or, with adb installed, run:\n" +
                 "adb shell sh /sdcard/Android/data/moe.shizuku.privileged.api/start.sh\n\n" +
                 "Rooted phones: tap “Start” in Shizuku; it then also starts by itself after a restart.\n\n" +
                 "After starting, come back here and tap “Grant permission”.")

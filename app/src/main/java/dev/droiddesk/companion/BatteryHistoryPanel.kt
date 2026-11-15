@@ -264,7 +264,7 @@ internal class BatteryHistoryPanel(private val host: MainActivity) {
                         " Nothing is shown here without it."
                 is BatteryUse.OldHelper ->
                     "The helper that is running is from an older version of this app. Turn it off and on again in Droid Desk " +
-                        "(Overview › Phone RAM manager), restart the phone, or use Shizuku (Settings › Privileged access)."
+                        "(Shizuku › Phone RAM manager), restart the phone, or use Shizuku (Settings › Privileged access)."
                 else -> "Couldn't read Android's battery statistics: ${e?.message ?: "unknown error"}"
             }
             appsBox.addView(appsNote(why))

@@ -368,7 +368,7 @@ internal class PermissionsScreen(host: MainActivity) : Screen(host) {
                     is ShellHelperClient.Unavailable -> "When each app last used this isn't shown: apps can't read that. It appears " +
                         "with privileged access. " + Privileged.HOW_TO
                     is PermissionAudit.OldHelper -> "Last-use times need a newer helper: turn it off and on again in Droid Desk " +
-                        "(Overview › Phone RAM manager), or use Shizuku (Settings › Privileged access)."
+                        "(Shizuku › Phone RAM manager), or use Shizuku (Settings › Privileged access)."
                     else -> "Last-use times couldn't be read: ${e.message}"
                 }
             }

@@ -283,8 +283,8 @@ Some features need more rights than Android gives a normal app: the Memory scree
 
 | Way | How to turn it on | Lasts |
 |---|---|---|
-| **Shizuku** | Install the free [Shizuku](https://shizuku.rikka.app) app and start it (its own guide explains how; Droid Desk's Overview also has **Start Shizuku**). Then tap **Grant permission** in the companion's Settings. No computer is needed afterwards. | Until the phone restarts (always on rooted phones) |
-| **Droid Desk helper** | In Droid Desk on the computer: **Overview › Phone RAM manager**. | Until the phone restarts |
+| **Shizuku** | Install the free [Shizuku](https://shizuku.rikka.app) app and start it (its own guide explains how; Droid Desk's **Shizuku** page also has **Start Shizuku**). Then tap **Grant permission** in the companion's Settings. No computer is needed afterwards. | Until the phone restarts (always on rooted phones) |
+| **Droid Desk helper** | In Droid Desk on the computer: **Shizuku › Phone RAM manager**. | Until the phone restarts |
 | **Root** | On rooted phones: **Memory › Use root instead**. | Until the phone restarts |
 
 Under **Settings › Privileged access**:
