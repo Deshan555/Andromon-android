@@ -10,6 +10,14 @@ Users don't install it themselves. Droid Desk pushes it over USB the first time 
 
 **Using the app?** The [user guide](docs/USER_GUIDE.md) shows every screen with screenshots and explains each option.
 
+## Download
+
+- **Droid Desk Companion (APK):** [Releases](https://github.com/Deshan555/Andromon-android/releases). Each release has `droid-desk-companion-<version>.apk` and its SHA-256 under **Assets**.
+- **Droid Desk for macOS, Windows and Linux:** [Releases of the desktop app](https://github.com/Deshan555/Andromon_PC/releases). It installs the companion on the phone by itself, so most people only need this.
+- **Builds that are not released yet:** open the newest green run of the `release` branch under [Actions](https://github.com/Deshan555/Andromon-android/actions/workflows/android.yml) and download **droid-desk-companion-release** from its **Artifacts** (needs a GitHub sign-in; kept for 90 days). Until the signing secrets are set, that APK is signed with a throw-away key and is named `…-test-key.apk`.
+
+Releases are made by the build as **drafts**: a release shows on the Releases page once it has been published (see [Builds and releases](#builds-and-releases)).
+
 ## How it works
 
 ```
