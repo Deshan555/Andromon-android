@@ -214,9 +214,38 @@ cd android
 # or, from pc/: npm run build:companion   (builds and copies to pc/renderer/companion.apk)
 ```
 
-Needs JDK 17 and the Android SDK (platform 36). The release APK is currently signed with the local **debug key**. If a phone has a copy signed with a different key, Droid Desk uninstalls it and reinstalls. For public releases, create a real keystore and keep it safe.
+Needs JDK 17 and the Android SDK (platform 36). Built by hand, the release APK is signed with the local **debug key** unless a keystore is given (see Builds and releases). If a phone has a copy signed with a different key, Droid Desk uninstalls it and reinstalls. For public releases, create a real keystore and keep it safe.
 
 When you change the app, bump `versionCode` in `app/build.gradle.kts` **and** `COMPANION_VERSION` in `pc/src/app.js`, so Droid Desk updates phones that have the old version.
+
+## Builds and releases
+
+GitHub Actions does the checking and building (`.github/workflows/android.yml`).
+
+| When | What happens |
+|---|---|
+| Push to `main`, or a pull request | Lint and a debug build. The debug APK and the lint report are attached to the run. |
+| Push to `release` | The same checks, then the signed release APK goes into a **draft** GitHub Release named after `versionName` (`v0.29.0`), with its SHA-256 file. You review and publish it. |
+| A tag like `v0.29.0`, or **Run workflow** in the Actions tab | The release APK, attached to the run only. |
+
+**To release:** raise `versionCode` and `versionName`, merge `main` into `release` and push. Pushing the same version again replaces the files on the draft; a version that is already published is never overwritten (the build fails and asks for a new version).
+
+**Signing key.** Updates only install over a build signed with the same key, so the workflow needs one key that never changes. Add it as repository secrets (Settings › Secrets and variables › Actions):
+
+| Secret | Value |
+|---|---|
+| `KEYSTORE_BASE64` | The keystore file, base64-encoded: `base64 -i release.keystore \| pbcopy` on macOS |
+| `KEYSTORE_PASSWORD` | The keystore's password |
+| `KEY_ALIAS` | The key's name in the keystore |
+| `KEY_PASSWORD` | The key's password |
+
+Create a keystore with `keytool -genkeypair -v -keystore release.keystore -alias droiddesk -keyalg RSA -keysize 4096 -validity 10000`, and keep a copy somewhere safe: a lost key means every phone has to uninstall and reinstall. Phones that already have a build signed with a local debug key need that one reinstall when the key changes (Droid Desk does it by itself, but the companion's settings on the phone are reset).
+
+Without the secrets the workflow still builds, signs the APK with a throw-away key, names it `…-test-key.apk` and makes no draft release.
+
+The same variables sign a build made by hand: `DD_KEYSTORE_FILE` (path to the keystore), `DD_KEYSTORE_PASSWORD`, `DD_KEY_ALIAS`, `DD_KEY_PASSWORD`.
+
+**Lint.** A new lint error fails the build. The problems that existed when the check was added are listed in `app/lint-baseline.xml` and don't count. After fixing one, run `./gradlew updateLintBaseline` and commit the file.
 
 ## Tested
 

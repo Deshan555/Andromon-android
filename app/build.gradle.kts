@@ -21,14 +21,32 @@ android {
         versionName = "0.29.0"
     }
 
+    // Release signing. The release workflow (.github/workflows/android.yml), or anyone building by
+    // hand, passes a keystore through these environment variables. Without them the release build
+    // is signed with the local debug key, as before. Updates only install over a build signed with
+    // the same key, so keep the keystore safe.
+    val releaseKeystore = System.getenv("DD_KEYSTORE_FILE")
+    signingConfigs {
+        if (!releaseKeystore.isNullOrBlank()) create("release") {
+            storeFile = file(releaseKeystore)
+            storePassword = System.getenv("DD_KEYSTORE_PASSWORD")
+            keyAlias = System.getenv("DD_KEY_ALIAS")
+            keyPassword = System.getenv("DD_KEY_PASSWORD")
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-            // Signed with the local debug key for now. For public releases create a dedicated
-            // keystore and keep it safe: updates must be signed with the same key.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.findByName("release") ?: signingConfigs.getByName("debug")
         }
+    }
+
+    // Lint fails the build on errors. The problems that existed when the check was added are listed
+    // in lint-baseline.xml and don't count; fix one and run `./gradlew updateLintBaseline` to drop it.
+    lint {
+        baseline = file("lint-baseline.xml")
     }
 
     // Privileged access › Shizuku: the UserService interface (IPrivilegedService.aidl).

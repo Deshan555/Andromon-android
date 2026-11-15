@@ -1,0 +1,2735 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<issues format="6" by="lint 8.13.1" type="baseline" client="gradle" dependencies="false" name="AGP (8.13.1)" variant="all" version="8.13.1">
+
+    <issue
+        id="MissingPermission"
+        message="Call requires permission which may be rejected by user: code should explicitly check to see if permission is available (with `checkPermission`) or explicitly handle a potential `SecurityException`"
+        errorLine1="                wm.startLocalOnlyHotspot(object : WifiManager.LocalOnlyHotspotCallback() {"
+        errorLine2="                ^">
+        <location
+            file="src/main/java/dev/droiddesk/companion/DirectLink.kt"
+            line="86"
+            column="17"/>
+    </issue>
+
+    <issue
+        id="GestureBackNavigation"
+        message="`onBackPressed` is no longer called for back gestures; migrate to AndroidX&apos;s backward compatible `OnBackPressedDispatcher`"
+        errorLine1="    override fun onBackPressed() {"
+        errorLine2="                 ~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/MainActivity.kt"
+            line="164"
+            column="18"/>
+    </issue>
+
+    <issue
+        id="DefaultLocale"
+        message="Implicitly using the default locale is a common source of bugs: Use `String.format(Locale, ...)` instead"
+        errorLine1="        big.text = &quot;${String.format(&quot;%.1f&quot;, used / 1e9)} GB of ${String.format(&quot;%.0f&quot;, Math.ceil(m.totalMem / 1e9))} GB&quot;"
+        errorLine2="                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/MemoryScreen.kt"
+            line="400"
+            column="23"/>
+    </issue>
+
+    <issue
+        id="DefaultLocale"
+        message="Implicitly using the default locale is a common source of bugs: Use `String.format(Locale, ...)` instead"
+        errorLine1="        big.text = &quot;${String.format(&quot;%.1f&quot;, used / 1e9)} GB of ${String.format(&quot;%.0f&quot;, Math.ceil(m.totalMem / 1e9))} GB&quot;"
+        errorLine2="                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/MemoryScreen.kt"
+            line="400"
+            column="23"/>
+    </issue>
+
+    <issue
+        id="DefaultLocale"
+        message="Implicitly using the default locale is a common source of bugs: Use `String.format(Locale, ...)` instead"
+        errorLine1="        big.text = &quot;${String.format(&quot;%.1f&quot;, used / 1e9)} GB of ${String.format(&quot;%.0f&quot;, Math.ceil(m.totalMem / 1e9))} GB&quot;"
+        errorLine2="                                                                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/MemoryScreen.kt"
+            line="400"
+            column="66"/>
+    </issue>
+
+    <issue
+        id="DefaultLocale"
+        message="Implicitly using the default locale is a common source of bugs: Use `String.format(Locale, ...)` instead"
+        errorLine1="        big.text = &quot;${String.format(&quot;%.1f&quot;, used / 1e9)} GB of ${String.format(&quot;%.0f&quot;, Math.ceil(m.totalMem / 1e9))} GB&quot;"
+        errorLine2="                                                                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/MemoryScreen.kt"
+            line="400"
+            column="66"/>
+    </issue>
+
+    <issue
+        id="DefaultLocale"
+        message="Implicitly using the default locale is a common source of bugs: Use `String.format(Locale, ...)` instead"
+        errorLine1="        b >= 1e12 -> String.format(&quot;%.1f&quot;, b / 1e12) to &quot;TB&quot;"
+        errorLine2="                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/Ui.kt"
+            line="627"
+            column="22"/>
+    </issue>
+
+    <issue
+        id="DefaultLocale"
+        message="Implicitly using the default locale is a common source of bugs: Use `String.format(Locale, ...)` instead"
+        errorLine1="        b >= 1e6 -> String.format(&quot;%.0f&quot;, b / 1e6) to &quot;MB&quot;"
+        errorLine2="                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/Ui.kt"
+            line="629"
+            column="21"/>
+    </issue>
+
+    <issue
+        id="DefaultLocale"
+        message="Implicitly using the default locale is a common source of bugs: Use `String.format(Locale, ...)` instead"
+        errorLine1="        b >= 1e3 -> String.format(&quot;%.0f&quot;, b / 1e3) to &quot;KB&quot;"
+        errorLine2="                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/Ui.kt"
+            line="630"
+            column="21"/>
+    </issue>
+
+    <issue
+        id="ExifInterface"
+        message="Avoid using `android.media.ExifInterface`; use `androidx.exifinterface.media.ExifInterface` instead"
+        errorLine1="import android.media.ExifInterface"
+        errorLine2="       ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/Mms.kt"
+            line="13"
+            column="8"/>
+    </issue>
+
+    <issue
+        id="ExifInterface"
+        message="Avoid using `android.media.ExifInterface`; use `androidx.exifinterface.media.ExifInterface` instead"
+        errorLine1="        when (ExifInterface(ByteArrayInputStream(bytes)).getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL)) {"
+        errorLine2="              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/Mms.kt"
+            line="279"
+            column="15"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 28 (current min is 26): `android.content.pm.PackageInfo#getLongVersionCode`"
+        errorLine1="            .put(&quot;version&quot;, pkg.longVersionCode)"
+        errorLine2="                                ~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/Api.kt"
+            line="73"
+            column="33"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 28 (current min is 26): `android.telecom.TelecomManager#endCall`"
+        errorLine1="        return ctx.getSystemService(TelecomManager::class.java).endCall()"
+        errorLine2="                                                                ~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/CallWatch.kt"
+            line="177"
+            column="65"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 36 (current min is 31): `android.net.wifi.SoftApConfiguration#getChannels`"
+        errorLine1="                    val ch = c.channels"
+        errorLine2="                               ~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/DirectLink.kt"
+            line="141"
+            column="32"/>
+    </issue>
+
+    <issue
+        id="UnusedAttribute"
+        message="Attribute `enableOnBackInvokedCallback` is only used in API level 33 and higher (current min is 26)"
+        errorLine1="        android:enableOnBackInvokedCallback=&quot;true&quot;"
+        errorLine2="        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/AndroidManifest.xml"
+            line="124"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="UnusedAttribute"
+        message="Attribute `showWhenLocked` is only used in API level 27 and higher (current min is 26)"
+        errorLine1="            android:showWhenLocked=&quot;true&quot;"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/AndroidManifest.xml"
+            line="230"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedAttribute"
+        message="Attribute `turnScreenOn` is only used in API level 27 and higher (current min is 26)"
+        errorLine1="            android:turnScreenOn=&quot;true&quot; />"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/AndroidManifest.xml"
+            line="231"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="SelectedPhotoAccess"
+        message="Your app is currently not handling Selected Photos Access introduced in Android 14+"
+        errorLine1="    &lt;uses-permission android:name=&quot;android.permission.READ_MEDIA_IMAGES&quot; />"
+        errorLine2="                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/AndroidManifest.xml"
+            line="23"
+            column="36"/>
+    </issue>
+
+    <issue
+        id="SelectedPhotoAccess"
+        message="Your app is currently not handling Selected Photos Access introduced in Android 14+"
+        errorLine1="    &lt;uses-permission android:name=&quot;android.permission.READ_MEDIA_VIDEO&quot; />"
+        errorLine2="                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/AndroidManifest.xml"
+            line="24"
+            column="36"/>
+    </issue>
+
+    <issue
+        id="AndroidGradlePluginVersion"
+        message="A newer version of Gradle than 8.14.2 is available: 8.14.7"
+        errorLine1="distributionUrl=https\://services.gradle.org/distributions/gradle-8.14.2-bin.zip"
+        errorLine2="                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="$HOME/Desktop/androidTools/android/gradle/wrapper/gradle-wrapper.properties"
+            line="3"
+            column="17"/>
+    </issue>
+
+    <issue
+        id="DiscouragedApi"
+        message="Use of this function is discouraged because resource reflection makes it harder to perform build optimizations and compile-time verification of code. It is much more efficient to retrieve resources by identifier (e.g. `R.foo.bar`) than by name (e.g. `getIdentifier(&quot;bar&quot;, &quot;foo&quot;, null)`)."
+        errorLine1="            val resourceId = resources.getIdentifier(&quot;force_stop&quot;, &quot;string&quot;, resourcesPackageName)"
+        errorLine2="                                       ~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/FreezeAccessibility.kt"
+            line="72"
+            column="40"/>
+    </issue>
+
+    <issue
+        id="CustomX509TrustManager"
+        message="Implementing a custom `X509TrustManager` is error-prone and likely to be insecure. It is likely to disable certificate validation altogether, and is non-trivial to implement correctly without calling Android&apos;s default implementation."
+        errorLine1="            val tm = object : X509TrustManager {"
+        errorLine2="                     ~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/WifiSend.kt"
+            line="935"
+            column="22"/>
+    </issue>
+
+    <issue
+        id="DataExtractionRules"
+        message="The attribute `android:allowBackup` is deprecated from Android 12 and higher and may be removed in future versions. Consider adding the attribute `android:dataExtractionRules` specifying an `@xml` resource which configures cloud backups and device transfers on Android 12 and higher."
+        errorLine1="        android:allowBackup=&quot;false&quot;"
+        errorLine2="                             ~~~~~">
+        <location
+            file="src/main/AndroidManifest.xml"
+            line="123"
+            column="30"/>
+    </issue>
+
+    <issue
+        id="DrawAllocation"
+        message="Avoid object allocations during draw/layout operations (preallocate and reuse instead)"
+        errorLine1="            area.shader = LinearGradient(0f, top, 0f, height.toFloat(),"
+        errorLine2="                          ^">
+        <location
+            file="src/main/java/dev/droiddesk/companion/Ui.kt"
+            line="601"
+            column="27"/>
+    </issue>
+
+    <issue
+        id="DrawAllocation"
+        message="Avoid object allocations during draw/layout operations (preallocate and reuse instead)"
+        errorLine1="            area.shader = LinearGradient(0f, top, 0f, height.toFloat(),"
+        errorLine2="                          ^">
+        <location
+            file="src/main/java/dev/droiddesk/companion/Ui.kt"
+            line="601"
+            column="27"/>
+    </issue>
+
+    <issue
+        id="DrawAllocation"
+        message="Avoid object allocations during draw/layout operations (preallocate and reuse instead)"
+        errorLine1="                guide.color = g; guide.pathEffect = DashPathEffect(floatArrayOf(3 * d, 4 * d), 0f)"
+        errorLine2="                                                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/Ui.kt"
+            line="612"
+            column="53"/>
+    </issue>
+
+    <issue
+        id="DrawAllocation"
+        message="Avoid object allocations during draw/layout operations (preallocate and reuse instead)"
+        errorLine1="                guide.color = g; guide.pathEffect = DashPathEffect(floatArrayOf(3 * d, 4 * d), 0f)"
+        errorLine2="                                                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/Ui.kt"
+            line="612"
+            column="53"/>
+    </issue>
+
+    <issue
+        id="DrawAllocation"
+        message="Avoid object allocations during draw/layout operations (preallocate and reuse instead)"
+        errorLine1="            arc.shader = SweepGradient(cx, cy, intArrayOf(from, to, to), floatArrayOf(0f, 0.85f, 1f)).also {"
+        errorLine2="                         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/Ui.kt"
+            line="700"
+            column="26"/>
+    </issue>
+
+    <issue
+        id="DrawAllocation"
+        message="Avoid object allocations during draw/layout operations (preallocate and reuse instead)"
+        errorLine1="            arc.shader = SweepGradient(cx, cy, intArrayOf(from, to, to), floatArrayOf(0f, 0.85f, 1f)).also {"
+        errorLine2="                         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/Ui.kt"
+            line="700"
+            column="26"/>
+    </issue>
+
+    <issue
+        id="DrawAllocation"
+        message="Avoid object allocations during draw/layout operations (preallocate and reuse instead)"
+        errorLine1="            if (paint.shader == null) paint.shader = LinearGradient(0f, 0f, 0f, h,"
+        errorLine2="                                                     ^">
+        <location
+            file="src/main/java/dev/droiddesk/companion/Ui.kt"
+            line="742"
+            column="54"/>
+    </issue>
+
+    <issue
+        id="DrawAllocation"
+        message="Avoid object allocations during draw/layout operations (preallocate and reuse instead)"
+        errorLine1="            if (paint.shader == null) paint.shader = LinearGradient(0f, 0f, 0f, h,"
+        errorLine2="                                                     ^">
+        <location
+            file="src/main/java/dev/droiddesk/companion/Ui.kt"
+            line="742"
+            column="54"/>
+    </issue>
+
+    <issue
+        id="DrawAllocation"
+        message="Avoid object allocations during draw/layout operations (preallocate and reuse instead)"
+        errorLine1="            if (paint.shader == null) paint.shader = LinearGradient(0f, 0f, w, 0f,"
+        errorLine2="                                                     ^">
+        <location
+            file="src/main/java/dev/droiddesk/companion/Ui.kt"
+            line="748"
+            column="54"/>
+    </issue>
+
+    <issue
+        id="DrawAllocation"
+        message="Avoid object allocations during draw/layout operations (preallocate and reuse instead)"
+        errorLine1="            if (paint.shader == null) paint.shader = LinearGradient(0f, 0f, w, 0f,"
+        errorLine2="                                                     ^">
+        <location
+            file="src/main/java/dev/droiddesk/companion/Ui.kt"
+            line="748"
+            column="54"/>
+    </issue>
+
+    <issue
+        id="DrawAllocation"
+        message="Avoid object allocations during draw/layout operations (preallocate and reuse instead)"
+        errorLine1="        val body = RectF(left, capH, left + bw, h)"
+        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/Ui.kt"
+            line="778"
+            column="20"/>
+    </issue>
+
+    <issue
+        id="DrawAllocation"
+        message="Avoid object allocations during draw/layout operations (preallocate and reuse instead)"
+        errorLine1="        val inner = RectF(body.left + inset, body.top + inset, body.right - inset, body.bottom - inset)"
+        errorLine2="                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/Ui.kt"
+            line="789"
+            column="21"/>
+    </issue>
+
+    <issue
+        id="DrawAllocation"
+        message="Avoid object allocations during draw/layout operations (preallocate and reuse instead)"
+        errorLine1="            val clip = Path().apply { addRoundRect(inner, r - inset, r - inset, Path.Direction.CW) }"
+        errorLine2="                       ~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/Ui.kt"
+            line="793"
+            column="24"/>
+    </issue>
+
+    <issue
+        id="DrawAllocation"
+        message="Avoid object allocations during draw/layout operations (preallocate and reuse instead)"
+        errorLine1="            p.shader = LinearGradient(0f, top, 0f, inner.bottom, low, high, Shader.TileMode.CLAMP)"
+        errorLine2="                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/Ui.kt"
+            line="795"
+            column="24"/>
+    </issue>
+
+    <issue
+        id="DrawAllocation"
+        message="Avoid object allocations during draw/layout operations (preallocate and reuse instead)"
+        errorLine1="            p.shader = LinearGradient(0f, top, 0f, inner.bottom, low, high, Shader.TileMode.CLAMP)"
+        errorLine2="                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/Ui.kt"
+            line="795"
+            column="24"/>
+    </issue>
+
+    <issue
+        id="ObsoleteSdkInt"
+        message="Unnecessary; `SDK_INT` is always >= 26"
+        errorLine1="                minSdk = if (Build.VERSION.SDK_INT >= 24) ai.minSdkVersion else 0,"
+        errorLine2="                             ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/AppTools.kt"
+            line="89"
+            column="30"/>
+    </issue>
+
+    <issue
+        id="ObsoleteSdkInt"
+        message="Unnecessary; `SDK_INT` is always >= 26"
+        errorLine1="        if (Build.VERSION.SDK_INT >= 24) stopForeground(STOP_FOREGROUND_REMOVE) else @Suppress(&quot;DEPRECATION&quot;) stopForeground(true)"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/SendService.kt"
+            line="98"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="ObsoleteSdkInt"
+        message="This folder configuration (`v26`) is unnecessary; `minSdkVersion` is 26. Merge all the resources in this folder into `mipmap-anydpi`.">
+        <location
+            file="src/main/res/mipmap-anydpi-v26"/>
+    </issue>
+
+    <issue
+        id="StaticFieldLeak"
+        message="Do not place Android context classes in static fields (static reference to `CallWatch` which has field `appCtx` pointing to `Context`); this is a memory leak"
+        errorLine1="/**"
+        errorLine2="^">
+        <location
+            file="src/main/java/dev/droiddesk/companion/CallWatch.kt"
+            line="23"
+            column="1"/>
+    </issue>
+
+    <issue
+        id="StaticFieldLeak"
+        message="Do not place Android context classes in static fields; this is a memory leak"
+        errorLine1="    private var appCtx: Context? = null"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/CallWatch.kt"
+            line="41"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="StaticFieldLeak"
+        message="Do not place Android context classes in static fields (static reference to `Ringer` which has field `appCtx` pointing to `Context`); this is a memory leak"
+        errorLine1="/**"
+        errorLine2="^">
+        <location
+            file="src/main/java/dev/droiddesk/companion/Links.kt"
+            line="189"
+            column="1"/>
+    </issue>
+
+    <issue
+        id="StaticFieldLeak"
+        message="Do not place Android context classes in static fields; this is a memory leak"
+        errorLine1="    private var appCtx: Context? = null"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/Links.kt"
+            line="211"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="StaticFieldLeak"
+        message="Do not place Android context classes in static fields (static reference to `Player` which has field `appCtx` pointing to `Context`); this is a memory leak"
+        errorLine1="/**"
+        errorLine2="^">
+        <location
+            file="src/main/java/dev/droiddesk/companion/Player.kt"
+            line="23"
+            column="1"/>
+    </issue>
+
+    <issue
+        id="StaticFieldLeak"
+        message="Do not place Android context classes in static fields; this is a memory leak"
+        errorLine1="    // Everything below is touched only on the handler thread."
+        errorLine2="    ^">
+        <location
+            file="src/main/java/dev/droiddesk/companion/Player.kt"
+            line="49"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="StaticFieldLeak"
+        message="Do not place Android context classes in static fields (static reference to `RecOverlay` which has field `root` pointing to `View`); this is a memory leak"
+        errorLine1="/**"
+        errorLine2="^">
+        <location
+            file="src/main/java/dev/droiddesk/companion/RecOverlay.kt"
+            line="26"
+            column="1"/>
+    </issue>
+
+    <issue
+        id="StaticFieldLeak"
+        message="Do not place Android context classes in static fields; this is a memory leak"
+        errorLine1="    private var root: View? = null"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/RecOverlay.kt"
+            line="42"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="StaticFieldLeak"
+        message="Do not place Android context classes in static fields; this is a memory leak"
+        errorLine1="    private var title: TextView? = null"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/RecOverlay.kt"
+            line="43"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="StaticFieldLeak"
+        message="Do not place Android context classes in static fields; this is a memory leak"
+        errorLine1="    private var detail: TextView? = null"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/RecOverlay.kt"
+            line="44"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="StaticFieldLeak"
+        message="Do not place Android context classes in static fields (static reference to `WifiServer` which has field `ctx` pointing to `Context`); this is a memory leak"
+        errorLine1="    @Volatile internal var server: WifiServer? = null"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/WifiReceive.kt"
+            line="89"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="StaticFieldLeak"
+        message="Do not place Android context classes in static fields (static reference to `Job` which has field `ctx` pointing to `Context`); this is a memory leak"
+        errorLine1="    private var job: Job? = null"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/WifiSend.kt"
+            line="195"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.color.coral` appears to be unused"
+        errorLine1="    &lt;color name=&quot;coral&quot;>#FFEEF6CF&lt;/color>"
+        errorLine2="           ~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/colors.xml"
+            line="30"
+            column="12"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.color.olive` appears to be unused"
+        errorLine1="    &lt;color name=&quot;olive&quot;>#FFE3F786&lt;/color>"
+        errorLine2="           ~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/colors.xml"
+            line="33"
+            column="12"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.color.cream` appears to be unused"
+        errorLine1="    &lt;color name=&quot;cream&quot;>#FFEEF6CF&lt;/color>"
+        errorLine2="           ~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/colors.xml"
+            line="35"
+            column="12"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.color.yellow_line` appears to be unused"
+        errorLine1="    &lt;color name=&quot;yellow_line&quot;>#FFD9A514&lt;/color>"
+        errorLine2="           ~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/colors.xml"
+            line="54"
+            column="12"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.color.accent` appears to be unused"
+        errorLine1="    &lt;color name=&quot;accent&quot;>#FF292A2C&lt;/color>"
+        errorLine2="           ~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/colors.xml"
+            line="56"
+            column="12"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.color.accent_strong` appears to be unused"
+        errorLine1="    &lt;color name=&quot;accent_strong&quot;>#FF292A2C&lt;/color>"
+        errorLine2="           ~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/colors.xml"
+            line="57"
+            column="12"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.color.accent_track` appears to be unused"
+        errorLine1="    &lt;color name=&quot;accent_track&quot;>#80FFFFFF&lt;/color>"
+        errorLine2="           ~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/colors.xml"
+            line="58"
+            column="12"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.color.lime` appears to be unused"
+        errorLine1="    &lt;color name=&quot;lime&quot;>#FF292A2C&lt;/color>"
+        errorLine2="           ~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/colors.xml"
+            line="59"
+            column="12"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.color.on_lime` appears to be unused"
+        errorLine1="    &lt;color name=&quot;on_lime&quot;>#FFFFFFFF&lt;/color>"
+        errorLine2="           ~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/colors.xml"
+            line="60"
+            column="12"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.color.cat_grey` appears to be unused"
+        errorLine1="    &lt;color name=&quot;cat_grey&quot;>#FFC9CACB&lt;/color>"
+        errorLine2="           ~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/colors.xml"
+            line="69"
+            column="12"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.color.centre_bg` appears to be unused"
+        errorLine1="    &lt;color name=&quot;centre_bg&quot;>#FFFFFFFF&lt;/color>"
+        errorLine2="           ~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/colors.xml"
+            line="75"
+            column="12"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.color.centre_active` appears to be unused"
+        errorLine1="    &lt;color name=&quot;centre_active&quot;>#FF292A2C&lt;/color>"
+        errorLine2="           ~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/colors.xml"
+            line="77"
+            column="12"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.raw.lucide_isc` appears to be unused">
+        <location
+            file="src/main/res/raw/lucide_isc.txt"/>
+    </issue>
+
+    <issue
+        id="UsableSpace"
+        message="Consider also using `StorageManager#getAllocatableBytes` and `allocateBytes` which will consider clearable cached data"
+        errorLine1="                    if (entry.size > Environment.getDataDirectory().usableSpace / 4) return null"
+        errorLine2="                                                                    ~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/SystemCleaner.kt"
+            line="324"
+            column="69"/>
+    </issue>
+
+    <issue
+        id="ViewConstructor"
+        message="Custom view `TimeChart` is missing constructor used by tools: `(Context)` or `(Context,AttributeSet)` or `(Context,AttributeSet,int)`"
+        errorLine1="internal class TimeChart(ctx: Context, face: Typeface) : View(ctx) {"
+        errorLine2="               ~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/BatteryHistoryPanel.kt"
+            line="314"
+            column="16"/>
+    </issue>
+
+    <issue
+        id="ViewConstructor"
+        message="Custom view `ColorTestView` is missing constructor used by tools: `(Context)` or `(Context,AttributeSet)` or `(Context,AttributeSet,int)`"
+        errorLine1="internal class ColorTestView(ctx: Context, private val onDone: () -> Unit) : View(ctx) {"
+        errorLine2="               ~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/HardwareTests.kt"
+            line="157"
+            column="16"/>
+    </issue>
+
+    <issue
+        id="ViewConstructor"
+        message="Custom view `TouchGridView` is missing constructor used by tools: `(Context)` or `(Context,AttributeSet)` or `(Context,AttributeSet,int)`"
+        errorLine1="internal class TouchGridView(ctx: Context, private val onDone: () -> Unit) : View(ctx) {"
+        errorLine2="               ~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/HardwareTests.kt"
+            line="175"
+            column="16"/>
+    </issue>
+
+    <issue
+        id="ViewConstructor"
+        message="Custom view `Wave` is missing constructor used by tools: `(Context)` or `(Context,AttributeSet)` or `(Context,AttributeSet,int)`"
+        errorLine1="internal class Wave(ctx: Context, private val filled: Boolean) : View(ctx) {"
+        errorLine2="               ~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/Ui.kt"
+            line="717"
+            column="16"/>
+    </issue>
+
+    <issue
+        id="ClickableViewAccessibility"
+        message="Custom view `TimeChart` overrides `onTouchEvent` but not `performClick`"
+        errorLine1="    override fun onTouchEvent(e: MotionEvent): Boolean {"
+        errorLine2="                 ~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/BatteryHistoryPanel.kt"
+            line="417"
+            column="18"/>
+    </issue>
+
+    <issue
+        id="ClickableViewAccessibility"
+        message="Custom view `TouchGridView` overrides `onTouchEvent` but not `performClick`"
+        errorLine1="    override fun onTouchEvent(e: MotionEvent): Boolean {"
+        errorLine2="                 ~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/HardwareTests.kt"
+            line="207"
+            column="18"/>
+    </issue>
+
+    <issue
+        id="ClickableViewAccessibility"
+        message="Custom view `MultiTouchView` overrides `onTouchEvent` but not `performClick`"
+        errorLine1="    override fun onTouchEvent(e: MotionEvent): Boolean {"
+        errorLine2="                 ~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/HardwareTests.kt"
+            line="243"
+            column="18"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="            count = ui.text(22f, color(R.color.ink), ui.light) { text = &quot;Loading apps…&quot;; letterSpacing = -0.02f }"
+        errorLine2="                                                                         ~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/AppsScreen.kt"
+            line="96"
+            column="74"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="        label.text = &quot;Allow usage access to see app sizes, screen time and when apps were last used.&quot;"
+        errorLine2="                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/AppsScreen.kt"
+            line="103"
+            column="23"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="            addView(ui.text(13f, color(R.color.ink), ui.medium) { text = &quot;Battery level&quot; })"
+        errorLine2="                                                                          ~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/BatteryHistoryPanel.kt"
+            line="74"
+            column="75"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="                addView(ui.text(12f, color(R.color.ink_soft)) { text = &quot;Charging&quot; }, ui.lp(w = WRAP_CONTENT, start = 6))"
+        errorLine2="                                                                        ~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/BatteryHistoryPanel.kt"
+            line="88"
+            column="73"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="                addView(ui.text(12f, color(R.color.ink_soft)) { text = &quot;- - -  No samples (phone asleep or off)&quot; },"
+        errorLine2="                                                                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/BatteryHistoryPanel.kt"
+            line="89"
+            column="73"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="            tempTitle = ui.text(13f, color(R.color.ink), ui.medium) { text = &quot;Temperature&quot; }"
+        errorLine2="                                                                              ~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/BatteryHistoryPanel.kt"
+            line="93"
+            column="79"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="            text = &quot;Worked out from this app&apos;s own samples. The time left is an estimate from recent drain, not a figure from Android.&quot;"
+        errorLine2="                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/BatteryHistoryPanel.kt"
+            line="197"
+            column="21"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="Do not concatenate text displayed with `setText`. Use resource string with placeholders."
+        errorLine1="                            text = (if (app.mah >= 10f) &quot;%.0f mAh&quot; else &quot;%.1f mAh&quot;).format(app.mah) + share"
+        errorLine2="                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/BatteryHistoryPanel.kt"
+            line="293"
+            column="36"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="Do not concatenate text displayed with `setText`. Use resource string with placeholders."
+        errorLine1="        if (!access) { ringValue.text = &quot;Needs file\naccess&quot;; ringLabel.text = &quot;–&quot; }"
+        errorLine2="                                        ~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/CleanerScreen.kt"
+            line="91"
+            column="41"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="        if (!access) { ringValue.text = &quot;Needs file\naccess&quot;; ringLabel.text = &quot;–&quot; }"
+        errorLine2="                                         ~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/CleanerScreen.kt"
+            line="91"
+            column="42"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="        if (!access) { ringValue.text = &quot;Needs file\naccess&quot;; ringLabel.text = &quot;–&quot; }"
+        errorLine2="                                                     ~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/CleanerScreen.kt"
+            line="91"
+            column="54"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="                    addView(ui.text(13f, color(R.color.ink_soft)) { text = &quot;Used&quot; }, ui.lp(w = WRAP_CONTENT, top = 2))"
+        errorLine2="                                                                            ~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/CleanerScreen.kt"
+            line="144"
+            column="77"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="                text = &quot;Apps are counted in “System &amp; other” until usage access is allowed.&quot;"
+        errorLine2="                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/CleanerScreen.kt"
+            line="187"
+            column="25"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="Do not concatenate text displayed with `setText`. Use resource string with placeholders."
+        errorLine1="                        addView(ui.text(13f, color(R.color.ink_soft)) { text = &quot;${fmtSize(v.free)} free of ${fmtSize(v.total)}&quot; },"
+        errorLine2="                                                                               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/CleanerScreen.kt"
+            line="198"
+            column="80"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="                        addView(ui.text(13f, color(R.color.ink_soft)) { text = &quot;${fmtSize(v.free)} free of ${fmtSize(v.total)}&quot; },"
+        errorLine2="                                                                                                  ~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/CleanerScreen.kt"
+            line="198"
+            column="99"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="                addView(ui.text(16f, color(R.color.ink), ui.medium) { text = &quot;Allow access to files&quot; })"
+        errorLine2="                                                                              ~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/CleanerScreen.kt"
+            line="217"
+            column="79"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="                    text = &quot;Needed to find junk on your storage and SD card. Nothing is deleted until you confirm.&quot;"
+        errorLine2="                            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/CleanerScreen.kt"
+            line="219"
+            column="29"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="                    addView(ui.text(13f, color(R.color.ink_soft)) { text = &quot;Freed up space&quot; })"
+        errorLine2="                                                                            ~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/CleanerScreen.kt"
+            line="262"
+            column="77"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="        ringValue.text = &quot;Scanning…&quot;"
+        errorLine2="                          ~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/CleanerScreen.kt"
+            line="279"
+            column="27"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="        resultsTitle.text = &quot;Scanning…&quot;"
+        errorLine2="                             ~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/CleanerScreen.kt"
+            line="283"
+            column="30"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="                resultsTitle.text = &quot;Scan failed&quot;"
+        errorLine2="                                     ~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/CleanerScreen.kt"
+            line="308"
+            column="38"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="                ringValue.text = &quot;Scan failed&quot;; ringLabel.text = &quot;–&quot;"
+        errorLine2="                                  ~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/CleanerScreen.kt"
+            line="310"
+            column="35"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="Do not concatenate text displayed with `setText`. Use resource string with placeholders."
+        errorLine1="                text = &quot;+ ${g.items.size - MAX_LISTED} smaller files (ticked with the group)&quot;"
+        errorLine2="                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/CleanerScreen.kt"
+            line="427"
+            column="24"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="                text = &quot;+ ${g.items.size - MAX_LISTED} smaller files (ticked with the group)&quot;"
+        errorLine2="                                                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/CleanerScreen.kt"
+            line="427"
+            column="55"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="                addView(ui.text(15f, color(R.color.ink), ui.medium) { text = &quot;Apps to freeze&quot; }, ui.lp(w = WRAP_CONTENT, start = 10))"
+        errorLine2="                                                                              ~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/FreezerScreen.kt"
+            line="78"
+            column="79"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="Do not concatenate text displayed with `setText`. Use resource string with placeholders."
+        errorLine1="        noteText.text = &quot;Frozen apps are stopped until you open them again. They show no notifications while frozen. &quot; +"
+        errorLine2="                        ^">
+        <location
+            file="src/main/java/dev/droiddesk/companion/FreezerScreen.kt"
+            line="91"
+            column="25"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="        noteText.text = &quot;Frozen apps are stopped until you open them again. They show no notifications while frozen. &quot; +"
+        errorLine2="                         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/FreezerScreen.kt"
+            line="91"
+            column="26"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="            &quot;Nothing is uninstalled or disabled.&quot;"
+        errorLine2="             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/FreezerScreen.kt"
+            line="92"
+            column="14"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="        screenRow.sub.text = &quot;Freezes what is pending once you stop using the phone. Needs Shizuku, the helper or root.&quot;"
+        errorLine2="                              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/FreezerScreen.kt"
+            line="226"
+            column="31"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="        levelRow.sub.text = &quot;Once per discharge. Without Shizuku, the helper or root you get a notification to tap instead.&quot;"
+        errorLine2="                             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/FreezerScreen.kt"
+            line="231"
+            column="30"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="        if (apps.isEmpty()) listNote.text = &quot;Loading apps…&quot;"
+        errorLine2="                                             ~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/FreezerScreen.kt"
+            line="251"
+            column="46"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="Do not concatenate text displayed with `setText`. Use resource string with placeholders."
+        errorLine1="                listNote.text = &quot;Couldn&apos;t load the apps: ${r.exceptionOrNull()?.message}&quot;"
+        errorLine2="                                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/FreezerScreen.kt"
+            line="255"
+            column="33"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="                listNote.text = &quot;Couldn&apos;t load the apps: ${r.exceptionOrNull()?.message}&quot;"
+        errorLine2="                                 ~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/FreezerScreen.kt"
+            line="255"
+            column="34"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="Do not concatenate text displayed with `setText`. Use resource string with placeholders."
+        errorLine1="            text = &quot;Tap a test to run it. Results stay on this screen until you clear them or close the app; nothing is sent anywhere &quot; +"
+        errorLine2="                   ^">
+        <location
+            file="src/main/java/dev/droiddesk/companion/HardwareScreen.kt"
+            line="107"
+            column="20"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="            text = &quot;Tap a test to run it. Results stay on this screen until you clear them or close the app; nothing is sent anywhere &quot; +"
+        errorLine2="                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/HardwareScreen.kt"
+            line="107"
+            column="21"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="                &quot;unless you share the summary. These are quick checks, not a repair-shop diagnosis.&quot;"
+        errorLine2="                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/HardwareScreen.kt"
+            line="108"
+            column="18"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="Do not concatenate text displayed with `setText`. Use resource string with placeholders."
+        errorLine1="        score.text = &quot;$pass of ${tests.size - absent} passed&quot;"
+        errorLine2="                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/HardwareScreen.kt"
+            line="148"
+            column="22"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="        score.text = &quot;$pass of ${tests.size - absent} passed&quot;"
+        errorLine2="                           ~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/HardwareScreen.kt"
+            line="148"
+            column="28"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="        score.text = &quot;$pass of ${tests.size - absent} passed&quot;"
+        errorLine2="                                                     ~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/HardwareScreen.kt"
+            line="148"
+            column="54"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="                text = &quot;Recording 4 seconds. Say something. The bar shows how loud the microphone hears you.&quot;"
+        errorLine2="                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/HardwareScreen.kt"
+            line="347"
+            column="25"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="                text = &quot;Move the phone and cover its top edge with your hand, then tap Done. Proximity and light may only report when something changes.&quot;"
+        errorLine2="                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/HardwareScreen.kt"
+            line="427"
+            column="25"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="Do not concatenate text displayed with `setText`. Use resource string with placeholders."
+        errorLine1="        heroDots.text = &quot;${i + 1} of ${stats.size} · tap for another&quot;"
+        errorLine2="                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/HomeScreen.kt"
+            line="221"
+            column="25"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="Do not concatenate text displayed with `setText`. Use resource string with placeholders."
+        errorLine1="        heroDots.text = &quot;${i + 1} of ${stats.size} · tap for another&quot;"
+        errorLine2="                           ~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/HomeScreen.kt"
+            line="221"
+            column="28"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="        heroDots.text = &quot;${i + 1} of ${stats.size} · tap for another&quot;"
+        errorLine2="                                 ~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/HomeScreen.kt"
+            line="221"
+            column="34"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="        heroDots.text = &quot;${i + 1} of ${stats.size} · tap for another&quot;"
+        errorLine2="                                                  ~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/HomeScreen.kt"
+            line="221"
+            column="51"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="            addView(ui.text(13f, color(R.color.ink), ui.medium) { text = &quot;Internal storage&quot; }, ui.lp(w = 0, weight = 1f))"
+        errorLine2="                                                                          ~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/HomeScreen.kt"
+            line="235"
+            column="75"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="            addView(ui.text(12f, color(R.color.ink_soft)) { text = &quot;See details&quot; }, ui.lp(w = WRAP_CONTENT))"
+        errorLine2="                                                                    ~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/HomeScreen.kt"
+            line="236"
+            column="69"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="        junk.sub.text = &quot;Clear caches, duplicates and big files&quot;"
+        errorLine2="                         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/HomeScreen.kt"
+            line="244"
+            column="26"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="        apps.sub.text = &quot;See what takes up space&quot;"
+        errorLine2="                         ~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/HomeScreen.kt"
+            line="247"
+            column="26"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="        storage.sub.text = &quot;Folder sizes, largest first&quot;"
+        errorLine2="                            ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/HomeScreen.kt"
+            line="249"
+            column="29"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="        perms.sub.text = &quot;Which apps can use camera, mic, location…&quot;"
+        errorLine2="                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/HomeScreen.kt"
+            line="251"
+            column="27"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="        hardware.sub.text = &quot;Screen, sound, sensors and more&quot;"
+        errorLine2="                             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/HomeScreen.kt"
+            line="253"
+            column="30"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="        freezer.sub.text = &quot;Stop apps you aren&apos;t using&quot;"
+        errorLine2="                            ~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/HomeScreen.kt"
+            line="256"
+            column="29"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="Do not concatenate text displayed with `setText`. Use resource string with placeholders."
+        errorLine1="        text = &quot;Droid Desk Companion&quot; + (version?.let { &quot; · v$it&quot; } ?: &quot;&quot;)"
+        errorLine2="               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/HomeScreen.kt"
+            line="269"
+            column="16"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="        text = &quot;Droid Desk Companion&quot; + (version?.let { &quot; · v$it&quot; } ?: &quot;&quot;)"
+        errorLine2="                ~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/HomeScreen.kt"
+            line="269"
+            column="17"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="Do not concatenate text displayed with `setText`. Use resource string with placeholders."
+        errorLine1="        memTile.sub.text = &quot;${(Phone.memoryUsed(host) * 100).toInt()}% of RAM in use&quot;"
+        errorLine2="                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/HomeScreen.kt"
+            line="285"
+            column="28"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="        memTile.sub.text = &quot;${(Phone.memoryUsed(host) * 100).toInt()}% of RAM in use&quot;"
+        errorLine2="                                                                     ~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/HomeScreen.kt"
+            line="285"
+            column="70"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="Do not concatenate text displayed with `setText`. Use resource string with placeholders."
+        errorLine1="        batteryTile.sub.text = &quot;${b.level}% · &quot; + if (b.charging) &quot;charging&quot; else b.healthText.lowercase()"
+        errorLine2="                               ~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/HomeScreen.kt"
+            line="287"
+            column="32"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="Do not concatenate text displayed with `setText`. Use resource string with placeholders."
+        errorLine1="        batteryTile.sub.text = &quot;${b.level}% · &quot; + if (b.charging) &quot;charging&quot; else b.healthText.lowercase()"
+        errorLine2="                               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/HomeScreen.kt"
+            line="287"
+            column="32"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="Do not concatenate text displayed with `setText`. Use resource string with placeholders."
+        errorLine1="            storageSub.text = &quot;${fmtSize(main.free)} free of ${fmtSize(main.total)}&quot;"
+        errorLine2="                              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/HomeScreen.kt"
+            line="307"
+            column="31"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="            storageSub.text = &quot;${fmtSize(main.free)} free of ${fmtSize(main.total)}&quot;"
+        errorLine2="                                                    ~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/HomeScreen.kt"
+            line="307"
+            column="53"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="Do not concatenate text displayed with `setText`. Use resource string with placeholders."
+        errorLine1="            text = &quot;Droid Desk is\nlooking for this phone&quot;"
+        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/Links.kt"
+            line="345"
+            column="20"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="            text = &quot;Droid Desk is\nlooking for this phone&quot;"
+        errorLine2="                    ~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/Links.kt"
+            line="345"
+            column="21"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="            text = &quot;Droid Desk is\nlooking for this phone&quot;"
+        errorLine2="                                   ~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/Links.kt"
+            line="345"
+            column="36"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="            text = &quot;Someone clicked “Ring my phone” on your computer. It stops by itself after two minutes.&quot;"
+        errorLine2="                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/Links.kt"
+            line="351"
+            column="21"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="            text = &quot;Found it&quot;"
+        errorLine2="                    ~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/Links.kt"
+            line="357"
+            column="21"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="                        addView(ui.text(15f, color(R.color.ink), ui.medium) { text = &quot;RAM&quot; }, ui.lp(w = WRAP_CONTENT, start = 10))"
+        errorLine2="                                                                                      ~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/MemoryScreen.kt"
+            line="94"
+            column="87"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="            addView(ui.text(13f, color(R.color.ink_soft)) { text = &quot;% in use ›&quot; }, ui.lp(w = WRAP_CONTENT))"
+        errorLine2="                                                                    ~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/MemoryScreen.kt"
+            line="123"
+            column="69"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="                addView(ui.text(12f, color(R.color.ink_soft)) { text = &quot;1 min ago&quot; }, ui.lp(w = 0, weight = 1f))"
+        errorLine2="                                                                        ~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/MemoryScreen.kt"
+            line="133"
+            column="73"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="                addView(ui.text(12f, color(R.color.ink_soft)) { text = &quot;now&quot; }, ui.lp(w = WRAP_CONTENT))"
+        errorLine2="                                                                        ~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/MemoryScreen.kt"
+            line="134"
+            column="73"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="            addView(ui.text(12f, color(R.color.ink_soft)) { text = &quot;Needed&quot; }, ui.lp(w = WRAP_CONTENT, start = 8))"
+        errorLine2="                                                                    ~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/MemoryScreen.kt"
+            line="201"
+            column="69"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="Do not concatenate text displayed with `setText`. Use resource string with placeholders."
+        errorLine1="        appsNote.text = &quot;Stopping ${app.label}…&quot;"
+        errorLine2="                        ~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/MemoryScreen.kt"
+            line="227"
+            column="25"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="        appsNote.text = &quot;Stopping ${app.label}…&quot;"
+        errorLine2="                         ~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/MemoryScreen.kt"
+            line="227"
+            column="26"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="                it.second.text = &quot;Needs full access, like App Manager&quot;"
+        errorLine2="                                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/MemoryScreen.kt"
+            line="295"
+            column="35"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="Do not concatenate text displayed with `setText`. Use resource string with placeholders."
+        errorLine1="                text = &quot;Android only lets an app see its own processes. To list the apps in memory and stop them, &quot; +"
+        errorLine2="                       ^">
+        <location
+            file="src/main/java/dev/droiddesk/companion/MemoryScreen.kt"
+            line="299"
+            column="24"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="Do not concatenate text displayed with `setText`. Use resource string with placeholders."
+        errorLine1="                text = &quot;Android only lets an app see its own processes. To list the apps in memory and stop them, &quot; +"
+        errorLine2="                       ^">
+        <location
+            file="src/main/java/dev/droiddesk/companion/MemoryScreen.kt"
+            line="299"
+            column="24"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="Do not concatenate text displayed with `setText`. Use resource string with placeholders."
+        errorLine1="                text = &quot;Android only lets an app see its own processes. To list the apps in memory and stop them, &quot; +"
+        errorLine2="                       ^">
+        <location
+            file="src/main/java/dev/droiddesk/companion/MemoryScreen.kt"
+            line="299"
+            column="24"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="Do not concatenate text displayed with `setText`. Use resource string with placeholders."
+        errorLine1="                text = &quot;Android only lets an app see its own processes. To list the apps in memory and stop them, &quot; +"
+        errorLine2="                       ^">
+        <location
+            file="src/main/java/dev/droiddesk/companion/MemoryScreen.kt"
+            line="299"
+            column="24"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="Do not concatenate text displayed with `setText`. Use resource string with placeholders."
+        errorLine1="                text = &quot;Android only lets an app see its own processes. To list the apps in memory and stop them, &quot; +"
+        errorLine2="                       ^">
+        <location
+            file="src/main/java/dev/droiddesk/companion/MemoryScreen.kt"
+            line="299"
+            column="24"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="                text = &quot;Android only lets an app see its own processes. To list the apps in memory and stop them, &quot; +"
+        errorLine2="                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/MemoryScreen.kt"
+            line="299"
+            column="25"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="Do not concatenate text displayed with `setText`. Use resource string with placeholders."
+        errorLine1="                    &quot;this app borrows the rights of ADB (or root).\n\n&quot; +"
+        errorLine2="                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/MemoryScreen.kt"
+            line="300"
+            column="21"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="                    &quot;this app borrows the rights of ADB (or root).\n\n&quot; +"
+        errorLine2="                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/MemoryScreen.kt"
+            line="300"
+            column="22"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="Do not concatenate text displayed with `setText`. Use resource string with placeholders."
+        errorLine1="                    &quot;Without a computer: with the Shizuku app (Settings › Privileged access).\n\n&quot; +"
+        errorLine2="                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/MemoryScreen.kt"
+            line="301"
+            column="21"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="                    &quot;Without a computer: with the Shizuku app (Settings › Privileged access).\n\n&quot; +"
+        errorLine2="                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/MemoryScreen.kt"
+            line="301"
+            column="22"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="                    &quot;With a computer: connect this phone to Droid Desk and click “Turn on” next to &quot; +"
+        errorLine2="                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/MemoryScreen.kt"
+            line="302"
+            column="22"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="                    &quot;“Phone RAM manager” on its Shizuku page. It stays on until the phone restarts, &quot; +"
+        errorLine2="                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/MemoryScreen.kt"
+            line="303"
+            column="22"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="                    &quot;even after you unplug.&quot;"
+        errorLine2="                     ~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/MemoryScreen.kt"
+            line="304"
+            column="22"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="        if (on) { appsNote.text = &quot;Loading running apps…&quot;; renderApps() }"
+        errorLine2="                                   ~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/MemoryScreen.kt"
+            line="367"
+            column="36"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="Do not concatenate text displayed with `setText`. Use resource string with placeholders."
+        errorLine1="        big.text = &quot;${String.format(&quot;%.1f&quot;, used / 1e9)} GB of ${String.format(&quot;%.0f&quot;, Math.ceil(m.totalMem / 1e9))} GB&quot;"
+        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/MemoryScreen.kt"
+            line="400"
+            column="20"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="        big.text = &quot;${String.format(&quot;%.1f&quot;, used / 1e9)} GB of ${String.format(&quot;%.0f&quot;, Math.ceil(m.totalMem / 1e9))} GB&quot;"
+        errorLine2="                                                        ~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/MemoryScreen.kt"
+            line="400"
+            column="57"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="        big.text = &quot;${String.format(&quot;%.1f&quot;, used / 1e9)} GB of ${String.format(&quot;%.0f&quot;, Math.ceil(m.totalMem / 1e9))} GB&quot;"
+        errorLine2="                                                                                                                    ~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/MemoryScreen.kt"
+            line="400"
+            column="117"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="            speedPhase = ui.text(13f, color(R.color.ink_soft)) { text = &quot;Ready&quot; }"
+        errorLine2="                                                                         ~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/NetworkScreen.kt"
+            line="60"
+            column="74"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="                addView(ui.text(13f, color(R.color.ink_soft)) { text = &quot;Mbps&quot; }, ui.lp(w = WRAP_CONTENT, top = 2))"
+        errorLine2="                                                                        ~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/NetworkScreen.kt"
+            line="155"
+            column="73"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="                speedPhase.text = &quot;Download speed&quot;"
+        errorLine2="                                   ~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/NetworkScreen.kt"
+            line="223"
+            column="36"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="                speedPhase.text = &quot;Test failed&quot;"
+        errorLine2="                                   ~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/NetworkScreen.kt"
+            line="225"
+            column="36"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="Do not concatenate text displayed with `setText`. Use resource string with placeholders."
+        errorLine1="                speedNote.text = &quot;Couldn&apos;t reach ${NetTools.SPEED_HOST}: ${it.message ?: it.javaClass.simpleName}&quot;"
+        errorLine2="                                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/NetworkScreen.kt"
+            line="227"
+            column="34"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="                speedNote.text = &quot;Couldn&apos;t reach ${NetTools.SPEED_HOST}: ${it.message ?: it.javaClass.simpleName}&quot;"
+        errorLine2="                                  ~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/NetworkScreen.kt"
+            line="227"
+            column="35"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="            setText(&quot;google.com&quot;)"
+        errorLine2="                     ~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/NetworkScreen.kt"
+            line="245"
+            column="22"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="            output.text = &quot;Enter a host name like example.com or an IP address.&quot;"
+        errorLine2="                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/NetworkScreen.kt"
+            line="278"
+            column="28"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="Do not concatenate text displayed with `setText`. Use resource string with placeholders."
+        errorLine1="        output.text = &quot;Looking up $h…&quot;"
+        errorLine2="                      ~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/NetworkScreen.kt"
+            line="306"
+            column="23"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="        output.text = &quot;Looking up $h…&quot;"
+        errorLine2="                       ~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/NetworkScreen.kt"
+            line="306"
+            column="24"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="            text = &quot;Your messages, contacts and call log only go to Droid Desk, on computers you connect or pair.&quot;"
+        errorLine2="                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/PcLinkScreen.kt"
+            line="74"
+            column="21"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="            addView(ui.text(15f, color(R.color.ink), ui.medium) { text = &quot;Droid Desk link&quot; }, ui.lp(w = 0, weight = 1f, start = 10))"
+        errorLine2="                                                                          ~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/PcLinkScreen.kt"
+            line="98"
+            column="75"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="        sub.text = &quot;Plug in, then click Connect in Droid Desk&quot;"
+        errorLine2="                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/PcLinkScreen.kt"
+            line="120"
+            column="21"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="Do not concatenate text displayed with `setText`. Use resource string with placeholders."
+        errorLine1="                    text = &quot;${i + 1}&quot;"
+        errorLine2="                              ~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/PcLinkScreen.kt"
+            line="131"
+            column="31"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="                wifiSub.text = &quot;Needs Android 11 or later&quot;"
+        errorLine2="                                ~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/PcLinkScreen.kt"
+            line="169"
+            column="33"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="                wifiSub.text = &quot;Set up once over USB: in Droid Desk, click “Use this phone without the cable”&quot;"
+        errorLine2="                                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/PcLinkScreen.kt"
+            line="179"
+            column="33"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="Do not concatenate text displayed with `setText`. Use resource string with placeholders."
+        errorLine1="        permSub.text = &quot;${wanted.size - missing.size} of ${wanted.size} allowed&quot;"
+        errorLine2="                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/PcLinkScreen.kt"
+            line="229"
+            column="24"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="        permSub.text = &quot;${wanted.size - missing.size} of ${wanted.size} allowed&quot;"
+        errorLine2="                                                     ~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/PcLinkScreen.kt"
+            line="229"
+            column="54"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="        permSub.text = &quot;${wanted.size - missing.size} of ${wanted.size} allowed&quot;"
+        errorLine2="                                                                       ~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/PcLinkScreen.kt"
+            line="229"
+            column="72"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="Do not concatenate text displayed with `setText`. Use resource string with placeholders."
+        errorLine1="                text = &quot;Android only allows message and call-log access when Droid Desk installs &quot; +"
+        errorLine2="                       ^">
+        <location
+            file="src/main/java/dev/droiddesk/companion/PcLinkScreen.kt"
+            line="258"
+            column="24"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="                text = &quot;Android only allows message and call-log access when Droid Desk installs &quot; +"
+        errorLine2="                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/PcLinkScreen.kt"
+            line="258"
+            column="25"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="                    &quot;this app over USB, not when the APK is opened on the phone.&quot;"
+        errorLine2="                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/PcLinkScreen.kt"
+            line="259"
+            column="22"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="Do not concatenate text displayed with `setText`. Use resource string with placeholders."
+        errorLine1="        inUse.sub.text = Privileged.reason(host, how, st, helper) +"
+        errorLine2="                         ^">
+        <location
+            file="src/main/java/dev/droiddesk/companion/PrivilegedPanel.kt"
+            line="82"
+            column="26"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="Do not concatenate text displayed with `setText`. Use resource string with placeholders."
+        errorLine1="            label.text = &quot;Nothing is saved until you tap Accept. Transfers are encrypted, and only &quot; +"
+        errorLine2="                         ^">
+        <location
+            file="src/main/java/dev/droiddesk/companion/ReceiveScreen.kt"
+            line="102"
+            column="26"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="            label.text = &quot;Nothing is saved until you tap Accept. Transfers are encrypted, and only &quot; +"
+        errorLine2="                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/ReceiveScreen.kt"
+            line="102"
+            column="27"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="                &quot;devices on the same Wi‑Fi can see this phone while receiving is on.&quot;"
+        errorLine2="                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/ReceiveScreen.kt"
+            line="103"
+            column="18"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="Do not concatenate text displayed with `setText`. Use resource string with placeholders."
+        errorLine1="        fValue.text = &quot;Download/${WifiServer.FOLDER}&quot;"
+        errorLine2="                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/ReceiveScreen.kt"
+            line="178"
+            column="23"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="        fValue.text = &quot;Download/${WifiServer.FOLDER}&quot;"
+        errorLine2="                       ~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/ReceiveScreen.kt"
+            line="178"
+            column="24"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="                addView(ui.text(16f, color(R.color.ink), ui.medium) { text = &quot;Direct link&quot; })"
+        errorLine2="                                                                              ~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/ReceiveScreen.kt"
+            line="188"
+            column="79"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="            addView(ui.text(17f, color(R.color.ink), ui.medium) { text = &quot;Received&quot; }, ui.lp(w = 0, weight = 1f))"
+        errorLine2="                                                                          ~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/ReceiveScreen.kt"
+            line="248"
+            column="75"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="        recentEmpty = ui.text(14f, color(R.color.ink_soft)) { text = &quot;Files you receive appear here.&quot; }"
+        errorLine2="                                                                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/ReceiveScreen.kt"
+            line="257"
+            column="71"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="Do not concatenate text displayed with `setText`. Use resource string with placeholders."
+        errorLine1="            askTitle.text = &quot;${r.from} wants to send you &quot; + if (r.files.size == 1) &quot;a file&quot; else &quot;${r.files.size} files&quot;"
+        errorLine2="                            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/ReceiveScreen.kt"
+            line="358"
+            column="29"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="Do not concatenate text displayed with `setText`. Use resource string with placeholders."
+        errorLine1="            askTitle.text = &quot;${r.from} wants to send you &quot; + if (r.files.size == 1) &quot;a file&quot; else &quot;${r.files.size} files&quot;"
+        errorLine2="                            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/ReceiveScreen.kt"
+            line="358"
+            column="29"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="            askTitle.text = &quot;${r.from} wants to send you &quot; + if (r.files.size == 1) &quot;a file&quot; else &quot;${r.files.size} files&quot;"
+        errorLine2="                                      ~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/ReceiveScreen.kt"
+            line="358"
+            column="39"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="Do not concatenate text displayed with `setText`. Use resource string with placeholders."
+        errorLine1="                text = &quot;+ ${r.files.size - 5} more&quot;"
+        errorLine2="                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/ReceiveScreen.kt"
+            line="371"
+            column="24"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="                text = &quot;+ ${r.files.size - 5} more&quot;"
+        errorLine2="                                             ~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/ReceiveScreen.kt"
+            line="371"
+            column="46"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="Do not concatenate text displayed with `setText`. Use resource string with placeholders."
+        errorLine1="            askDirect.text = &quot;Direct link: for this transfer your computer joins a private Wi‑Fi network from this &quot; +"
+        errorLine2="                             ^">
+        <location
+            file="src/main/java/dev/droiddesk/companion/ReceiveScreen.kt"
+            line="376"
+            column="30"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="            askDirect.text = &quot;Direct link: for this transfer your computer joins a private Wi‑Fi network from this &quot; +"
+        errorLine2="                              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/ReceiveScreen.kt"
+            line="376"
+            column="31"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="                &quot;phone, which is faster. Android needs this app open to start it.&quot;"
+        errorLine2="                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/ReceiveScreen.kt"
+            line="377"
+            column="18"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="Do not concatenate text displayed with `setText`. Use resource string with placeholders."
+        errorLine1="            progTitle.text = &quot;Receiving from ${p.from}&quot;"
+        errorLine2="                             ~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/ReceiveScreen.kt"
+            line="391"
+            column="30"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="            progTitle.text = &quot;Receiving from ${p.from}&quot;"
+        errorLine2="                              ~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/ReceiveScreen.kt"
+            line="391"
+            column="31"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="                directNote.text = &quot;Your computer can join a private Wi‑Fi from this phone for big transfers. Faster than going through the router.&quot;"
+        errorLine2="                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/ReceiveScreen.kt"
+            line="442"
+            column="36"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="                directNote.text = &quot;Off: transfers always go through your Wi‑Fi router.&quot;"
+        errorLine2="                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/ReceiveScreen.kt"
+            line="448"
+            column="36"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="                directNote.text = &quot;Turn on Location: Android 12 and older need it to start a private Wi‑Fi.&quot;"
+        errorLine2="                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/ReceiveScreen.kt"
+            line="459"
+            column="36"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="                directNote.text = &quot;This phone can&apos;t host a private Wi‑Fi while it&apos;s connected to Wi‑Fi.&quot;"
+        errorLine2="                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/ReceiveScreen.kt"
+            line="465"
+            column="36"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="Do not concatenate text displayed with `setText`. Use resource string with placeholders."
+        errorLine1="        askTimer.text = &quot;Declines automatically in $left s&quot;"
+        errorLine2="                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/ReceiveScreen.kt"
+            line="474"
+            column="25"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="        askTimer.text = &quot;Declines automatically in $left s&quot;"
+        errorLine2="                         ~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/ReceiveScreen.kt"
+            line="474"
+            column="26"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="                addView(ui.text(15f, color(R.color.ink), ui.medium) { text = &quot;Battery Saver&quot; }, ui.lp(w = WRAP_CONTENT, start = 10))"
+        errorLine2="                                                                              ~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/SaverScreen.kt"
+            line="77"
+            column="79"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="Do not concatenate text displayed with `setText`. Use resource string with placeholders."
+        errorLine1="        dozeNote.text = (if (!privileged &amp;&amp; BatterySaver.dozeOnScreenOff(host)) &quot;Not working right now: $NEEDS. &quot; else &quot;&quot;) +"
+        errorLine2="                        ^">
+        <location
+            file="src/main/java/dev/droiddesk/companion/SaverScreen.kt"
+            line="249"
+            column="25"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="Do not concatenate text displayed with `setText`. Use resource string with placeholders."
+        errorLine1="        dozeNote.text = (if (!privileged &amp;&amp; BatterySaver.dozeOnScreenOff(host)) &quot;Not working right now: $NEEDS. &quot; else &quot;&quot;) +"
+        errorLine2="                        ^">
+        <location
+            file="src/main/java/dev/droiddesk/companion/SaverScreen.kt"
+            line="249"
+            column="25"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="            &quot;The trade-off: in Doze, notifications and syncing are delayed until Android&apos;s next maintenance window or until &quot; +"
+        errorLine2="             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/SaverScreen.kt"
+            line="250"
+            column="14"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="            &quot;you wake the phone. Calls, SMS and alarms still come through. The screen-off option keeps the “Battery watch” notification.&quot;"
+        errorLine2="             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/SaverScreen.kt"
+            line="251"
+            column="14"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="Do not concatenate text displayed with `setText`. Use resource string with placeholders."
+        errorLine1="            if (d == null) { awakeNote.text = &quot;Couldn&apos;t load: ${r.exceptionOrNull()?.message}&quot;; return@background }"
+        errorLine2="                                              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/SaverScreen.kt"
+            line="327"
+            column="47"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="            if (d == null) { awakeNote.text = &quot;Couldn&apos;t load: ${r.exceptionOrNull()?.message}&quot;; return@background }"
+        errorLine2="                                               ~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/SaverScreen.kt"
+            line="327"
+            column="48"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="            if (a.keep) addView(ui.text(12f, color(R.color.ink_soft)) { text = &quot;Needed&quot; }, ui.lp(w = WRAP_CONTENT, start = 8))"
+        errorLine2="                                                                                ~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/SaverScreen.kt"
+            line="357"
+            column="81"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="Do not concatenate text displayed with `setText`. Use resource string with placeholders."
+        errorLine1="        awakeNote.text = &quot;Stopping ${a.label}…&quot;"
+        errorLine2="                         ~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/SaverScreen.kt"
+            line="365"
+            column="26"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="        awakeNote.text = &quot;Stopping ${a.label}…&quot;"
+        errorLine2="                          ~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/SaverScreen.kt"
+            line="365"
+            column="27"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="Do not concatenate text displayed with `setText`. Use resource string with placeholders."
+        errorLine1="        label.text = &quot;Nothing is sent until you tap Send and the other device accepts. Transfers are &quot; +"
+        errorLine2="                     ^">
+        <location
+            file="src/main/java/dev/droiddesk/companion/SendScreen.kt"
+            line="111"
+            column="22"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="        label.text = &quot;Nothing is sent until you tap Send and the other device accepts. Transfers are &quot; +"
+        errorLine2="                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/SendScreen.kt"
+            line="111"
+            column="23"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="            &quot;encrypted, and the other device is checked against the identity it announced.&quot;"
+        errorLine2="             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/SendScreen.kt"
+            line="112"
+            column="14"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="            text = &quot;It is shown in the receiving app&apos;s settings on that device.&quot;"
+        errorLine2="                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/SendScreen.kt"
+            line="159"
+            column="21"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="            addView(ui.text(17f, color(R.color.ink), ui.medium) { text = &quot;To send&quot; }, ui.lp(w = WRAP_CONTENT))"
+        errorLine2="                                                                          ~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/SendScreen.kt"
+            line="185"
+            column="75"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="            text = &quot;Pick files or photos here, or use Share › Droid Desk in Gallery, Files or another app.&quot;"
+        errorLine2="                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/SendScreen.kt"
+            line="195"
+            column="21"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="            addView(ui.text(17f, color(R.color.ink), ui.medium) { text = &quot;Send to&quot; }, ui.lp(w = 0, weight = 1f))"
+        errorLine2="                                                                          ~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/SendScreen.kt"
+            line="211"
+            column="75"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="Do not concatenate text displayed with `setText`. Use resource string with placeholders."
+        errorLine1="                    progTitle.text = &quot;Getting ready to send to ${p.to}&quot;"
+        errorLine2="                                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/SendScreen.kt"
+            line="304"
+            column="38"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="                    progTitle.text = &quot;Getting ready to send to ${p.to}&quot;"
+        errorLine2="                                      ~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/SendScreen.kt"
+            line="304"
+            column="39"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="Do not concatenate text displayed with `setText`. Use resource string with placeholders."
+        errorLine1="                    progText.text = &quot;Reading $items&quot;"
+        errorLine2="                                    ~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/SendScreen.kt"
+            line="307"
+            column="37"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="                    progText.text = &quot;Reading $items&quot;"
+        errorLine2="                                     ~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/SendScreen.kt"
+            line="307"
+            column="38"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="Do not concatenate text displayed with `setText`. Use resource string with placeholders."
+        errorLine1="                    progTitle.text = &quot;Waiting for ${p.to}&quot;"
+        errorLine2="                                     ~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/SendScreen.kt"
+            line="310"
+            column="38"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="                    progTitle.text = &quot;Waiting for ${p.to}&quot;"
+        errorLine2="                                      ~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/SendScreen.kt"
+            line="310"
+            column="39"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="Do not concatenate text displayed with `setText`. Use resource string with placeholders."
+        errorLine1="                    progText.text = &quot;Accept the transfer on ${p.to} · $items · ${fmtSize(p.total)}&quot;"
+        errorLine2="                                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/SendScreen.kt"
+            line="313"
+            column="37"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="                    progText.text = &quot;Accept the transfer on ${p.to} · $items · ${fmtSize(p.total)}&quot;"
+        errorLine2="                                     ~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/SendScreen.kt"
+            line="313"
+            column="38"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="Do not concatenate text displayed with `setText`. Use resource string with placeholders."
+        errorLine1="                    progTitle.text = &quot;Sending to ${p.to}&quot;"
+        errorLine2="                                     ~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/SendScreen.kt"
+            line="316"
+            column="38"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="                    progTitle.text = &quot;Sending to ${p.to}&quot;"
+        errorLine2="                                      ~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/SendScreen.kt"
+            line="316"
+            column="39"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="Do not concatenate text displayed with `setText`. Use resource string with placeholders."
+        errorLine1="            if (q.size > 60) queueList.addView(ui.text(14f, color(R.color.ink_soft)) { text = &quot;+ ${q.size - 60} more&quot; },"
+        errorLine2="                                                                                              ~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/SendScreen.kt"
+            line="374"
+            column="95"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="            if (q.size > 60) queueList.addView(ui.text(14f, color(R.color.ink_soft)) { text = &quot;+ ${q.size - 60} more&quot; },"
+        errorLine2="                                                                                                               ~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/SendScreen.kt"
+            line="374"
+            column="112"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="            valueRow(R.drawable.ic_lock, &quot;Licence&quot;, &quot;Free software under the GNU GPL version 3&quot;) { showLicence() }.text = &quot;GPL-3.0&quot;"
+        errorLine2="                                                                                                                           ~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/SettingsScreen.kt"
+            line="115"
+            column="124"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="Do not concatenate text displayed with `setText`. Use resource string with placeholders."
+        errorLine1="        rulesValue.text = &quot;${rules.count { Prefs.ruleOn(host, it.first) }} of ${rules.size} on&quot;"
+        errorLine2="                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/SettingsScreen.kt"
+            line="135"
+            column="27"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="        rulesValue.text = &quot;${rules.count { Prefs.ruleOn(host, it.first) }} of ${rules.size} on&quot;"
+        errorLine2="                                                                          ~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/SettingsScreen.kt"
+            line="135"
+            column="75"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="        rulesValue.text = &quot;${rules.count { Prefs.ruleOn(host, it.first) }} of ${rules.size} on&quot;"
+        errorLine2="                                                                                           ~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/SettingsScreen.kt"
+            line="135"
+            column="92"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="                addView(ui.text(16f, color(R.color.ink), ui.medium) { text = &quot;Allow access to files&quot; })"
+        errorLine2="                                                                              ~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/StorageScreen.kt"
+            line="197"
+            column="79"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="                    text = &quot;Needed to measure the folders on your storage and SD card. Nothing is deleted unless you choose it and confirm.&quot;"
+        errorLine2="                            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/StorageScreen.kt"
+            line="199"
+            column="29"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="Do not concatenate text displayed with `setText`. Use resource string with placeholders."
+        errorLine1="                    text = &quot;Up to &quot; + if (up.parent == null) scan?.volume?.name else up.file.name"
+        errorLine2="                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/StorageScreen.kt"
+            line="331"
+            column="28"/>
+    </issue>
+
+    <issue
+        id="SetTextI18n"
+        message="String literal in `setText` can not be translated. Use Android resources instead."
+        errorLine1="                    text = &quot;Up to &quot; + if (up.parent == null) scan?.volume?.name else up.file.name"
+        errorLine2="                            ~~~~~~">
+        <location
+            file="src/main/java/dev/droiddesk/companion/StorageScreen.kt"
+            line="331"
+            column="29"/>
+    </issue>
+
+</issues>

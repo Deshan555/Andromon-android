@@ -1,0 +1,171 @@
+# Checks and builds Droid Desk Companion.
+#
+#   Every push to "main" and every pull request:
+#     lint (new problems fail the build; app/lint-baseline.xml lists the old ones) and a debug APK,
+#     attached to the workflow run.
+#   Every push to the "release" branch:
+#     the same checks, then the release APK, signed with the key in the repository's secrets and
+#     put in a draft GitHub Release named after versionName in app/build.gradle.kts (v0.29.0),
+#     which you review and publish yourself.
+#   A tag like v0.29.0, or "Run workflow" in the Actions tab:
+#     the release APK, attached to the workflow run only.
+#
+# Signing secrets (Settings > Secrets and variables > Actions), see README "Builds and releases":
+#   KEYSTORE_BASE64    the keystore file, base64-encoded
+#   KEYSTORE_PASSWORD  its password
+#   KEY_ALIAS          the key's name inside it
+#   KEY_PASSWORD       the key's password
+# Without them the release APK is signed with a throw-away debug key: fine for trying a build, but
+# it can't update an installed app, so no draft release is made from it.
+name: Build companion app
+
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+    branches: [main, release]
+    tags: ["v*"]
+
+# A newer push to the same branch replaces a build that is still running.
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Lint and debug build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      # Caches Gradle's downloads between runs and checks that the Gradle wrapper is the genuine one.
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Lint and build
+        run: ./gradlew lintDebug assembleDebug
+      - name: Attach the lint report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lint-report
+          path: app/build/reports/lint-results-debug.html
+          if-no-files-found: ignore
+      - name: Attach the debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: droid-desk-companion-debug
+          path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+
+  release:
+    name: Release APK
+    if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/release' || startsWith(github.ref, 'refs/tags/v')
+    needs: check
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # to create the draft release
+    env:
+      KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Read the version
+        id: version
+        run: |
+          name="$(sed -n 's/^ *versionName = "\(.*\)"/\1/p' app/build.gradle.kts)"
+          code="$(sed -n 's/^ *versionCode = \([0-9]*\).*/\1/p' app/build.gradle.kts)"
+          [ -n "$name" ] && [ -n "$code" ] || { echo "::error::Couldn't read versionName and versionCode from app/build.gradle.kts"; exit 1; }
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+          echo "Version $name (code $code)"
+
+      # The keystore only exists on the runner for this job, outside the checked-out files.
+      - name: Get the signing key
+        id: key
+        run: |
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/release.keystore"
+            echo "DD_KEYSTORE_FILE=$RUNNER_TEMP/release.keystore" >> "$GITHUB_ENV"
+            echo "signed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "signed=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::No signing key in the secrets (KEYSTORE_BASE64). This APK is signed with a throw-away debug key and can't update an installed app."
+          fi
+
+      - name: Build the release APK
+        env:
+          DD_KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          DD_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          DD_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: ./gradlew assembleRelease
+
+      - name: Remove the signing key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/release.keystore"
+
+      # One file with the version in its name, its checksum, and proof of who signed it.
+      - name: Name and verify the APK
+        id: apk
+        env:
+          VERSION: ${{ steps.version.outputs.name }}
+          CODE: ${{ steps.version.outputs.code }}
+          SIGNED: ${{ steps.key.outputs.signed }}
+        run: |
+          mkdir -p dist
+          suffix=""; [ "$SIGNED" = "true" ] || suffix="-test-key"
+          apk="dist/droid-desk-companion-${VERSION}${suffix}.apk"
+          cp app/build/outputs/apk/release/app-release.apk "$apk"
+          apksigner="$(ls "$ANDROID_HOME"/build-tools/*/apksigner | sort -V | tail -1)"
+          "$apksigner" verify --print-certs "$apk" | tee "$RUNNER_TEMP/certs.txt"
+          (cd dist && sha256sum "$(basename "$apk")" > "$(basename "$apk").sha256")
+          {
+            echo "### Droid Desk Companion ${VERSION} (code ${CODE})"
+            echo
+            echo "| | |"
+            echo "|---|---|"
+            echo "| File | \`$(basename "$apk")\` |"
+            echo "| Size | $(du -h "$apk" | cut -f1) |"
+            echo "| SHA-256 | \`$(cut -d' ' -f1 "$apk.sha256")\` |"
+            echo "| Signed by | \`$(sed -n 's/.*certificate SHA-256 digest: //p' "$RUNNER_TEMP/certs.txt" | head -1)\` |"
+            if [ "$SIGNED" != "true" ]; then
+              echo
+              echo "Signed with a throw-away debug key (no signing secrets): for testing only."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "path=$apk" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: droid-desk-companion-release
+          path: dist/*
+          if-no-files-found: error
+
+      # Push to "release" with a real key only: collect the APK in a draft release for this version.
+      # A version that is already published is never overwritten: raise versionCode and versionName.
+      - name: Create or update the draft release
+        if: github.event_name == 'push' && github.ref == 'refs/heads/release' && steps.key.outputs.signed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: v${{ steps.version.outputs.name }}
+        run: |
+          if state="$(gh release view "$TAG" --json isDraft --jq .isDraft 2>/dev/null)"; then
+            if [ "$state" != "true" ]; then
+              echo "::error::Release $TAG is already published. Raise versionCode and versionName in app/build.gradle.kts for a new release."
+              exit 1
+            fi
+            # Same version pushed again before publishing: replace the files on the draft.
+            gh release upload "$TAG" dist/* --clobber
+          else
+            gh release create "$TAG" dist/* --draft --target "$GITHUB_SHA" \
+              --title "Droid Desk Companion $TAG" --generate-notes
+          fi
