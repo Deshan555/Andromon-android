@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Launcher icon: the robot on its dark backdrop, as two separate adaptive-icon layers.
+     The layers are 108dp bitmaps in drawable-*dpi; the robot stays inside the 66dp safe zone. -->
 <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
-    <background android:drawable="@color/launcher_bg" />
-    <foreground android:drawable="@drawable/ic_launcher_fg" />
-    <monochrome android:drawable="@drawable/ic_launcher_fg" />
+    <background android:drawable="@drawable/andromon_background" />
+    <foreground android:drawable="@drawable/andromon_foreground" />
+    <monochrome android:drawable="@drawable/andromon_monochrome" />
 </adaptive-icon>

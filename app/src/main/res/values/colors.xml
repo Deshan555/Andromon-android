@@ -76,10 +76,6 @@
     <color name="centre_icon">#FF292A2C</color>
     <color name="centre_active">#FF292A2C</color>
 
-    <!-- Launcher icon: same in light and dark -->
-    <color name="launcher_bg">#FFE3F786</color>
-    <color name="launcher_fg">#FF292A2C</color>
-
     <!-- Hero card gradient (top-left to bottom-right) -->
     <color name="hero_start">#FFEAF9A8</color>
     <color name="hero">#FFC6EC50</color>

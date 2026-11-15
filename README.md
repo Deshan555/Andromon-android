@@ -257,7 +257,7 @@ Anyone who distributes the APK, including inside Droid Desk's installer, must al
 | [Shizuku-API](https://github.com/RikkaApps/Shizuku-API) 13.1.5 (`dev.rikka.shizuku:api`, `:provider`, with their `aidl` and `shared` parts), the app's only library, from Maven Central | compiled into the APK | MIT License, Copyright (c) 2021 RikkaW (notice under Settings › About › Third-party notices) |
 | Poppins font, subset to Latin | `app/src/main/res/font/` | SIL Open Font License 1.1 (`res/raw/poppins_ofl.txt`) |
 | [Lucide](https://lucide.dev) icons, converted to vector drawables | `app/src/main/res/drawable/ic_*.xml` | ISC License (`res/raw/lucide_isc.txt`); parts derived from Feather, MIT |
-| Launcher and Freeze shortcut icons, based on Material Icons (Google LLC) | `res/drawable/ic_launcher_fg.xml`, `ic_freeze_shortcut.xml` | Apache License 2.0 (`res/raw/apache_2_0.txt`) |
+| Freeze shortcut icon, based on Material Icons (Google LLC) | `res/drawable/ic_freeze_shortcut.xml` | Apache License 2.0 (`res/raw/apache_2_0.txt`) |
 | Gradle wrapper (build tool only, not in the APK) | `gradle/wrapper/` | Apache License 2.0 |
 
 All of these are compatible with GPL-3.0. The licence texts ship inside the APK and can be read under **Settings › About › Third-party notices**.

@@ -43,7 +43,7 @@ How the Android companion app looks, behaves and reads, and how to build a new s
 
 | Name | Hex | Role |
 |---|---|---|
-| Lime | `#E3F786` | Brand colour, launcher icon background, soft accent fills |
+| Lime | `#E3F786` | Brand colour, soft accent fills |
 | Green | `#9CD237` | Charts, status dots, gradient end tones |
 | Ink | `#292A2C` | Text, icons, primary buttons, bottom bar |
 | White | `#FFFFFF` | Text on ink, active nav item |
