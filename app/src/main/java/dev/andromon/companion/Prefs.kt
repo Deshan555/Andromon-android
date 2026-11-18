@@ -24,6 +24,11 @@ internal object Prefs {
     fun startLinkOnOpen(ctx: Context) = sp(ctx).getBoolean("start_link", true)
     fun setStartLinkOnOpen(ctx: Context, on: Boolean) = sp(ctx).edit().putBoolean("start_link", on).apply()
 
+    /** The person pressed Stop (PC link screen, its notification, the tile or an automation): the link
+     *  stays off, also when Andromon or opening the app would start it, until they press Start. */
+    fun linkPaused(ctx: Context) = sp(ctx).getBoolean("link_paused", false)
+    fun setLinkPaused(ctx: Context, on: Boolean) = sp(ctx).edit().putBoolean("link_paused", on).apply()
+
     /** The welcome tour (OnboardingActivity) was finished or skipped. */
     fun onboarded(ctx: Context) = sp(ctx).getBoolean("onboarded", false)
     fun setOnboarded(ctx: Context, on: Boolean) = sp(ctx).edit().putBoolean("onboarded", on).apply()

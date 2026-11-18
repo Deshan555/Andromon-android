@@ -49,9 +49,8 @@ class AutomationActivity : Activity() {
 
     private fun run(action: String?) {
         when (action) {
-            LINK_ON -> CompanionService.start(this)
-            LINK_OFF -> if (CompanionService.running)
-                startService(Intent(this, CompanionService::class.java).setAction(CompanionService.ACTION_STOP))
+            LINK_ON -> CompanionService.start(this, byUser = true)
+            LINK_OFF -> CompanionService.stopByUser(this)
             RECEIVE_ON -> {
                 // Same checks as Transfer › Receive and its tile: without them a transfer couldn't be accepted or saved.
                 val missing = buildList {

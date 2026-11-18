@@ -48,7 +48,7 @@ The screenshots were taken on an Android 12 emulator with made-up sample data.
 
 - Android only lets **apps on the phone** read SMS, contacts, the call log, the calendar and notifications. The companion is that app: Andromon asks, the companion reads and answers.
 - Requests arrive through **adb**, Android's debugging link (USB cable, or Wireless debugging on Android 11+). The companion checks that each request comes from adb. Other apps on the phone, and other devices on the network, can't talk to it.
-- While the link is on, a **"Connected to Andromon"** notification is shown. The link stops when you press **Stop** on it or on the PC link screen, or after 15 idle minutes.
+- While the link is on, a **"Connected to Andromon"** notification is shown. The link stops when you press **Stop** on it or on the PC link screen, or after 15 idle minutes. After you press **Stop**, Andromon on the computer doesn't start it again by itself: it says the link is stopped on the phone until you press **Start**.
 - The phone-care tools work on their own, without a computer. A few of them can do more with **privileged access** (see [section 18](#18-privileged-access-shizuku-helper-root)).
 
 ## 2. Getting the app

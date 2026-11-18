@@ -179,6 +179,13 @@
             android:exported="true"
             android:permission="android.permission.DUMP" />
 
+        <!-- Andromon on the PC asks whether the person stopped the PC link here (then it doesn't
+             start it again). DUMP: only the adb shell can ask. -->
+        <receiver
+            android:name=".LinkStateReceiver"
+            android:exported="true"
+            android:permission="android.permission.DUMP" />
+
         <!-- Phone notifications on the PC. Android binds it only after the person (or Andromon,
              over adb) allows "Notification access"; it passes nothing on unless a PC is listening. -->
         <service

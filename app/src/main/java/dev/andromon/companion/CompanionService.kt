@@ -53,6 +53,8 @@ class CompanionService : Service() {
     companion object {
         const val SOCKET_NAME = "andromon_companion"
         const val ACTION_STOP = "dev.andromon.companion.STOP"
+        /** Set on the Start the person pressed (PC link screen, tile, automation): ends a pause from Stop. */
+        const val EXTRA_BY_USER = "by_user"
         private const val CHANNEL_ID = "pc_link"
         private const val NOTIFICATION_ID = 1
         private const val SHELL_UID = 2000
@@ -66,8 +68,20 @@ class CompanionService : Service() {
         /** Called on the main thread when [running] changes; the status screen sets it while visible. */
         var stateListener: (() -> Unit)? = null
 
-        fun start(ctx: Context) {
-            ctx.startForegroundService(Intent(ctx, CompanionService::class.java))
+        /**
+         * Starts the link. [byUser]: the person asked for it, which also undoes their Stop. Without it
+         * (Andromon over adb, opening the app) the link stays off while they have it stopped.
+         */
+        fun start(ctx: Context, byUser: Boolean = false) {
+            if (byUser) Prefs.setLinkPaused(ctx, false)
+            else if (Prefs.linkPaused(ctx)) return
+            ctx.startForegroundService(Intent(ctx, CompanionService::class.java).putExtra(EXTRA_BY_USER, byUser))
+        }
+
+        /** Stops the link because the person asked: it stays stopped until they press Start. */
+        fun stopByUser(ctx: Context) {
+            Prefs.setLinkPaused(ctx, true)
+            if (running) ctx.startService(Intent(ctx, CompanionService::class.java).setAction(ACTION_STOP))
         }
     }
 
@@ -94,17 +108,28 @@ class CompanionService : Service() {
 
     override fun onCreate() {
         super.onCreate()
-        goForeground()
-        startServer()
-        running = true
-        stateListener?.invoke()
-        main.postDelayed(idleCheck, 60_000)
+        goForeground() // within 5 s of startForegroundService(), even when the start is then refused
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if (intent?.action == ACTION_STOP) {
+            Prefs.setLinkPaused(this, true) // Stop on the notification, or from the screen/tile/automation
             stopSelf()
             return START_NOT_STICKY
+        }
+        if (intent?.getBooleanExtra(EXTRA_BY_USER, false) == true) Prefs.setLinkPaused(this, false)
+        // Andromon on the PC starts the service over adb when it can't reach it. After the person
+        // pressed Stop it must stay stopped: Andromon reads the pause (LinkStateReceiver) and says so.
+        if (Prefs.linkPaused(this) && !running) {
+            Log.i(TAG, "Link stopped by the person; not starting it again")
+            stopSelf()
+            return START_NOT_STICKY
+        }
+        if (!running) {
+            startServer()
+            running = true
+            stateListener?.invoke()
+            main.postDelayed(idleCheck, 60_000)
         }
         lastActivity = System.currentTimeMillis()
         return START_NOT_STICKY
@@ -361,5 +386,21 @@ class CompanionService : Service() {
             if (buf.size() > 32 * 1024 * 1024) throw IOException("Request too large")
         }
         return if (buf.size() > 0) buf.toString(Charsets.UTF_8.name()) else null
+    }
+}
+
+/**
+ * Andromon on the PC asks, before it starts the link over adb, whether the person stopped it here
+ * (`am broadcast -n dev.andromon.companion/.LinkStateReceiver`). The answer is the broadcast's
+ * result data: "paused", "on" or "off". DUMP (manifest) keeps other apps from asking.
+ */
+class LinkStateReceiver : android.content.BroadcastReceiver() {
+    override fun onReceive(ctx: Context, intent: Intent) {
+        resultCode = 1
+        resultData = when {
+            Prefs.linkPaused(ctx) -> "paused"
+            CompanionService.running -> "on"
+            else -> "off"
+        }
     }
 }

@@ -89,12 +89,12 @@ class LinkTile : DeskTile() {
     override fun onClick() {
         if (CompanionService.running) {
             try {
-                startService(Intent(this, CompanionService::class.java).setAction(CompanionService.ACTION_STOP))
+                CompanionService.stopByUser(this)
             } catch (_: Exception) {
             }
         } else {
             try {
-                CompanionService.start(this)
+                CompanionService.start(this, byUser = true)
             } catch (_: Exception) {
                 // Android 12+ may refuse a foreground service from the background: the app's
                 // screen starts it instead and steps aside (as when Andromon starts it).

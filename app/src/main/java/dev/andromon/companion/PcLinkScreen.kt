@@ -319,11 +319,8 @@ internal class PcLinkScreen(host: MainActivity) : Screen(host) {
     // ---------- state ----------
 
     private fun togglePcLink() {
-        if (CompanionService.running) {
-            host.startService(Intent(host, CompanionService::class.java).setAction(CompanionService.ACTION_STOP))
-        } else {
-            CompanionService.start(host)
-        }
+        if (CompanionService.running) CompanionService.stopByUser(host)
+        else CompanionService.start(host, byUser = true)
         // refresh() runs via CompanionService.stateListener once the service has started/stopped.
     }
 
@@ -360,7 +357,8 @@ internal class PcLinkScreen(host: MainActivity) : Screen(host) {
             else -> {
                 heroTitle.text = "Link is off"
                 heroSub.text = "Andromon can't reach this phone"
-                heroDetail.text = "Start the link here. Andromon can also start it itself over USB."
+                heroDetail.text = if (Prefs.linkPaused(host)) "You stopped it, so Andromon won't start it again by itself. Tap Start when you want it back."
+                    else "Start the link here. Andromon can also start it itself over USB."
             }
         }
         heroDetail.visibility = if (heroDetail.text.isNullOrEmpty()) View.GONE else View.VISIBLE
