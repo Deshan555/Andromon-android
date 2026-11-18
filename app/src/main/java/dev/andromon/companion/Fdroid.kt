@@ -3,6 +3,7 @@
 
 package dev.andromon.companion
 
+import android.annotation.SuppressLint
 import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -101,7 +102,8 @@ internal object Fdroid {
 
     class Page(val total: Int, val items: List<Item>)
 
-    enum class Sort(val label: String) { UPDATED("Recently updated"), ADDED("Newest"), NAME("Name") }
+    /** [MATCH] orders by how well an app matches the search words (name first); used while searching. */
+    enum class Sort(val label: String) { MATCH("Best match"), UPDATED("Recently updated"), ADDED("Newest"), NAME("Name") }
 
     // ---------- the one running download ----------
 
@@ -124,6 +126,8 @@ internal object Fdroid {
         /** Android wants the person to confirm; start [intent] from the activity. */
         class Confirm(val pkg: String, val intent: Intent) : Event()
         class InstallDone(val pkg: String, val ok: Boolean, val message: String) : Event()
+        /** "Update all" ended: every app had its turn, or the person stopped it. */
+        class UpdatesDone(val updated: Int, val notUpdated: Int, val stopped: Boolean) : Event()
     }
 
     @Volatile var job: Job? = null
@@ -150,14 +154,18 @@ internal object Fdroid {
             job = j
         }
         thread(isDaemon = true, name = "fdroid") {
+            var failed = false
             try {
                 work(j)
             } catch (e: Throwable) {
+                failed = true
                 val cancelled = j.cancelled.get()
                 emit(Event.Failed(j.pkg, if (cancelled) "The download was cancelled." else friendly(e), cancelled))
             } finally {
                 synchronized(this) { job = null }
                 emit(Event.Progress)
+                // "Update all" goes on with the next app once this one's job is out of the way.
+                if (failed && j.pkg != null) main.post { advance(j.pkg, false) }
             }
         }
         return true
@@ -204,7 +212,19 @@ internal object Fdroid {
     private fun connect(name: String, j: Job?): HttpURLConnection {
         if (!SAFE_NAME.matches(name) || ".." in name) throw Problem("Download address not allowed.")
         val path = name.split("/").joinToString("/") { URLEncoder.encode(it, "UTF-8").replace("+", "%20") }
-        val c = URL(REPO + path).openConnection() as HttpURLConnection
+        val url = URL(REPO + path)
+        // The connection's own name lookup has no time limit (a broken Private DNS holds it for
+        // minutes) and Cancel can't stop it, so the screen stayed on "Downloading…". Look the name
+        // up first with a limit; the connection then finds the answer in Android's DNS cache.
+        try {
+            NetTools.resolve(url.host)
+        } catch (e: java.net.UnknownHostException) {
+            throw e
+        } catch (e: IOException) {
+            throw java.net.UnknownHostException(e.message)
+        }
+        if (j?.cancelled?.get() == true) throw IOException("cancelled")
+        val c = url.openConnection() as HttpURLConnection
         c.connectTimeout = 15_000
         c.readTimeout = 30_000
         c.setRequestProperty("User-Agent", "Andromon")
@@ -588,16 +608,17 @@ internal object Fdroid {
             }
             val cond = if (where.isEmpty()) "" else " WHERE " + where.joinToString(" AND ")
             total = d.rawQuery("SELECT count(*) FROM apps$cond", args.toTypedArray()).use { it.moveToFirst(); it.getInt(0) }
-            val by = when (sort) { Sort.NAME -> "name COLLATE NOCASE"; Sort.ADDED -> "added DESC"; Sort.UPDATED -> "updated DESC" }
+            val by = when (sort) { Sort.NAME -> "name COLLATE NOCASE"; Sort.ADDED -> "added DESC"; Sort.UPDATED, Sort.MATCH -> "updated DESC" }
             var order = by
-            if (words.isNotEmpty() && sort != Sort.NAME) {
+            // Best match: the score decides, the name breaks ties. Other orders are kept as chosen.
+            if (words.isNotEmpty() && sort == Sort.MATCH) {
                 // A hit in the name counts most.
                 val score = words.joinToString(" + ") {
                     "(CASE WHEN lower(name) = ? THEN 8 WHEN name LIKE ? ESCAPE '\\' THEN 5 WHEN name LIKE ? ESCAPE '\\' THEN 4 " +
                         "WHEN summary LIKE ? ESCAPE '\\' OR pkg LIKE ? ESCAPE '\\' THEN 2 ELSE 1 END)"
                 }
                 for (w in words) { args += w; args += "${like(w)}%"; repeat(3) { args += "%${like(w)}%" } }
-                order = "($score) DESC, $by"
+                order = "($score) DESC, name COLLATE NOCASE"
             }
             d.rawQuery("SELECT $APP_COLS FROM apps$cond ORDER BY $order LIMIT ${limit.coerceIn(1, 200)} OFFSET ${offset.coerceAtLeast(0)}", args.toTypedArray()).use { c ->
                 while (c.moveToNext()) apps += readApp(c, "", emptyList())
@@ -784,15 +805,17 @@ internal object Fdroid {
 
     /** Forgets an install Android no longer knows about (e.g. the confirmation was swiped away). True when one was dropped. */
     fun dropStaleInstall(ctx: Context): Boolean {
-        val (_, id) = installing ?: return false
+        val (pkg, id) = installing ?: return false
         if (ctx.packageManager.packageInstaller.getSessionInfo(id) != null) return false
         installing = null
+        advance(pkg, false)
         return true
     }
 
     /** Android's answer to [commit]. */
     fun onInstallStatus(ctx: Context, intent: Intent) {
         val pkg = intent.getStringExtra(EXTRA_PKG) ?: return
+        if (intent.getIntExtra(PackageInstaller.EXTRA_SESSION_ID, -2) == abandoned) return
         when (val status = intent.getIntExtra(PackageInstaller.EXTRA_STATUS, PackageInstaller.STATUS_FAILURE)) {
             PackageInstaller.STATUS_PENDING_USER_ACTION -> {
                 @Suppress("DEPRECATION") val confirm = intent.getParcelableExtra<Intent>(Intent.EXTRA_INTENT) ?: return
@@ -804,6 +827,7 @@ internal object Fdroid {
                 installing = null
                 File(tmpDir(ctx), "apk").deleteRecursively()
                 emit(Event.InstallDone(pkg, true, ""))
+                advance(pkg, true)
             }
             else -> {
                 installing = null
@@ -816,7 +840,102 @@ internal object Fdroid {
                     PackageInstaller.STATUS_FAILURE_BLOCKED -> "The phone's settings don't allow this install."
                     else -> "Android couldn't install the app."
                 }))
+                advance(pkg, false)
             }
+        }
+    }
+
+    // ---------- "Update all" ----------
+
+    /**
+     * Updates several apps one after another, each through [install]. Android still asks the
+     * person to confirm every one; whatever the answer (or a failed download), the next app
+     * follows. Everything here runs on the main thread, so the steps can't overlap.
+     */
+    class Batch(val ctx: Context, val items: List<Item>) {
+        /** The app being updated now, from 0. */
+        @Volatile var index = 0
+            internal set
+        @Volatile var updated = 0
+            internal set
+        @Volatile var notUpdated = 0
+            internal set
+        /** Stop was tapped while this app's download or prompt was under way; ends once that has. */
+        @Volatile var stopping = false
+            internal set
+        val current: Item? get() = items.getOrNull(index)
+    }
+
+    @SuppressLint("StaticFieldLeak") // holds the application context only, which lives as long as the app
+    @Volatile var batch: Batch? = null
+        private set
+
+    /** Starts updating every app in [items] that has an update. False when something else is running. */
+    fun updateAll(ctx: Context, items: List<Item>): Boolean {
+        if (job != null || installing != null || batch != null) return false
+        val b = Batch(ctx.applicationContext, items.filter { it.canUpdate })
+        if (b.items.isEmpty()) return false
+        batch = b
+        next(b)
+        return true
+    }
+
+    /** An installer session given up by [stopUpdates]; Android's late answer to it is ignored. */
+    @Volatile private var abandoned = -1
+
+    /**
+     * Doesn't start any more. A running download is cancelled, and the end is reported once it has
+     * stopped, so its own "cancelled" doesn't come after the summary. An install still waiting for
+     * the person's answer is given up: Stop is tapped in this app, so Android's prompt isn't in
+     * front (it was dismissed by tapping beside it, which leaves the install waiting for good).
+     */
+    fun stopUpdates() {
+        val b = batch ?: return
+        val pkg = b.current?.app?.pkg
+        val waiting = installing
+        when {
+            pkg != null && job?.pkg == pkg -> {
+                b.stopping = true
+                cancel()
+                emit(Event.Progress)
+            }
+            pkg != null && waiting?.first == pkg -> {
+                abandoned = waiting.second
+                installing = null
+                runCatching { b.ctx.packageManager.packageInstaller.abandonSession(waiting.second) }
+                b.notUpdated++
+                finish(b, stopped = true)
+            }
+            else -> finish(b, stopped = true)
+        }
+    }
+
+    private fun finish(b: Batch, stopped: Boolean) {
+        if (batch !== b) return
+        batch = null
+        emit(Event.UpdatesDone(b.updated, b.notUpdated, stopped))
+    }
+
+    /** [pkg]'s turn ended, [ok] when it was updated. */
+    private fun advance(pkg: String, ok: Boolean) {
+        val b = batch ?: return
+        if (b.current?.app?.pkg != pkg) return
+        if (ok) b.updated++ else b.notUpdated++
+        b.index++
+        if (b.stopping) finish(b, stopped = true) else next(b)
+    }
+
+    private fun next(b: Batch) {
+        while (batch === b) {
+            val item = b.current
+            if (item == null) { finish(b, stopped = false); return }
+            val v = item.suggested
+            val now = installed(b.ctx, item.app.pkg)
+            // Uninstalled or updated some other way since the list was made: nothing to do.
+            if (v == null || now == null || now.code >= v.code) { b.index++; continue }
+            if (install(b.ctx, item.app, v)) { emit(Event.Progress); return }
+            b.notUpdated++ // another download is running; shouldn't happen, as updateAll checks
+            b.index++
         }
     }
 }

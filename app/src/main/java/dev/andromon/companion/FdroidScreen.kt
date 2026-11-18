@@ -45,6 +45,10 @@ internal class FdroidScreen(host: MainActivity) : Screen(host) {
     private lateinit var listPage: LinearLayout
     private lateinit var setup: View
     private lateinit var jobCard: View
+    private lateinit var batchCard: View
+    private lateinit var batchText: TextView
+    private lateinit var batchSub: TextView
+    private lateinit var updateAll: TextView
     private lateinit var jobText: TextView
     private lateinit var jobMeter: Meter
     private lateinit var notice: TextView
@@ -62,12 +66,23 @@ internal class FdroidScreen(host: MainActivity) : Screen(host) {
     private var tab = Tab.BROWSE
     private var category = "" // id; "" = all
     private var sort = Fdroid.Sort.UPDATED
+    /** The person chose an order while a search word was typed; otherwise a search sorts by best match. */
+    private var sortPickedInSearch = false
+
+    /** The order in use: best match while searching (unless another was picked), else the chosen one. */
+    private fun sortNow(q: String) = when {
+        q.isNotEmpty() && !sortPickedInSearch -> Fdroid.Sort.MATCH
+        q.isEmpty() && sort == Fdroid.Sort.MATCH -> Fdroid.Sort.UPDATED
+        else -> sort
+    }
     private var shown = 0
     private var total = 0
     private var token = 0
     private var loaded = false
     private var message: String? = null
     private var listScroll = 0
+    /** The apps with an update, from the last "On this phone" list: what "Update all" goes through. */
+    private var updatable: List<Fdroid.Item> = emptyList()
 
     // ----- the app page -----
     private lateinit var appPage: LinearLayout
@@ -95,6 +110,15 @@ internal class FdroidScreen(host: MainActivity) : Screen(host) {
                 addView(ui.pill("Download", color(R.color.fab), color(R.color.on_fab), R.drawable.ic_down) { refresh() }, ui.lp(top = 14))
             }
             addView(setup, ui.lp(top = 16))
+            batchCard = ui.glassCard(16) {
+                batchText = ui.text(16f, color(R.color.ink), ui.medium)
+                addView(batchText)
+                batchSub = ui.text(13f, color(R.color.ink_soft)) { setLineSpacing(ui.dp(2).toFloat(), 1f) }
+                addView(batchSub, ui.lp(top = 4))
+                addView(ui.pill("Stop", color(R.color.glass_strong), color(R.color.ink)) { Fdroid.stopUpdates() },
+                    ui.lp(w = WRAP_CONTENT, top = 14))
+            }
+            addView(batchCard, ui.lp(top = 16))
             jobCard = ui.glassCard(16) {
                 jobText = ui.text(14f, color(R.color.ink), ui.medium)
                 addView(jobText)
@@ -140,6 +164,9 @@ internal class FdroidScreen(host: MainActivity) : Screen(host) {
         }, ui.lp(top = 14))
         count = ui.text(22f, color(R.color.ink), ui.light) { text = "–"; letterSpacing = -0.02f }
         addView(count, ui.lp(top = 18))
+        updateAll = ui.pill("Update all", color(R.color.fab), color(R.color.on_fab), R.drawable.ic_down) { startUpdateAll() }
+            .apply { visibility = View.GONE }
+        addView(updateAll, ui.lp(w = WRAP_CONTENT, top = 12))
         filters = ui.row {
             categoryPill = ui.pill("", color(R.color.surface), color(R.color.ink), R.drawable.ic_expand) { pickCategory() }
                 .apply { textSize = 13f; minHeight = ui.dp(36); maxLines = 1; ellipsize = TextUtils.TruncateAt.END }
@@ -188,7 +215,7 @@ internal class FdroidScreen(host: MainActivity) : Screen(host) {
 
     private fun onEvent(e: Fdroid.Event) {
         when (e) {
-            is Fdroid.Event.Progress -> { renderJob(); renderAppAction() }
+            is Fdroid.Event.Progress -> { renderJob(); renderBatch(); renderAppAction() }
             is Fdroid.Event.CatalogueDone -> {
                 message = if (e.changed) null else "The catalogue is already up to date."
                 render()
@@ -204,6 +231,16 @@ internal class FdroidScreen(host: MainActivity) : Screen(host) {
                 loaded = false
                 if (e.pkg == app?.app?.pkg) { appMessage = if (e.ok) null else e.message; reloadApp() }
                 else { if (!e.ok) message = e.message; render(); if (app == null) load(true) }
+            }
+            is Fdroid.Event.UpdatesDone -> {
+                message = when {
+                    e.updated + e.notUpdated == 0 && e.stopped -> "Stopped. No apps were updated."
+                    else -> (if (e.stopped) "Stopped. " else "") + plural(e.updated, "app") + " updated" +
+                        if (e.notUpdated > 0) ", ${e.notUpdated} not (cancelled or failed)." else "."
+                }
+                loaded = false
+                render()
+                if (app == null) load(true)
             }
         }
     }
@@ -227,11 +264,43 @@ internal class FdroidScreen(host: MainActivity) : Screen(host) {
             foot.text = "Catalogue from ${dates.format(Date(st.timestamp))} · %,d apps".format(st.apps) +
                 (if (st.fetchedAt > 0) " · checked ${ago(st.fetchedAt)}" else "") + "\nTap the refresh button to look for new apps and updates."
             ui.setLabel(categoryPill, st.categories.firstOrNull { it.first == category }?.second ?: "All categories")
-            ui.setLabel(sortPill, sort.label)
+            ui.setLabel(sortPill, sortNow(search.text.toString().trim()).label)
             renderChips()
         }
         renderJob()
+        renderBatch()
         renderAppAction()
+    }
+
+    /** "Update all": the button on the "On this phone" tab, and the progress while it runs. */
+    private fun renderBatch() {
+        val b = Fdroid.batch
+        updateAll.visibility = if (tab == Tab.MINE && b == null && updatable.isNotEmpty()) View.VISIBLE else View.GONE
+        ui.setEnabled(updateAll, Fdroid.job == null && Fdroid.installing == null)
+        batchCard.visibility = if (b == null) View.GONE else View.VISIBLE
+        val item = b?.current ?: return
+        batchText.text = if (b.stopping) "Stopping after ${item.app.name}…" else "Updating ${b.index + 1} of ${b.items.size}…"
+        batchSub.text = item.app.name + when {
+            Fdroid.installing?.first == item.app.pkg -> " · confirm the update in Android's prompt"
+            else -> ""
+        } + "\nAndroid asks before each app is updated. Cancelling one goes on with the next."
+    }
+
+    private fun startUpdateAll() {
+        if (!mayInstall("Update all")) return
+        message = if (Fdroid.updateAll(host, updatable)) null else "A download is running. Wait for it to finish."
+        render()
+    }
+
+    /** Android asks once before the companion may install apps; until then, say how. */
+    private fun mayInstall(button: String): Boolean {
+        if (host.packageManager.canRequestPackageInstalls()) return true
+        UiRows(host, ui).message("Allow installing apps",
+            "Android asks once before Andromon Companion may install apps. Turn on “Allow from this source” on the next page, " +
+                "then come back and tap $button again.", "Open settings") {
+            runCatching { host.startActivity(Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:${host.packageName}"))) }
+        }
+        return false
     }
 
     private fun renderChips() {
@@ -242,6 +311,7 @@ internal class FdroidScreen(host: MainActivity) : Screen(host) {
             }
         }
         filters.visibility = if (tab == Tab.BROWSE) View.VISIBLE else View.GONE
+        renderBatch()
     }
 
     private fun jobLine(j: Fdroid.Job): String {
@@ -279,8 +349,11 @@ internal class FdroidScreen(host: MainActivity) : Screen(host) {
     }
 
     private fun pickSort() {
-        UiRows(host, ui).pick("Sort by", Fdroid.Sort.values().toList(), sort, { it.label }) {
+        val q = search.text.toString().trim()
+        val choices = Fdroid.Sort.values().filter { q.isNotEmpty() || it != Fdroid.Sort.MATCH }
+        UiRows(host, ui).pick("Sort by", choices, sortNow(q), { it.label }) {
             sort = it
+            sortPickedInSearch = q.isNotEmpty()
             ui.setLabel(sortPill, it.label)
             load(true)
         }
@@ -293,12 +366,20 @@ internal class FdroidScreen(host: MainActivity) : Screen(host) {
         val q = search.text.toString().trim()
         val t = tab
         val cat = category
-        val s = sort
+        if (q.isEmpty()) sortPickedInSearch = false
+        val s = sortNow(q)
+        ui.setLabel(sortPill, s.label)
         val offset = shown
         ui.setEnabled(more, false)
         background({
             if (t == Tab.MINE) {
                 val mine = Fdroid.onPhone(host).filter { q.isEmpty() || it.app.name.contains(q, ignoreCase = true) || it.app.pkg.contains(q, ignoreCase = true) }
+                    .let { list -> if (q.isEmpty()) list else list.sortedBy { when {
+                        it.app.name.equals(q, ignoreCase = true) -> 0
+                        it.app.name.startsWith(q, ignoreCase = true) -> 1
+                        it.app.name.contains(q, ignoreCase = true) -> 2
+                        else -> 3
+                    } } }
                 Fdroid.Page(mine.size, mine)
             } else Fdroid.search(host, q, cat, s, offset, PAGE)
         }) { r ->
@@ -317,6 +398,9 @@ internal class FdroidScreen(host: MainActivity) : Screen(host) {
             shown += page.items.size
             for (item in page.items) list.addView(row(item, my), ui.lp(top = 8))
             val updates = page.items.count { it.canUpdate }
+            // Only a list without a search word has every update in it.
+            if (t == Tab.MINE) updatable = if (q.isEmpty()) page.items.filter { it.canUpdate } else updatable
+            renderBatch()
             count.text = when {
                 t == Tab.MINE -> plural(total, "app") + " from F-Droid" + if (updates > 0) " · " + plural(updates, "update") else ""
                 else -> plural(total, "app")
@@ -619,14 +703,7 @@ internal class FdroidScreen(host: MainActivity) : Screen(host) {
     }
 
     private fun startInstall(item: Fdroid.Item, v: Fdroid.Version) {
-        if (!host.packageManager.canRequestPackageInstalls()) {
-            UiRows(host, ui).message("Allow installing apps",
-                "Android asks once before Andromon Companion may install apps. Turn on “Allow from this source” on the next page, " +
-                    "then come back and tap ${if (item.installed == null) "Install" else "Update"} again.", "Open settings") {
-                runCatching { host.startActivity(Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:${host.packageName}"))) }
-            }
-            return
-        }
+        if (!mayInstall(if (item.installed == null) "Install" else "Update")) return
         appMessage = if (Fdroid.install(host, item.app, v)) null else "Another download is running. Wait for it to finish."
         renderJob()
         renderAppAction()

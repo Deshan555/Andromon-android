@@ -1,0 +1,1 @@
+F-Droid: update all apps in one go. Battery: capacity next to charge cycles where the phone reports it. For Andromon on the computer: clipboard sync, similar-photo search and battery health.
