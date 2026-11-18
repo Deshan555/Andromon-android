@@ -6,4 +6,12 @@
         <!-- Poppins everywhere: TextViews, buttons, inputs and dialogs pick it up from the theme. -->
         <item name="android:fontFamily">@font/poppins</item>
     </style>
+
+    <!-- MainActivity's theme while it starts: the splash (splash_window, or Android 12+'s own splash
+         set up in values-v31). MainActivity switches to AppTheme before drawing anything. -->
+    <style name="LaunchTheme" parent="AppTheme">
+        <item name="android:windowBackground">@drawable/splash_window</item>
+        <item name="android:statusBarColor">@color/splash_bg</item>
+        <item name="android:navigationBarColor">@color/splash_bg</item>
+    </style>
 </resources>

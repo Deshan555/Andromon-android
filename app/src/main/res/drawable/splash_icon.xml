@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android 12+ start-up splash icon (values-v31/themes.xml): the robot. The system shows a 288dp
+     square and keeps what is inside a 192dp circle, so the robot is drawn 132dp tall in the middle, clear of the circle. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:width="288dp" android:height="288dp">
+        <shape android:shape="rectangle"><solid android:color="@android:color/transparent" /></shape>
+    </item>
+    <item android:width="132dp" android:height="132dp" android:gravity="center" android:drawable="@drawable/brand_robot" />
+</layer-list>

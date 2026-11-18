@@ -89,6 +89,7 @@ class MainActivity : Activity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        setTheme(R.style.AppTheme) // the manifest's LaunchTheme only shows the splash while the app starts
         super.onCreate(savedInstanceState)
         // The extras of the intent that opened the app are acted on once. Android hands the same
         // intent to a recreated activity (theme or text size changed, Battery Saver's dark mode,

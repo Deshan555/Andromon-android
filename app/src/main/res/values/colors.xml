@@ -7,6 +7,8 @@
 -->
 <resources>
     <color name="bg">#FFE6E6E4</color>
+    <!-- Start-up splash (LaunchTheme), the same in light and dark: the logo's own dark backdrop. -->
+    <color name="splash_bg">#FF111317</color>
     <color name="surface">#FFF5F5F3</color>
     <color name="ink">#FF292A2C</color>
     <color name="ink_soft">#FF6C6D70</color>

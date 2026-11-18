@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android 12+ start-up splash: the name at the bottom (at most 200 x 80 dp). -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:width="200dp" android:height="68dp" android:gravity="center" android:drawable="@drawable/brand_wordmark" />
+</layer-list>
