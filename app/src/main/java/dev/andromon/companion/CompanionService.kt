@@ -70,6 +70,7 @@ class CompanionService : Service() {
     }
 
     private var server: LocalServerSocket? = null
+    @Volatile private var closing = false
     private val workers: ExecutorService = Executors.newFixedThreadPool(6)
     private val main = Handler(Looper.getMainLooper())
     @Volatile private var lastActivity = System.currentTimeMillis()
@@ -107,6 +108,17 @@ class CompanionService : Service() {
 
     override fun onDestroy() {
         running = false
+        // Free the socket's name, or turning the link on again in the same run fails with "Address
+        // already in use". Closing alone doesn't end a waiting accept(), so wake it with one
+        // connection first (the accept loop sees [closing] and drops it).
+        closing = true
+        server?.let { s ->
+            thread(name = "pc-link-close", isDaemon = true) {
+                runCatching { android.net.LocalSocket().use { it.connect(android.net.LocalSocketAddress(SOCKET_NAME)) } }
+                runCatching { s.close() }
+            }
+        }
+        server = null
         RecOverlay.endAll()
         Ringer.stop(applicationContext, "link") // Find my phone can't outlive the link: nothing would time it out
         stateListener?.invoke()
@@ -159,6 +171,7 @@ class CompanionService : Service() {
         thread(name = "pc-link-accept", isDaemon = true) {
             while (true) {
                 val client = try { socket.accept() } catch (_: IOException) { break }
+                if (closing) { runCatching { client.close() }; break }
                 try {
                     workers.execute { handle(client) }
                 } catch (_: Exception) {
