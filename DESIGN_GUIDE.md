@@ -342,6 +342,7 @@ Button hierarchy on one screen: one `action`, any number of pills, and destructi
 | Status label | `ui.dotLabel()` | 8dp dot plus text. Set both colour and words. On the hero, put it on a `glass` pill with `ink` text (PC link's Linked / Ready / Off). |
 | Share row | `ui.shareRow(icon, fallbackIcon, title, figure, share, sub) { … }` | One app (or group) in a statistics list: icon, name, figure on the right, a 6dp share bar and a line under it ("23% · 14 opens"). The whole row is the target. |
 | Empty card | `ui.emptyCard(icon, "Sentence.", "Action") { … }` | Empty, unavailable and needs-access states: an icon chip, one sentence, an optional filled small pill. |
+| Personal data | `PrivacyBlur.always(view)` / `PrivacyBlur.ifFound(textView)` | Mark once, when building, every view that shows a name, number, address or message text, so Settings › Display › Blur personal data can blur it. `always` for a value that is personal whatever it says; `ifFound` for mixed text, blurred only while `Pii` finds personal data in it (`Pii.addKnown(name)` first for names). Never on a button: leave the name out of its label while the setting is on. |
 
 ### Dashboard
 
@@ -627,6 +628,7 @@ internal class ExampleScreen(host: MainActivity) : Screen(host) {
 - [ ] Targets at least 48dp, or the row is the target
 - [ ] Works at the largest font size and at 320dp width
 - [ ] Status readable without colour
+- [ ] Names, numbers, addresses and message text are marked for Blur personal data (`PrivacyBlur`)
 - [ ] Small secondary text sits on a card, not on the page or the hero
 
 ---

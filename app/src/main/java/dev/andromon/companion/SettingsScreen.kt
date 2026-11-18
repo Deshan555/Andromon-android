@@ -32,6 +32,7 @@ internal class SettingsScreen(host: MainActivity) : Screen(host) {
     private lateinit var contrastSwitch: Switch
     private lateinit var boldSwitch: Switch
     private lateinit var motionSwitch: Switch
+    private lateinit var blurSwitch: Switch
     private lateinit var linkSwitch: Switch
     private lateinit var largeValue: TextView
     private lateinit var rulesValue: TextView
@@ -76,7 +77,7 @@ internal class SettingsScreen(host: MainActivity) : Screen(host) {
             addView(title, ui.lp(w = 0, weight = 1f, start = 2))
         })
 
-        page("display", R.drawable.ic_moon, "Display", "Theme, text size, contrast and motion") {
+        page("display", R.drawable.ic_moon, "Display", "Theme, text size, contrast, motion and blur") {
             addView(ui.glassCard(6) {
                 themeValue = valueRow(R.drawable.ic_moon, "Theme", "Light, dark or the same as your phone") { pickTheme() }
             }, ui.lp(top = 20))
@@ -96,6 +97,15 @@ internal class SettingsScreen(host: MainActivity) : Screen(host) {
                 valueRow(R.drawable.ic_accessibility, "Phone accessibility settings", "TalkBack, magnification, colour correction and more") {
                     runCatching { host.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) }
                 }.text = ""
+            }, ui.lp(top = 12))
+            // Takes effect on every screen's next frame (PrivacyBlur.kt): no redraw needed.
+            addView(ui.section("Privacy"), ui.lp(top = 26))
+            addView(ui.glassCard(6) {
+                blurSwitch = switchRow(R.drawable.ic_eye_off, "Blur personal data",
+                    "Names, numbers, addresses and messages, so screenshots are safe to share") { on ->
+                    PrivacyBlur.setEnabled(host, on)
+                }
+                UiRows(host, ui).note(this, "Tap a blurred value to see it for a few seconds.")
             }, ui.lp(top = 12))
         }
 
@@ -230,6 +240,7 @@ internal class SettingsScreen(host: MainActivity) : Screen(host) {
         contrastSwitch.isChecked = Prefs.highContrast(host)
         boldSwitch.isChecked = Prefs.boldText(host)
         motionSwitch.isChecked = Prefs.reduceMotionPref(host)
+        blurSwitch.isChecked = PrivacyBlur.enabled(host)
         linkSwitch.isChecked = Prefs.startLinkOnOpen(host)
         largeValue.text = sizeLabel(Prefs.largeFileMb(host))
         val rules = Prefs.CLEANING_RULES

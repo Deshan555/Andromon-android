@@ -354,6 +354,7 @@ internal class StatsScreen(host: MainActivity) : Screen(host) {
                 val r = UiRows(host, ui).value(this, R.drawable.ic_desktop, c.optString("name"),
                     listOf(c.optString("os"), c.optString("app"), "last seen ${ago(c.optLong("last"))}").filter { it.isNotBlank() }.joinToString(" · "), null)
                 r.value?.text = ""
+                PrivacyBlur.always(r.title) // the computer's name
             }
             UiRows(host, ui).note(this, "Kept on this phone for 30 days. Settings › PC link › Clear link history removes it.")
         }, ui.lp(top = 12))

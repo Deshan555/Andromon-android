@@ -132,6 +132,7 @@ internal class NetworkScreen(host: MainActivity) : Screen(host) {
         for ((k, v) in info.rows) {
             val (row, value) = ui.keyValue(k)
             value.text = v
+            PrivacyBlur.ifFound(value) // IP, gateway and DNS addresses; signal or "Metered" stay readable
             rows.addView(row, ui.lp(top = 10))
         }
         rows.visibility = if (info.rows.isEmpty()) View.GONE else View.VISIBLE
@@ -267,6 +268,7 @@ internal class NetworkScreen(host: MainActivity) : Screen(host) {
             setTextIsSelectable(true)
             visibility = View.GONE
         }
+        PrivacyBlur.ifFound(output) // ping and lookup lines carry IP addresses
         addView(output, ui.lp(top = 14))
     }
 

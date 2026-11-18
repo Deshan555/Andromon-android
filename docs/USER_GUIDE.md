@@ -272,6 +272,7 @@ Where the phone can tell the result, it fills it in; otherwise you tap **Passed*
 | Section | Option | What it does |
 |---|---|---|
 | **Appearance** | Theme | Light, dark, or the same as the phone. |
+| | Blur personal data | Off by default. On: names (computers, Wi‑Fi devices, this phone's name), IP addresses and text you send are blurred on every screen, so screenshots of the app are safe to share. Lines that mix normal text with personal data (ping output, transfer status) blur only when they contain some. Tap a blurred value to see it for a few seconds. Android 11 and older cover it with a grey bar instead of a blur. |
 | **PC link** | Start when the app opens | On: opening the app also starts the link to Andromon. Andromon can always start the link over USB, even when this is off. |
 | | Clear link history | Removes the PC link screen's recent activity, the PC link figures in Stats and the names of the computers that connected. |
 | **Tools** | Cleaning rules | Which of the Cleaner's rules run (17 in all). |

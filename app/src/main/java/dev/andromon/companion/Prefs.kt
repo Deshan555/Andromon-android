@@ -85,6 +85,10 @@ internal object Prefs {
     fun reduceMotionPref(ctx: Context) = sp(ctx).getBoolean("a11y_motion", false)
     fun setReduceMotion(ctx: Context, on: Boolean) = sp(ctx).edit().putBoolean("a11y_motion", on).apply()
 
+    /** Settings › Display › Blur personal data: names, numbers, addresses and messages drawn blurred ([PrivacyBlur]). Off by default. */
+    fun blurPersonal(ctx: Context) = sp(ctx).getBoolean("blur_personal", false)
+    fun setBlurPersonal(ctx: Context, on: Boolean) = sp(ctx).edit().putBoolean("blur_personal", on).apply()
+
     /** True when animations should be skipped: switched off here, or "Remove animations" is on in the phone's settings. */
     fun reduceMotion(ctx: Context): Boolean = reduceMotionPref(ctx) || runCatching {
         android.provider.Settings.Global.getFloat(ctx.contentResolver, android.provider.Settings.Global.ANIMATOR_DURATION_SCALE, 1f) == 0f

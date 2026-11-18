@@ -190,6 +190,7 @@ internal class TransferScreen(host: MainActivity) : Screen(host) {
         heroTitle = ui.text(34f, color(R.color.ink), ui.light) {
             letterSpacing = -0.02f; maxLines = 2; ellipsize = TextUtils.TruncateAt.END
         }
+        PrivacyBlur.always(heroTitle) // this phone's name
         hero.addView(heroTitle, ui.lp(top = 4))
         heroSub = ui.text(14f, color(R.color.ink)) { setLineSpacing(ui.dp(2).toFloat(), 1f) }
         hero.addView(heroSub, ui.lp(top = 10))
@@ -197,6 +198,7 @@ internal class TransferScreen(host: MainActivity) : Screen(host) {
         val details = ui.column { setPadding(0, ui.dp(6), ui.dp(6), 0) }
         val (aRow, aValue) = ui.keyValue("Address")
         addressRow = aRow; addressValue = aValue
+        PrivacyBlur.always(aValue)
         details.addView(aRow, ui.lp(top = 12))
         val (fRow, fValue) = ui.keyValue("Saved to")
         fValue.text = "Download/${WifiServer.FOLDER}"
@@ -220,6 +222,7 @@ internal class TransferScreen(host: MainActivity) : Screen(host) {
         toggle = ui.action("", R.drawable.ic_power) { toggle() }
         hero.addView(toggle, ui.lp(top = 18))
         messageText = ui.text(14f, color(R.color.ink)) { setLineSpacing(ui.dp(2).toFloat(), 1f) }
+        PrivacyBlur.ifFound(messageText)
         hero.addView(messageText, ui.lp(top = 12))
         return hero
     }
@@ -233,6 +236,8 @@ internal class TransferScreen(host: MainActivity) : Screen(host) {
                 addView(askTitle)
                 askMeta = ui.text(14f, color(R.color.ink_soft))
                 addView(askMeta, ui.lp(top = 4))
+                PrivacyBlur.ifFound(askTitle) // the sender's name
+                PrivacyBlur.ifFound(askMeta) // its IP address
             }, ui.lp(w = 0, weight = 1f, start = 14))
         })
         askList = ui.column { setPadding(ui.dp(4), 0, ui.dp(4), 0) }
@@ -252,6 +257,7 @@ internal class TransferScreen(host: MainActivity) : Screen(host) {
         progCard = this
         addView(ui.row {
             progTitle = ui.text(16f, color(R.color.ink_soft)) { maxLines = 1; ellipsize = TextUtils.TruncateAt.END }
+            PrivacyBlur.ifFound(progTitle)
             addView(progTitle, ui.lp(w = 0, weight = 1f))
             addView(ui.pill("Stop", color(R.color.surface), color(R.color.ink)) { WifiReceive.stopTransfer() }.apply {
                 textSize = 14f; minHeight = ui.dp(34)
@@ -377,6 +383,7 @@ internal class TransferScreen(host: MainActivity) : Screen(host) {
         askCard.visibility = if (r != null) View.VISIBLE else View.GONE
         if (r != null && r.id != askShown) {
             askShown = r.id
+            Pii.addKnown(r.from) // Blur personal data finds the name in the lines below
             askTitle.text = "${r.from} wants to send you " + if (r.files.size == 1) "a file" else "${r.files.size} files"
             askMeta.text = listOfNotNull(fmtSize(r.total), r.model, r.ip).joinToString(" · ")
             askList.removeAllViews()
@@ -410,6 +417,7 @@ internal class TransferScreen(host: MainActivity) : Screen(host) {
         val p = WifiReceive.progress
         progCard.visibility = if (p != null) View.VISIBLE else View.GONE
         if (p != null) {
+            Pii.addKnown(p.from)
             progTitle.text = "Receiving from ${p.from}"
             val pct = if (p.total > 0) (p.received * 100 / p.total).toInt() else 100
             progBig.text = ui.withUnit("$pct", "%")
@@ -447,9 +455,11 @@ internal class TransferScreen(host: MainActivity) : Screen(host) {
             addView(ui.text(15f, color(R.color.ink)) {
                 text = item.name; maxLines = 1; ellipsize = TextUtils.TruncateAt.MIDDLE
             })
+            Pii.addKnown(item.from)
             addView(ui.text(13f, color(R.color.ink_soft)) {
                 text = listOf(fmtSize(item.size), item.from, ago(item.time)).joinToString(" · ")
                 maxLines = 1; ellipsize = TextUtils.TruncateAt.END
+                PrivacyBlur.ifFound(this) // the sender's name
             }, ui.lp(top = 4))
         }, ui.lp(w = 0, weight = 1f, start = 12))
         setOnClickListener { open(item) }

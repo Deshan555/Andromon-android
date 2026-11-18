@@ -145,6 +145,9 @@ internal class PcLinkScreen(host: MainActivity) : Screen(host) {
         addView(heroTitle, ui.lp(top = 16))
         heroSub = ui.text(14f, color(R.color.ink), ui.medium) { setLineSpacing(ui.dp(2).toFloat(), 1f) }
         addView(heroSub, ui.lp(top = 8))
+        // The computer's name (Pii.addKnown in refreshLink()); "Ready" and "Link is off" stay readable.
+        PrivacyBlur.ifFound(heroTitle)
+        PrivacyBlur.ifFound(heroSub)
         heroDetail = ui.text(13f, color(R.color.ink)) { setLineSpacing(ui.dp(2).toFloat(), 1f) }
         addView(heroDetail, ui.lp(top = 4))
         startStop = ui.action("Start", R.drawable.ic_power) { togglePcLink() }
@@ -171,6 +174,7 @@ internal class PcLinkScreen(host: MainActivity) : Screen(host) {
             visibility = View.GONE; setLineSpacing(ui.dp(2).toFloat(), 1f)
             setPadding(ui.dp(8), ui.dp(6), ui.dp(8), ui.dp(6))
         }
+        PrivacyBlur.ifFound(actionNote) // "Sent the clipboard to <computer>."
         addView(actionNote)
     }
 
@@ -336,6 +340,7 @@ internal class PcLinkScreen(host: MainActivity) : Screen(host) {
         val linked = LinkStats.linkedNow()
         val name = LinkStats.computerName(host)
         val hello = LinkStats.hello(host)
+        if (hello != null) Pii.addKnown(hello.computer) // not the "Your computer" stand-in
         statusDot.background = ui.circle(color(when { linked -> R.color.good; on -> R.color.green_dot; else -> R.color.ink_faint }))
         statusText.text = when { linked -> "Linked"; on -> "Ready"; else -> "Off" }
         when {
@@ -371,6 +376,7 @@ internal class PcLinkScreen(host: MainActivity) : Screen(host) {
 
     private fun refreshActivity() {
         val items = LinkStats.recent(host, 5)
+        Pii.addKnown(*LinkStats.computers(host).map { it.optString("name") }.toTypedArray()) // "<computer> connected"
         activityList.removeAllViews()
         allActivity.visibility = if (items.size >= 5) View.VISIBLE else View.GONE
         if (items.isEmpty()) {
@@ -386,6 +392,8 @@ internal class PcLinkScreen(host: MainActivity) : Screen(host) {
         addView(ui.text(14f, color(R.color.ink)) {
             text = a.text + if (a.count > 1) " (${a.count}×)" else ""
             maxLines = 2; ellipsize = TextUtils.TruncateAt.END
+            // Wi‑Fi transfers name the other device, which may not be known any more: blur the whole line.
+            if (a.kind == "send" || a.kind == "receive") PrivacyBlur.always(this) else PrivacyBlur.ifFound(this)
         }, ui.lp(w = 0, weight = 1f, start = 12))
         addView(ui.text(12f, color(R.color.ink_soft)) { text = ago(a.time); maxLines = 1 }, ui.lp(w = WRAP_CONTENT, start = 8))
     }

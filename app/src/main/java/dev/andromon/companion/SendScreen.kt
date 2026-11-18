@@ -78,6 +78,7 @@ internal class SendPanel(private val host: MainActivity) {
         addView(deviceCard(), ui.lp(top = 12))
         sendButton = ui.action("Send", R.drawable.ic_up) { send() }
         messageText = ui.text(14f, color(R.color.ink)) { setLineSpacing(ui.dp(2).toFloat(), 1f) }
+        PrivacyBlur.ifFound(messageText)
         addView(messageText, ui.lp(top = 12))
         val (row, label) = ui.insight(R.drawable.ic_lock, color(R.color.green_tile))
         label.text = "Nothing is sent until you tap Send and the other device accepts. Transfers are " +
@@ -123,11 +124,15 @@ internal class SendPanel(private val host: MainActivity) {
         addView(progMeter, ui.lp(h = ui.dp(10), top = 12))
         progText = ui.text(14f, color(R.color.ink_soft)) { setLineSpacing(ui.dp(2).toFloat(), 1f) }
         addView(progText, ui.lp(top = 10))
+        // The receiving device's name (Pii.addKnown in refresh()).
+        PrivacyBlur.ifFound(progTitle)
+        PrivacyBlur.ifFound(progText)
     }
 
     private fun pinCard() = ui.card(color(R.color.good_bg), 18) {
         pinCard = this
         pinTitle = ui.text(18f, color(R.color.ink), ui.medium) { setLineSpacing(ui.dp(2).toFloat(), 1f) }
+        PrivacyBlur.ifFound(pinTitle)
         addView(pinTitle)
         addView(ui.text(14f, color(R.color.ink_soft)) {
             text = "It is shown in the receiving app's settings on that device."
@@ -152,6 +157,8 @@ internal class SendPanel(private val host: MainActivity) {
         })
         doneText = ui.text(14f, color(R.color.ink)) { setLineSpacing(ui.dp(2).toFloat(), 1f) }
         addView(doneText, ui.lp(top = 8))
+        PrivacyBlur.ifFound(doneTitle)
+        PrivacyBlur.ifFound(doneText)
     }
 
     private fun queueCard() = ui.glassCard(16) {
@@ -285,6 +292,7 @@ internal class SendPanel(private val host: MainActivity) {
         val active = WifiSend.active
         val p = WifiSend.progress
         val dev = WifiSend.selectedDevice()
+        Pii.addKnown(p?.to, WifiSend.done?.to, dev?.alias) // Blur personal data finds these names in the lines below
 
         // Progress
         val showProg = p != null && p.stage != WifiSend.Stage.PIN
@@ -406,6 +414,7 @@ internal class SendPanel(private val host: MainActivity) {
             active -> "Sending…"
             q.isEmpty() -> "Send"
             dev == null -> "Send $count"
+            PrivacyBlur.enabled(host) -> "Send $count" // a button isn't blurred: leave the name out
             else -> "Send $count to ${dev.alias.take(24)}"
         })
         ui.setEnabled(sendButton, !active && q.isNotEmpty() && dev != null && !WifiSend.adding)
@@ -442,6 +451,7 @@ internal class SendPanel(private val host: MainActivity) {
             addView(ui.text(15f, color(R.color.ink)) {
                 text = if (item.text != null) String(item.text, Charsets.UTF_8).take(80).replace('\n', ' ') else item.name
                 maxLines = 1; ellipsize = TextUtils.TruncateAt.MIDDLE
+                if (item.text != null) PrivacyBlur.always(this) // the text itself, e.g. a copied message
             })
             val sub = ui.text(13f, color(if (item.state == WifiSend.ItemState.FAILED) R.color.danger else R.color.ink_soft)) {
                 maxLines = 2; ellipsize = TextUtils.TruncateAt.END
@@ -465,6 +475,7 @@ internal class SendPanel(private val host: MainActivity) {
         addView(ui.column {
             addView(ui.text(15f, color(R.color.ink), ui.medium) {
                 text = d.alias; maxLines = 1; ellipsize = TextUtils.TruncateAt.END
+                PrivacyBlur.always(this)
             })
             addView(ui.text(13f, color(R.color.ink_soft)) {
                 text = listOfNotNull(
@@ -474,6 +485,7 @@ internal class SendPanel(private val host: MainActivity) {
                     if (d.pinned) "ID ${d.fingerprint.take(8).uppercase()}" else if (!d.https) "not encrypted" else null,
                 ).joinToString(" · ")
                 maxLines = 2; ellipsize = TextUtils.TruncateAt.END
+                PrivacyBlur.ifFound(this) // its IP address
             }, ui.lp(top = 4))
         }, ui.lp(w = 0, weight = 1f, start = 12))
         if (chosen) addView(ui.iconView(R.drawable.ic_check_circle, color(R.color.good)), ui.lp(w = ui.dp(22), h = ui.dp(22), start = 8))
