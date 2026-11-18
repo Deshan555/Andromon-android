@@ -51,7 +51,7 @@ class MainActivity : Activity() {
         listOf(HomeScreen(this), MemoryScreen(this), CleanerScreen(this), NetworkScreen(this), ReceiveScreen(this),
             BatteryScreen(this), AppsScreen(this), SettingsScreen(this), PcLinkScreen(this),
             StorageScreen(this), PermissionsScreen(this), HardwareScreen(this),
-            FreezerScreen(this), SaverScreen(this), RecoverScreen(this))
+            FreezerScreen(this), SaverScreen(this), RecoverScreen(this), FdroidScreen(this))
     }
     /** Screens in the bottom bar, left to right. */
     private val navOrder = listOf("Home", "PC link", "Receive", "Settings")

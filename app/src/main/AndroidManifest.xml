@@ -106,6 +106,10 @@
          restarted after a phone restart through RECEIVE_BOOT_COMPLETED above. -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
 
+    <!-- F-Droid (Fdroid.kt): hand an app the person picked from F-Droid's catalogue to Android's
+         installer. Android asks the person to allow this once, and to confirm every install. -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+
     <uses-feature android:name="android.hardware.microphone" android:required="false" />
     <uses-feature android:name="android.hardware.bluetooth" android:required="false" />
     <uses-feature android:name="android.hardware.telephony" android:required="false" />
@@ -267,6 +271,8 @@
             android:turnScreenOn="true" />
         <!-- Buttons on the "From your computer" and Find my phone notifications. -->
         <receiver android:name=".LinkReceiver" android:exported="false" />
+        <!-- F-Droid: Android's answer to an install the person started (Fdroid.kt). -->
+        <receiver android:name=".FdroidInstallReceiver" android:exported="false" />
         <!-- Quick-settings tiles. Only the system may bind them. -->
         <service
             android:name=".LinkTile"
