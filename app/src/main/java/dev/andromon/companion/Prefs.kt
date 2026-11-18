@@ -24,6 +24,10 @@ internal object Prefs {
     fun startLinkOnOpen(ctx: Context) = sp(ctx).getBoolean("start_link", true)
     fun setStartLinkOnOpen(ctx: Context, on: Boolean) = sp(ctx).edit().putBoolean("start_link", on).apply()
 
+    /** The welcome tour (OnboardingActivity) was finished or skipped. */
+    fun onboarded(ctx: Context) = sp(ctx).getBoolean("onboarded", false)
+    fun setOnboarded(ctx: Context, on: Boolean) = sp(ctx).edit().putBoolean("onboarded", on).apply()
+
     fun largeFileMb(ctx: Context) = sp(ctx).getInt("large_mb", 100).takeIf { it in LARGE_FILE_CHOICES } ?: 100
     fun setLargeFileMb(ctx: Context, mb: Int) = sp(ctx).edit().putInt("large_mb", mb).apply()
 

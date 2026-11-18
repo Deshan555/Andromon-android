@@ -128,6 +128,10 @@ class MainActivity : Activity() {
         setupSystemBars()
         show(savedInstanceState?.getInt("screen")?.takeIf { it in screens.indices } ?: home)
         if (fresh) openRequested(intent)
+        // The welcome tour, once: when the person opens the app themselves (not Andromon's autostart,
+        // a notification, a tile or Share asking for a screen).
+        if (fresh && !autostart && !Prefs.onboarded(this) && intent?.action == Intent.ACTION_MAIN &&
+            intent?.getStringExtra(EXTRA_SCREEN) == null) OnboardingActivity.open(this)
         CrashReports.offer(this) // once after a crash; nothing is sent unless the person shares it
 
         if (autostart) {

@@ -57,6 +57,8 @@ You don't install it yourself. Connect the phone to Andromon with the USB cable 
 
 ## 3. Finding your way around
 
+- The first time you open the app, a short **welcome tour** explains what it does. **Skip** ends it; **Settings › About › Welcome tour** shows it again.
+
 - The **dark bar at the bottom** has five buttons, each with its name: **PC link, Transfer, Tools, Stats, Settings**. The open one's icon sits on a white pill. The app opens on **PC link**.
 - Tapping the button of the screen you are on scrolls it back to the top (in Settings, it also goes back to the list of pages).
 - Every tool (**Memory, Cleaner, Network, Battery, Battery saver, Freezer, Apps, Storage, F-Droid, Recover, Permissions, Hardware**) opens from a tile on **Tools**. While one is open, **Tools** is highlighted in the bar.

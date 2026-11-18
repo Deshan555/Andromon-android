@@ -156,6 +156,12 @@
             </intent-filter>
         </activity>
 
+        <!-- The welcome tour on first start (MainActivity opens it). -->
+        <activity
+            android:name=".OnboardingActivity"
+            android:exported="false"
+            android:theme="@style/AppTheme" />
+
         <!--
           Exported only so `adb shell am start-foreground-service` can start it, and guarded by
           DUMP, a permission the adb shell has but normal apps cannot get.

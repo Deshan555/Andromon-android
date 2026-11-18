@@ -172,6 +172,7 @@ internal class SettingsScreen(host: MainActivity) : Screen(host) {
                 val version = runCatching { host.packageManager.getPackageInfo(host.packageName, 0).versionName }.getOrNull()
                 valueRow(R.drawable.ic_desktop, "Andromon Companion", "Helper app for Andromon on your computer", null).text =
                     version?.let { "v$it" } ?: ""
+                valueRow(R.drawable.ic_info, "Welcome tour", "What the app does, in six pages") { OnboardingActivity.open(host) }.text = ""
                 valueRow(R.drawable.ic_shield, "Your data", "What the app reads and where it goes") { showPrivacy() }.text = ""
                 valueRow(R.drawable.ic_warning, "Crash reports", "Kept on this phone; you decide whether to share one") { CrashReports.show(host) }.text = ""
                 valueRow(R.drawable.ic_lock, "Licence", "Free software under the GNU GPL version 3") { showLicence() }.text = "GPL-3.0"
