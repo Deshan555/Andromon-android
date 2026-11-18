@@ -1,0 +1,1 @@
+Fixes: the PC link answers right away even while event streams are open, reopening or recreating the app no longer jumps to another screen or hides it, F-Droid downloads no longer hang on a stuck DNS lookup, similar-photo search no longer groups pictures of different shapes, and smaller fixes in Battery saver, Finish setup, Apps, Home and Send.

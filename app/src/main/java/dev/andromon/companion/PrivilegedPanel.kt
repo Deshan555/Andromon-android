@@ -35,6 +35,7 @@ internal class PrivilegedPanel(private val host: MainActivity) {
     fun addTo(parent: LinearLayout) {
         parent.addView(ui.glassCard(6) {
             inUse = rows.value(this, R.drawable.ic_key, "In use", "", null)
+            inUse.sub.maxLines = Int.MAX_VALUE // the reason and how to turn it on: shown whole, never cut off
             shizuku = rows.value(this, R.drawable.ic_shield, "Shizuku", "", null)
             grant = rows.value(this, R.drawable.ic_check_circle, "Grant permission", "Shizuku asks whether this app may use it") { requestPermission() }
             open = rows.value(this, R.drawable.ic_arrow_up_right, "Open Shizuku", "") { openShizuku() }

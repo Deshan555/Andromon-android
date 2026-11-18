@@ -340,7 +340,7 @@ internal class CleanerScreen(host: MainActivity) : Screen(host) {
             })
             sizeText.text = when {
                 g.key == "cache" && g.size == 0L -> "–"
-                g.key == "sdm_empty" -> "${g.items.size}"
+                g.key == "sdm_empty" -> plural(g.items.size, "folder")
                 else -> fmtSize(g.size)
             }
             chevron?.rotation = if (g.expanded) 180f else 0f

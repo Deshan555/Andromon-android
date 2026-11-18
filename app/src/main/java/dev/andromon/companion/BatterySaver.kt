@@ -35,9 +35,12 @@ internal object BatterySaver {
 
     fun saverOn(ctx: Context) = ctx.getSystemService(PowerManager::class.java).isPowerSaveMode
 
-    /** Android's own "turn on automatically at X%" (0 = off), or null when it can't be read. */
+    /**
+     * Android's own "turn on automatically at X%" (0 = off), or null when it can't be read. The
+     * setting doesn't exist until someone first changes it, and missing means Android's default: off.
+     */
     fun autoLevel(ctx: Context): Int? =
-        runCatching { Settings.Global.getInt(ctx.contentResolver, "low_power_trigger_level") }.getOrNull()
+        runCatching { Settings.Global.getInt(ctx.contentResolver, "low_power_trigger_level", 0) }.getOrNull()
 
     /** Writes one of the two Battery Saver settings: directly with WRITE_SECURE_SETTINGS, else through [Privileged]. */
     private fun putGlobal(ctx: Context, key: String, value: Int) {

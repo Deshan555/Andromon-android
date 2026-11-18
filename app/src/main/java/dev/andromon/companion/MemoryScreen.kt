@@ -284,7 +284,11 @@ internal class MemoryScreen(host: MainActivity) : Screen(host) {
 
     private fun helperNote(): String {
         val total = running.sumOf { it.bytes }
-        return "${running.size} apps use ${fmtSize(total)}. Full access is on ${access?.how() ?: "through the helper"}. Tap an app for its App info."
+        // Each size is the app's resident memory, which counts memory shared with other apps (system
+        // libraries) once per app: added up it is more than the RAM in use, so no total is shown.
+        return "${running.size} apps are in memory. An app's size includes memory it shares with others, so the sizes add up to " +
+            "more than the RAM in use (${fmtSize(total)} together). Full access is on ${access?.how() ?: "through the helper"}. " +
+            "Tap an app for its App info."
     }
 
     // ---------- turning it on (no helper) ----------
@@ -292,7 +296,7 @@ internal class MemoryScreen(host: MainActivity) : Screen(host) {
     private fun buildUnlock() = ui.column {
         addView(ui.glassCard(16) {
             addView(ui.cardHeader(R.drawable.ic_lock, "See and stop running apps").also {
-                it.second.text = "Needs full access, like App Manager"
+                it.second.text = "Needs privileged access"
             }.first)
             addView(ui.text(14f, color(R.color.ink)) {
                 setLineSpacing(ui.dp(2).toFloat(), 1f)

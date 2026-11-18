@@ -130,7 +130,13 @@ internal object Privileged {
         val asked = runCatching {
             ctx.packageManager.getPackageInfo(ctx.packageName, PackageManager.GET_PERMISSIONS).requestedPermissions?.toList()
         }.getOrNull() ?: emptyList()
-        return asked.filter { it in PrivilegedCommands.SELF_PERMISSIONS && it != SECURE }
+        // The manifest also lists permissions of newer Android versions (photos, notifications,
+        // nearby devices on 13+). Older versions don't know them and can't grant them, so they
+        // left "App permissions" off and reported as refused on every Android 12 phone.
+        return asked.filter {
+            it in PrivilegedCommands.SELF_PERMISSIONS && it != SECURE &&
+                runCatching { ctx.packageManager.getPermissionInfo(it, 0) }.isSuccess
+        }
     }
 
     private const val SECURE = "android.permission.WRITE_SECURE_SETTINGS"

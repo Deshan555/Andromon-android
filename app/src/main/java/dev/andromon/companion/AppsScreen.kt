@@ -195,7 +195,8 @@ internal class AppsScreen(host: MainActivity) : Screen(host) {
             Sort.PACKAGE -> parts += app.pkg
             else -> {
                 app.size?.let { parts += fmtSize(it) }
-                app.versionName?.let { parts += "v$it" }
+                // Some apps put the "v" in their version name already ("v8.0"): don't show "vv8.0".
+                app.versionName?.let { parts += if (it.startsWith("v", ignoreCase = true)) it else "v$it" }
             }
         }
         if (!app.enabled) parts += "Disabled"
