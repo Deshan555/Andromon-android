@@ -63,11 +63,14 @@ kotlin {
     compilerOptions { jvmTarget.set(JvmTarget.JVM_17) }
 }
 
-// The app's only library: Shizuku-API (MIT), for Privileged access through the Shizuku app
-// (ShizukuAccess.kt). Its androidx.annotation dependency is compile-time annotations only and is
-// left out, so the app still ships no AndroidX code.
+// Libraries. All are plain Java/Android code under licences that fit GPL-3.0; none needs AndroidX
+// (the androidx.annotation dependencies are compile-time annotations only and are left out), so
+// the release build still ships no AndroidX code. The licences are listed in Settings › About.
 dependencies {
+    // Privileged access through the Shizuku app (ShizukuAccess.kt). MIT.
     val shizuku = "13.1.5"
     implementation("dev.rikka.shizuku:api:$shizuku") { exclude(group = "androidx.annotation") }
     implementation("dev.rikka.shizuku:provider:$shizuku") { exclude(group = "androidx.annotation") }
+    // Privileged access with root: one root shell, asked for once (RamManager.kt). Apache 2.0.
+    implementation("com.github.topjohnwu.libsu:core:6.0.0") { exclude(group = "androidx.annotation") }
 }

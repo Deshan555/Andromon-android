@@ -401,6 +401,9 @@ internal class SettingsScreen(host: MainActivity) : Screen(host) {
                     "Copyright (c) 2021 RikkaW, MIT License: permission is granted, free of charge, to use, copy, modify, " +
                     "merge, publish, distribute, sublicense and sell copies of the software, provided this copyright and " +
                     "permission notice is included. The software is provided “as is”, without warranty of any kind.\n\n" +
+                    "libsu\n" +
+                    "Root access for Privileged access (com.github.topjohnwu.libsu:core 6.0.0), Copyright John Wu, " +
+                    "Apache License, Version 2.0.\n\n" +
                     "Poppins font\n" +
                     "Copyright 2020 The Poppins Project Authors. SIL Open Font License 1.1. " +
                     "This app includes it subset to Latin characters.\n\n" +

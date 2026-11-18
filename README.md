@@ -160,6 +160,13 @@ Code: `WifiSend.kt` (discovery, HTTP client, transfer), `SendService.kt`, `Share
 
 **Limits:** up to 500 items per transfer. One transfer at a time. Files only, no folders. If one file fails the others still go; what wasn't sent stays in the list to try again (there is no resume inside a file). The address sweep covers /24 networks and the default port 53317 only. While receiving is off, the phone still announces itself to be found by receivers that only answer announcements, so a computer may list the phone although it can't receive yet. Not yet tested on a real phone.
 
+## Scan code, archives, trackers, DNS records, automation, crash reports
+
+| Feature | Where | How |
+|---|---|---|
+| **Root** | Privileged access (`RamManager.kt`) | The helper is started as root through libsu: one root shell, asked for once. |
+
+
 ## API (one JSON request per connection)
 
 | Method | Params | Result |
@@ -293,7 +300,8 @@ Anyone who distributes the APK, including inside Andromon's installer, must also
 | System Cleaner filters, matching engine (`SdmSieve.kt`, `SystemCleaner.kt`) and CorpseFinder (`CorpseFinder.kt`), ported from [SD Maid SE](https://github.com/d4rken-org/sdmaid-se) (commit `ecbe81b`) | `app/src/main/java/…/companion/` | GNU GPL v3, the SD Maid SE authors |
 | SD Maid SE's clutter marker database | `app/src/main/assets/clutter/db_clutter_markers.json` | From SD Maid SE. Its README excludes "assets" (icons, logos, marketing) from the GPL; this data file is included on the understanding that it is covered by the GPL like the code that uses it. |
 | The Freezer: freeze modes, the pending-freeze decision and its defaults, running/stopped detection, freeze on screen off, the list order, and the accessibility method (`Freezer.kt`, `FreezeAccessibility.kt`, `FreezerScreen.kt`, `PowerWatch.kt`, the `freeze` command in `PrivilegedCommands.kt`, `res/xml/freeze_accessibility.xml`), ported from [SuperFreezZ](https://gitlab.com/SuperFreezZ/SuperFreezZ) (commit `267d0f7`) | `app/src/main/java/…/companion/`, `app/src/main/res/xml/` | GNU GPL v3 or later, Copyright (c) 2018 Hocuri; used here under version 3. Each file keeps the original notice |
-| [Shizuku-API](https://github.com/RikkaApps/Shizuku-API) 13.1.5 (`dev.rikka.shizuku:api`, `:provider`, with their `aidl` and `shared` parts), the app's only library, from Maven Central | compiled into the APK | MIT License, Copyright (c) 2021 RikkaW (notice under Settings › About › Third-party notices) |
+| [Shizuku-API](https://github.com/RikkaApps/Shizuku-API) 13.1.5 (`dev.rikka.shizuku:api`, `:provider`, with their `aidl` and `shared` parts), from Maven Central | compiled into the APK | MIT License, Copyright (c) 2021 RikkaW (notice under Settings › About › Third-party notices) |
+| [libsu](https://github.com/topjohnwu/libsu) core 6.0.0, from JitPack (root shell) | compiled into the APK | Apache License 2.0, John Wu |
 | Poppins font, subset to Latin | `app/src/main/res/font/` | SIL Open Font License 1.1 (`res/raw/poppins_ofl.txt`) |
 | [Lucide](https://lucide.dev) icons, converted to vector drawables | `app/src/main/res/drawable/ic_*.xml` | ISC License (`res/raw/lucide_isc.txt`); parts derived from Feather, MIT |
 | Freeze shortcut icon, based on Material Icons (Google LLC) | `res/drawable/ic_freeze_shortcut.xml` | Apache License 2.0 (`res/raw/apache_2_0.txt`) |

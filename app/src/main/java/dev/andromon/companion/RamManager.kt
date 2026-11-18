@@ -3,6 +3,7 @@
 
 package dev.andromon.companion
 
+import com.topjohnwu.superuser.Shell
 import android.app.ActivityManager
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -73,17 +74,25 @@ internal object ShellHelperClient {
         r.getInt("version") to (r.optInt("uid", -1) == 0)
     } catch (_: Exception) { null }
 
+    /** A `su` program is on the phone (asking for root may still be refused). Never shows the root prompt. */
     fun hasSu(): Boolean =
-        listOf("/system/bin/su", "/system/xbin/su", "/sbin/su", "/debug_ramdisk/su", "/system_ext/bin/su")
-            .any { File(it).exists() } ||
+        Shell.isAppGrantedRoot() == true ||
+            listOf("/system/bin/su", "/system/xbin/su", "/sbin/su", "/debug_ramdisk/su", "/system_ext/bin/su")
+                .any { File(it).exists() } ||
             (System.getenv("PATH") ?: "").split(':').any { it.isNotEmpty() && File(it, "su").exists() }
 
-    /** Starts the helper with `su` (the root app asks the person to allow it). True once it answers. */
+    /**
+     * Starts the helper as root through libsu (the root app asks the person to allow it once; libsu
+     * keeps that one root shell instead of asking again for each command). True once the helper
+     * answers. Call off the main thread: waiting for the root prompt blocks.
+     */
     fun startWithRoot(ctx: Context): Boolean {
         ping(ctx)?.let { (v, _) -> if (v < ShellHelper.VERSION) runCatching { call(ctx, "exit") } else return true }
-        val proc = ProcessBuilder("su", "-c", startCommand(ctx.applicationInfo.sourceDir)).redirectErrorStream(true).start()
-        proc.outputStream.close()
-        if (!proc.waitFor(60, TimeUnit.SECONDS)) { proc.destroy(); return false } // root prompt ignored
+        // A shell cached from a refused prompt isn't root: drop it, so this try asks again.
+        Shell.getCachedShell()?.takeIf { !it.isRoot }?.let { runCatching { it.close() } }
+        val shell = runCatching { Shell.getShell() }.getOrNull() ?: return false
+        if (!shell.isRoot) return false // refused, or the prompt was ignored
+        if (!shell.newJob().add(startCommand(ctx.applicationInfo.sourceDir)).exec().isSuccess) return false
         repeat(30) { if (ping(ctx) != null) return true; Thread.sleep(200) } // waits for its broadcast
         return false
     }
