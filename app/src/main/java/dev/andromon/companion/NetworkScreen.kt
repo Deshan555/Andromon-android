@@ -304,7 +304,13 @@ internal class NetworkScreen(host: MainActivity) : Screen(host) {
         busy(true)
         output.visibility = View.VISIBLE
         output.text = "Looking up $h…"
-        background({ NetTools.lookup(h) }) { r ->
+        background({
+            // Addresses from Android's resolver, then the other record types (DnsRecords.kt). A name
+            // with mail records but no address is still an answer.
+            val addresses = runCatching { NetTools.lookup(h) }
+            val records = runCatching { DnsRecords.lookup(host, h) }.getOrDefault(emptyList())
+            if (records.isEmpty()) addresses.getOrThrow() else addresses.getOrDefault(emptyList()) + records
+        }) { r ->
             busy(false)
             output.text = r.fold({ it.joinToString("\n") }, { "No DNS answer for $h (${it.message ?: "not found"})" })
         }

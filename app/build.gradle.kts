@@ -77,4 +77,6 @@ dependencies {
     implementation("com.google.zxing:core:3.5.3")
     // Storage: make and open zip archives, also password-protected ones (Archives.kt). Apache 2.0.
     implementation("net.lingala.zip4j:zip4j:2.11.5")
+    // Network › DNS lookup: mail, name-server, text and other records (DnsRecords.kt). BSD-3-Clause.
+    implementation("dnsjava:dnsjava:3.6.3")
 }

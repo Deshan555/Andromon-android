@@ -12,3 +12,11 @@
 }
 # Shizuku-API's androidx.annotation dependency is left out (build.gradle.kts): annotations only.
 -dontwarn androidx.annotation.**
+
+# dnsjava (DnsRecords.kt): build-time annotations, and slf4j's optional logger binding (without one
+# slf4j logs nothing, which is what the app wants). Its desktop-only helpers (JNA, JNDI) aren't used.
+-dontwarn lombok.**
+-dontwarn org.slf4j.impl.**
+-dontwarn com.sun.jna.**
+-dontwarn javax.naming.**
+-dontwarn sun.net.spi.nameservice.**

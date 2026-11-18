@@ -411,6 +411,12 @@ internal class SettingsScreen(host: MainActivity) : Screen(host) {
                     "Zip4j\n" +
                     "Makes and opens zip archives in Storage (net.lingala.zip4j 2.11.5), Copyright Srikanth Reddy Lingala, " +
                     "Apache License, Version 2.0.\n\n" +
+                    "dnsjava\n" +
+                    "DNS records in Network › Look up (dnsjava 3.6.3), Copyright (c) 1998-2019 Brian Wellington and " +
+                    "2019-2023 dnsjava.org, BSD 3-Clause License: redistribution and use in source and binary forms are " +
+                    "permitted provided the copyright notice, the list of conditions and the disclaimer are retained; the " +
+                    "names of the contributors may not be used to endorse products without permission. Provided “as is”, " +
+                    "without warranty. It uses SLF4J (slf4j-api 1.7.36), Copyright (c) 2004-2017 QOS.ch, MIT License.\n\n" +
                     "Exodus Privacy\n" +
                     "The tracker signatures used by Apps › Trackers come from Exodus Privacy " +
                     "(reports.exodus-privacy.eu.org), whose analysis tools are under the GNU AGPL version 3.\n\n" +
