@@ -1,0 +1,24 @@
+Andromon Companion is the phone side of Andromon, a free desktop app for macOS, Windows and Linux that manages an Android phone over USB or Wi-Fi.
+
+<b>With Andromon on your computer</b>
+<ul>
+<li>Read and send messages, browse contacts, the call log and the calendar</li>
+<li>Browse photos and music, see phone notifications and call alerts on the computer</li>
+<li>Send and receive files over Wi-Fi, with an open file-sharing protocol that other apps speak too</li>
+</ul>
+
+<b>On the phone, without a computer</b>
+<ul>
+<li>Junk Cleaner with rules ported from SD Maid SE</li>
+<li>Freezer for apps you rarely use, ported from SuperFreezZ</li>
+<li>Memory, battery history and battery saver tools</li>
+<li>Storage browser with folder sizes and zip archives</li>
+<li>App manager with APK export and a tracker check based on Exodus Privacy's list</li>
+<li>Network details, speed test, ping and DNS records</li>
+<li>Permission overview and hardware tests</li>
+</ul>
+
+<b>Your data</b>
+Messages, contacts and the call log are read only when Andromon asks over the connection you set up, and only go to that computer. Nothing is uploaded. There are no ads, no trackers and no accounts. Crash reports stay on the phone unless you choose to share one.
+
+Some tools need extra rights that Android only gives over adb, Shizuku or root; the app explains each one where it is needed.

@@ -16,6 +16,9 @@ Users don't install it themselves. Andromon pushes it over USB the first time so
 - **Andromon for macOS, Windows and Linux:** [Releases of the desktop app](https://github.com/Deshan555/Andromon_PC/releases). It installs the companion on the phone by itself, so most people only need this.
 - **Builds that are not released yet:** open the newest green run of the `release` branch under [Actions](https://github.com/Deshan555/Andromon-android/actions/workflows/android.yml) and download **andromon-companion-release** from its **Artifacts** (needs a GitHub sign-in; kept for 90 days). Until the signing secrets are set, that APK is signed with a throw-away key and is named `…-test-key.apk`.
 
+- **Obtainium:** add `https://github.com/Deshan555/Andromon-android` as an app source in [Obtainium](https://github.com/ImranR98/Obtainium) and it installs each published release and tells you about new ones. Nothing in the app is needed for this.
+- **F-Droid:** the app has no closed parts, trackers or network services of its own, so it qualifies. The store texts are in [`fastlane/metadata/android/en-US`](fastlane/metadata/android/en-US) and a draft build recipe is in [`docs/fdroid-recipe.yml`](docs/fdroid-recipe.yml); it is not listed until that recipe is submitted to F-Droid's `fdroiddata` repository.
+
 Releases are made by the build as **drafts**: a release shows on the Releases page once it has been published (see [Builds and releases](#builds-and-releases)).
 
 ## How it works

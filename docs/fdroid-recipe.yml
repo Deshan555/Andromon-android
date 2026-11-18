@@ -1,0 +1,27 @@
+# Draft F-Droid build recipe for metadata/dev.andromon.companion.yml in
+# https://gitlab.com/fdroid/fdroiddata. Not submitted. Before submitting: publish a tagged
+# release, put that tag's commit hash under "commit", and check the file with `fdroid lint`.
+Categories:
+  - System
+  - Connectivity
+License: GPL-3.0-only
+SourceCode: https://github.com/Deshan555/Andromon-android
+IssueTracker: https://github.com/Deshan555/Andromon-android/issues
+
+AutoName: Andromon Companion
+
+RepoType: git
+Repo: https://github.com/Deshan555/Andromon-android.git
+
+Builds:
+  - versionName: 0.29.0
+    versionCode: 29
+    commit: <commit hash of the release tag>
+    subdir: app
+    gradle:
+      - yes
+
+AutoUpdateMode: Version
+UpdateCheckMode: Tags
+CurrentVersion: 0.29.0
+CurrentVersionCode: 29
