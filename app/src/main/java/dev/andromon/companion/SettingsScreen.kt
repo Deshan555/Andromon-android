@@ -43,81 +43,158 @@ internal class SettingsScreen(host: MainActivity) : Screen(host) {
     /** A larger text size is chosen: rows show their whole subtitle instead of cutting it at two lines. */
     private val bigText = Prefs.textSize(host) != Prefs.TextSize.SYSTEM
 
-    override fun build(): View = ui.column {
-        addView(ui.topBar("Settings", host::goHome).first)
+    /** One page of Settings: a row on the first page that opens [box]. */
+    private class Page(val key: String, val icon: Int, val title: String, val sub: String, val box: LinearLayout)
 
-        addView(ui.section("Appearance"), ui.lp(top = 28))
-        addView(ui.glassCard(6) {
-            themeValue = valueRow(R.drawable.ic_moon, "Theme", "Light, dark or the same as your phone") { pickTheme() }
-        }, ui.lp(top = 12))
-
-        // Each of these redraws the app (like Theme), so the switches only act on a real change.
-        addView(ui.section("Accessibility"), ui.lp(top = 26))
-        addView(ui.glassCard(6) {
-            textSizeValue = valueRow(R.drawable.ic_text_size, "Text size", "Makes the text in this app bigger") { pickTextSize() }
-            contrastSwitch = switchRow(R.drawable.ic_contrast, "High contrast", "Grey text and thin lines become as dark as the main text") { on ->
-                if (on != Prefs.highContrast(host)) { Prefs.setHighContrast(host, on); host.recreate() }
-            }
-            boldSwitch = switchRow(R.drawable.ic_bold, "Bold text", "Heavier letters everywhere in the app") { on ->
-                if (on != Prefs.boldText(host)) { Prefs.setBoldText(host, on); host.recreate() }
-            }
-            motionSwitch = switchRow(R.drawable.ic_motion, "Reduce motion", "Gauges jump to their value and pages don't glide when they scroll") { on ->
-                Prefs.setReduceMotion(host, on)
-            }
-            valueRow(R.drawable.ic_accessibility, "Phone accessibility settings", "TalkBack, magnification, colour correction and more") {
-                runCatching { host.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) }
-            }.text = ""
-        }, ui.lp(top = 12))
-
-        addView(ui.section("PC link"), ui.lp(top = 26))
-        addView(ui.glassCard(6) {
-            linkSwitch = switchRow(R.drawable.ic_usb, "Start when the app opens",
-                "Andromon can still start the link over USB when this is off") { on ->
-                Prefs.setStartLinkOnOpen(host, on)
-            }
-        }, ui.lp(top = 12))
-
-        addView(ui.section("Tools"), ui.lp(top = 26))
-        addView(ui.glassCard(6) {
-            rulesValue = valueRow(R.drawable.ic_broom, "Cleaning rules", "What the Junk Cleaner looks for") { pickRules() }
-            largeValue = valueRow(R.drawable.ic_big_file, "Large files", "Size from which the Junk Cleaner lists a file") { pickLargeSize() }
-            dataSwitch = switchRow(R.drawable.ic_speed, "Save data on speed tests",
-                "Always run the shorter test (about 35 MB), also on Wi‑Fi") { on -> Prefs.setSaveData(host, on) }
-        }, ui.lp(top = 12))
-
-        addView(ui.section("Access"), ui.lp(top = 26))
-        addView(ui.glassCard(6) {
-            filesValue = valueRow(R.drawable.ic_folder, "All files access", "Lets the Junk Cleaner scan your storage") {
-                openAppSetting(if (Build.VERSION.SDK_INT >= 30) Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION else null)
-            }
-            usageValue = valueRow(R.drawable.ic_apps, "Usage access", "Lets the app measure app sizes and caches") {
-                openAppSetting(Settings.ACTION_USAGE_ACCESS_SETTINGS)
-            }
-            notifyValue = valueRow(R.drawable.ic_info, "Notifications", "PC link status and Wi‑Fi receive requests") {
-                runCatching {
-                    host.startActivity(Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
-                        .putExtra(Settings.EXTRA_APP_PACKAGE, host.packageName))
-                }.onFailure { openAppSetting(null) }
-            }
-            valueRow(R.drawable.ic_lock, "App permissions", "Messages, contacts, call log and more") { openAppSetting(null) }
-                .text = ""
-        }, ui.lp(top = 12))
-
-        // Privileged access: Shizuku, the Andromon helper, root (PrivilegedPanel.kt)
-        privileged.addTo(this)
-
-        addView(ui.section("About"), ui.lp(top = 26))
-        addView(ui.glassCard(6) {
-            val version = runCatching { host.packageManager.getPackageInfo(host.packageName, 0).versionName }.getOrNull()
-            valueRow(R.drawable.ic_desktop, "Andromon Companion", "Helper app for Andromon on your computer", null).text =
-                version?.let { "v$it" } ?: ""
-            valueRow(R.drawable.ic_shield, "Your data", "What the app reads and where it goes") { showPrivacy() }.text = ""
-            valueRow(R.drawable.ic_lock, "Licence", "Free software under the GNU GPL version 3") { showLicence() }.text = "GPL-3.0"
-            valueRow(R.drawable.ic_file, "Third-party notices", "SD Maid SE, SuperFreezZ, Shizuku-API, Poppins and Lucide icons") { showThirdParty() }.text = ""
-        }, ui.lp(top = 12))
+    companion object {
+        /** Page to open the next time Settings is shown (a link from another screen, or the page that was open before a redraw). */
+        var pending: String? = null
     }
 
-    override fun onShow() { refresh(); privileged.onShow() }
+    private val pages = mutableListOf<Page>()
+    private var open: Page? = null
+    private lateinit var title: TextView
+    private lateinit var backBtn: View
+    private lateinit var menu: LinearLayout
+
+    /**
+     * The first page lists the pages; a tap opens one in place, and Back (or the arrow beside the
+     * title) returns to the list. Keeps every page short enough to need little or no scrolling.
+     */
+    override fun build(): View = ui.column {
+        addView(ui.row {
+            gravity = android.view.Gravity.CENTER_VERTICAL
+            backBtn = ui.circleButton(R.drawable.ic_back, "Back to Settings") { showPage(null) }
+            addView(backBtn, ui.lp(w = ui.dp(42), h = ui.dp(42)))
+            title = ui.text(28f, color(R.color.ink), ui.light) {
+                letterSpacing = -0.02f; maxLines = 1; ellipsize = TextUtils.TruncateAt.END
+                minimumHeight = ui.dp(42); gravity = android.view.Gravity.CENTER_VERTICAL
+                if (Build.VERSION.SDK_INT >= 28) isAccessibilityHeading = true
+            }
+            addView(title, ui.lp(w = 0, weight = 1f, start = 2))
+        })
+
+        page("display", R.drawable.ic_moon, "Display", "Theme, text size, contrast and motion") {
+            addView(ui.glassCard(6) {
+                themeValue = valueRow(R.drawable.ic_moon, "Theme", "Light, dark or the same as your phone") { pickTheme() }
+            }, ui.lp(top = 20))
+            // Each of these redraws the app (like Theme), so the switches only act on a real change.
+            addView(ui.section("Accessibility"), ui.lp(top = 26))
+            addView(ui.glassCard(6) {
+                textSizeValue = valueRow(R.drawable.ic_text_size, "Text size", "Makes the text in this app bigger") { pickTextSize() }
+                contrastSwitch = switchRow(R.drawable.ic_contrast, "High contrast", "Grey text and thin lines become as dark as the main text") { on ->
+                    if (on != Prefs.highContrast(host)) { Prefs.setHighContrast(host, on); redraw() }
+                }
+                boldSwitch = switchRow(R.drawable.ic_bold, "Bold text", "Heavier letters everywhere in the app") { on ->
+                    if (on != Prefs.boldText(host)) { Prefs.setBoldText(host, on); redraw() }
+                }
+                motionSwitch = switchRow(R.drawable.ic_motion, "Reduce motion", "Gauges jump to their value and pages don't glide when they scroll") { on ->
+                    Prefs.setReduceMotion(host, on)
+                }
+                valueRow(R.drawable.ic_accessibility, "Phone accessibility settings", "TalkBack, magnification, colour correction and more") {
+                    runCatching { host.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) }
+                }.text = ""
+            }, ui.lp(top = 12))
+        }
+
+        page("link", R.drawable.ic_usb, "PC link", "When the link to your computer starts") {
+            addView(ui.glassCard(6) {
+                linkSwitch = switchRow(R.drawable.ic_usb, "Start when the app opens",
+                    "Andromon can still start the link over USB when this is off") { on ->
+                    Prefs.setStartLinkOnOpen(host, on)
+                }
+            }, ui.lp(top = 20))
+        }
+
+        page("tools", R.drawable.ic_broom, "Tools", "Junk Cleaner rules, speed tests and automation") {
+            addView(ui.glassCard(6) {
+                rulesValue = valueRow(R.drawable.ic_broom, "Cleaning rules", "What the Junk Cleaner looks for") { pickRules() }
+                largeValue = valueRow(R.drawable.ic_big_file, "Large files", "Size from which the Junk Cleaner lists a file") { pickLargeSize() }
+                dataSwitch = switchRow(R.drawable.ic_speed, "Save data on speed tests",
+                    "Always run the shorter test (about 35 MB), also on Wi‑Fi") { on -> Prefs.setSaveData(host, on) }
+            }, ui.lp(top = 20))
+        }
+
+        page("access", R.drawable.ic_lock, "Access", "Files, usage, notifications and permissions") {
+            addView(ui.glassCard(6) {
+                filesValue = valueRow(R.drawable.ic_folder, "All files access", "Lets the Junk Cleaner scan your storage") {
+                    openAppSetting(if (Build.VERSION.SDK_INT >= 30) Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION else null)
+                }
+                usageValue = valueRow(R.drawable.ic_apps, "Usage access", "Lets the app measure app sizes and caches") {
+                    openAppSetting(Settings.ACTION_USAGE_ACCESS_SETTINGS)
+                }
+                notifyValue = valueRow(R.drawable.ic_info, "Notifications", "PC link status and Wi‑Fi receive requests") {
+                    runCatching {
+                        host.startActivity(Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                            .putExtra(Settings.EXTRA_APP_PACKAGE, host.packageName))
+                    }.onFailure { openAppSetting(null) }
+                }
+                valueRow(R.drawable.ic_lock, "App permissions", "Messages, contacts, call log and more") { openAppSetting(null) }
+                    .text = ""
+            }, ui.lp(top = 20))
+        }
+
+        // Shizuku, the Andromon helper, root (PrivilegedPanel.kt)
+        page("privileged", R.drawable.ic_key, "Privileged access", "Shizuku, the Andromon helper or root") {
+            privileged.addTo(this)
+        }
+
+        page("about", R.drawable.ic_info, "About", "Version, your data and licences") {
+            addView(ui.glassCard(6) {
+                val version = runCatching { host.packageManager.getPackageInfo(host.packageName, 0).versionName }.getOrNull()
+                valueRow(R.drawable.ic_desktop, "Andromon Companion", "Helper app for Andromon on your computer", null).text =
+                    version?.let { "v$it" } ?: ""
+                valueRow(R.drawable.ic_shield, "Your data", "What the app reads and where it goes") { showPrivacy() }.text = ""
+                valueRow(R.drawable.ic_lock, "Licence", "Free software under the GNU GPL version 3") { showLicence() }.text = "GPL-3.0"
+                valueRow(R.drawable.ic_file, "Third-party notices", "SD Maid SE, SuperFreezZ, Exodus Privacy, the libraries, Poppins and Lucide icons") { showThirdParty() }.text = ""
+            }, ui.lp(top = 20))
+        }
+
+        menu = ui.glassCard(6) {
+            for (p in pages) valueRow(p.icon, p.title, p.sub) { showPage(p) }.text = ""
+        }
+        addView(menu, 1, ui.lp(top = 20))
+        showPage(null)
+    }
+
+    /** Declares a page: built now, hidden until its row on the first page is tapped. */
+    private fun LinearLayout.page(key: String, icon: Int, title: String, sub: String, content: LinearLayout.() -> Unit) {
+        val box = ui.column(content).apply { visibility = View.GONE }
+        pages += Page(key, icon, title, sub, box)
+        addView(box)
+    }
+
+    /** Shows [page], or the list of pages when it is null. */
+    private fun showPage(page: Page?) {
+        open = page
+        title.text = page?.title ?: "Settings"
+        backBtn.visibility = if (page == null) View.GONE else View.VISIBLE
+        title.setPadding(if (page == null) 0 else ui.dp(10), 0, 0, 0)
+        menu.visibility = if (page == null) View.VISIBLE else View.GONE
+        for (p in pages) p.box.visibility = if (p === page) View.VISIBLE else View.GONE
+        host.scrollToTop()
+    }
+
+    /** Redraws the whole app for a new look and comes back to the page that is open. */
+    private fun redraw() {
+        pending = open?.key
+        host.recreate()
+    }
+
+    override fun onBack(): Boolean {
+        if (open == null) return false
+        showPage(null)
+        return true
+    }
+
+    override fun onLeave() { if (pending == null) showPage(null) }
+
+    override fun onShow() {
+        view // builds the pages on first use
+        pending?.let { key -> pages.firstOrNull { it.key == key }?.let(::showPage) }
+        pending = null
+        refresh(); privileged.onShow()
+    }
 
     override fun onHide() = privileged.onHide()
 
@@ -211,7 +288,7 @@ internal class SettingsScreen(host: MainActivity) : Screen(host) {
                 d.dismiss()
                 if (which != current) {
                     Prefs.setTheme(host, options[which])
-                    host.recreate() // reloads every colour; the Settings screen is restored
+                    redraw() // reloads every colour; Settings opens on the same page again
                 }
             }
             .setNegativeButton("Cancel", null)
@@ -227,7 +304,7 @@ internal class SettingsScreen(host: MainActivity) : Screen(host) {
                 d.dismiss()
                 if (which != current) {
                     Prefs.setTextSize(host, options[which])
-                    host.recreate() // every text is measured again at the new size
+                    redraw() // every text is measured again at the new size
                 }
             }
             .setNegativeButton("Cancel", null)

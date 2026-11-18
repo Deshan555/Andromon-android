@@ -33,7 +33,6 @@ internal class PrivilegedPanel(private val host: MainActivity) {
     private val onShizuku: () -> Unit = { refresh() }
 
     fun addTo(parent: LinearLayout) {
-        parent.addView(ui.section("Privileged access"), ui.lp(top = 26))
         parent.addView(ui.glassCard(6) {
             inUse = rows.value(this, R.drawable.ic_key, "In use", "", null)
             shizuku = rows.value(this, R.drawable.ic_shield, "Shizuku", "", null)
@@ -50,7 +49,7 @@ internal class PrivilegedPanel(private val host: MainActivity) {
                 "rights of adb (or root). Shizuku lends them on the phone itself; Andromon on your computer can start a helper " +
                 "for the same purpose (Shizuku › Phone RAM manager). Either way only fixed, built-in commands are run, and only " +
                 "by this app.")
-        }, ui.lp(top = 12))
+        }, ui.lp(top = 20))
     }
 
     fun onShow() {

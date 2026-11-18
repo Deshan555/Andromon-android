@@ -94,7 +94,7 @@ internal class FreezerScreen(host: MainActivity) : Screen(host) {
 
         addView(ui.section("Method"), ui.lp(top = 26))
         addView(ui.glassCard(6) {
-            methodRow = rows.value(this, R.drawable.ic_key, "How apps are stopped", "") { host.show("Settings") }
+            methodRow = rows.value(this, R.drawable.ic_key, "How apps are stopped", "") { host.showSettings("privileged") }
             a11yRow = rows.switch(this, R.drawable.ic_accessibility, "Accessibility method",
                 "For phones without Shizuku, the helper or root: presses “Force stop” for you in Android's App info") { on -> toggleAccessibility(on) }
         }, ui.lp(top = 12))

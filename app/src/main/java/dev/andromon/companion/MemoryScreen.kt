@@ -305,7 +305,7 @@ internal class MemoryScreen(host: MainActivity) : Screen(host) {
             }, ui.lp(top = 14))
             unlockNote = ui.text(13f, color(R.color.ink_soft)) { visibility = View.GONE }
             addView(unlockNote, ui.lp(top = 10))
-            addView(ui.pill("Use Shizuku", color(R.color.fab), color(R.color.on_fab), R.drawable.ic_key) { host.show("Settings") },
+            addView(ui.pill("Use Shizuku", color(R.color.fab), color(R.color.on_fab), R.drawable.ic_key) { host.showSettings("privileged") },
                 ui.lp(w = WRAP_CONTENT, top = 12))
             if (ShellHelperClient.hasSu()) {
                 rootBtn = ui.pill("Use root instead", color(R.color.fab), color(R.color.on_fab), R.drawable.ic_shield) { startRoot() }

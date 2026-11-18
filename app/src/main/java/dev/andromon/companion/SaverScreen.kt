@@ -95,7 +95,7 @@ internal class SaverScreen(host: MainActivity) : Screen(host) {
                 }
             }
         }, ui.lp(top = 12))
-        setupPill = ui.pill("Set up privileged access", color(R.color.fab), color(R.color.on_fab), R.drawable.ic_key) { host.show("Settings") }
+        setupPill = ui.pill("Set up privileged access", color(R.color.fab), color(R.color.on_fab), R.drawable.ic_key) { host.showSettings("privileged") }
         addView(setupPill, ui.lp(w = WRAP_CONTENT, top = 12))
 
         addView(ui.section("Deep sleep"), ui.lp(top = 26))
@@ -414,7 +414,7 @@ internal class SaverScreen(host: MainActivity) : Screen(host) {
     private fun limitMenu(l: Limit) {
         val items = ArrayList<Pair<String, () -> Unit>>()
         fun change(what: String, task: () -> Unit) {
-            if (active == null) { rows.message(what, "$NEEDS. ${Privileged.HOW_TO}", "Open Settings") { host.show("Settings") }; return }
+            if (active == null) { rows.message(what, "$NEEDS. ${Privileged.HOW_TO}", "Open Settings") { host.showSettings("privileged") }; return }
             work(task) { e ->
                 if (e != null) rows.message(what, "Android answered: ${e.message}")
                 load()

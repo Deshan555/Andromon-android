@@ -27,6 +27,8 @@ internal abstract class Screen(protected val host: MainActivity) {
     open fun onShow() {}
     /** Called when the screen is hidden (also on activity pause). */
     open fun onHide() {}
+    /** Called when another screen replaces this one (not on activity pause). */
+    open fun onLeave() {}
     open fun onPermissionsResult() {}
     open fun onActivityResult(requestCode: Int) {}
     /** Back was pressed. Return true when the screen used it (e.g. to leave a sub-page); false goes Home. */

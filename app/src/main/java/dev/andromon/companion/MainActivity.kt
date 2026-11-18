@@ -25,8 +25,7 @@ import android.window.OnBackInvokedDispatcher
 /**
  * The app's only activity. Opening it (or Andromon starting it with --ez autostart true)
  * starts the PC link service. A bottom bar docked to the screen edge switches between Home,
- * PC link, Cleaner (the round centre button), Network and Receive; Memory, Battery, Apps and
- * Settings open from Home.
+ * PC link, Receive and Settings; every other tool opens from its tile on Home.
  */
 class MainActivity : Activity() {
 
@@ -55,7 +54,7 @@ class MainActivity : Activity() {
             FreezerScreen(this), SaverScreen(this))
     }
     /** Screens in the bottom bar, left to right. */
-    private val navOrder = listOf("Home", "PC link", "Cleaner", "Network", "Receive", "Settings")
+    private val navOrder = listOf("Home", "PC link", "Receive", "Settings")
     private var current = -1
     private var bars = listOf(0, 0, 0, 0)
     private var imeBottom = 0
@@ -130,6 +129,13 @@ class MainActivity : Activity() {
 
     internal fun goHome() = show(0)
 
+    /** Opens Settings on one of its pages (a [SettingsScreen] page key such as "privileged"). */
+    internal fun showSettings(page: String) {
+        SettingsScreen.pending = page
+        val i = screenIndex("Settings")
+        if (i == current) screens[i].onShow() else show(i)
+    }
+
     internal fun screenIndex(name: String) = screens.indexOfFirst { it.name == name }
 
     override fun onSaveInstanceState(outState: Bundle) {
@@ -169,7 +175,7 @@ class MainActivity : Activity() {
 
     internal fun show(index: Int) {
         if (index == current) return
-        if (current >= 0) screens[current].onHide()
+        if (current >= 0) { screens[current].onHide(); screens[current].onLeave() }
         current = index
         val screen = screens[index]
         scroll.removeAllViews()
