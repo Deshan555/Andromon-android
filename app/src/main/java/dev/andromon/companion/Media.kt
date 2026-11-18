@@ -34,6 +34,16 @@ import java.util.concurrent.TimeUnit
  */
 internal class Media(private val ctx: Context) {
 
+    private companion object {
+        /** Most images compared in one go (the newest); more would keep the PC waiting too long. */
+        const val SIMILAR_MAX = 20_000
+        /** Perceptual hashes by id, kept while the companion runs so a second search is quick. */
+        val hashes = ConcurrentHashMap<Long, PHash>()
+    }
+
+    /** [hash] null: the thumbnail couldn't be read. Valid while the file's [modified] time is the same. */
+    private class PHash(val modified: Long, val hash: Long?)
+
     private val cr = ctx.contentResolver
 
     fun call(method: String, p: JSONObject): Any = when (method) {
@@ -42,6 +52,7 @@ internal class Media(private val ctx: Context) {
         "media.delete" -> delete(kind(p), p.getJSONArray("ids"))
         "media.scan" -> scan(p.getJSONArray("paths").let { a -> List(a.length()) { a.getString(it) } })
         "media.duplicates" -> duplicates(kind(p))
+        "media.similar" -> similar(kind(p), p.optInt("threshold", 10).coerceIn(0, 32))
         else -> throw IllegalArgumentException("Unknown method: $method")
     }
 
@@ -233,6 +244,124 @@ internal class Media(private val ctx: Context) {
             }
         }
         return out
+    }
+
+    // ---------- similar photos ----------
+
+    /**
+     * Groups of photos that look alike: the same picture saved again, resized, re-compressed or
+     * slightly edited, and burst shots. Each photo gets a 64-bit "difference hash" of its small
+     * thumbnail (see [dHash]); photos whose hashes differ in at most [threshold] bits are joined,
+     * and so are chains of them. Exact copies are found too.
+     *
+     * Each group: {ids (oldest first, like media.duplicates), totalSize, items:[{id, size, date,
+     * width, height}]}, the groups with the most bytes first. Only the newest [SIMILAR_MAX]
+     * photos are compared.
+     */
+    private fun similar(kind: String, threshold: Int): JSONArray {
+        require(kind == "image") { "only photos (kind image) can be compared" }
+        requireRead(kind)
+        class F(val id: Long, val size: Long, val modified: Long, val date: Long, val width: Long, val height: Long)
+        val all = ArrayList<F>()
+        cr.query(collection(kind), arrayOf(MediaStore.MediaColumns._ID, MediaStore.MediaColumns.SIZE, MediaStore.MediaColumns.DATE_MODIFIED,
+            MediaStore.Images.Media.DATE_TAKEN, MediaStore.Images.Media.WIDTH, MediaStore.Images.Media.HEIGHT),
+            "${MediaStore.MediaColumns.SIZE} > 0", null, "${MediaStore.MediaColumns.DATE_MODIFIED} DESC")?.use { c ->
+            while (c.moveToNext() && all.size < SIMILAR_MAX) {
+                val modified = c.getLong(2)
+                // Same "date" as media.list: when it was taken, else when the file last changed.
+                val taken = if (c.isNull(3)) 0 else c.getLong(3)
+                all += F(c.getLong(0), c.getLong(1), modified, if (taken > 0) taken else modified * 1000, c.getLong(4), c.getLong(5))
+            }
+        }
+
+        // Thumbnails come from MediaStore's cache, so most of the time goes to waiting on it:
+        // a few at once is quicker. Hashes already worked out for an unchanged file are reused.
+        val pool = Executors.newFixedThreadPool(4)
+        try {
+            for (f in all) {
+                if (hashes[f.id]?.modified == f.modified) continue
+                pool.execute { hashes[f.id] = PHash(f.modified, dHash(f.id)) }
+            }
+            pool.shutdown()
+            pool.awaitTermination(30, TimeUnit.MINUTES)
+        } finally {
+            pool.shutdownNow()
+        }
+
+        val items = all.filter { hashes[it.id]?.modified == it.modified && hashes[it.id]?.hash != null }
+        val h = LongArray(items.size) { hashes[items[it].id]!!.hash!! }
+        // Long side over short side (0 when unknown), the same however the photo is turned. Plain or
+        // smooth pictures (a gradient, a white page) have nearly empty hashes and matched pictures of
+        // another shape; copies, resized photos and burst shots keep their shape.
+        val shape = FloatArray(items.size) { i ->
+            val a = maxOf(items[i].width, items[i].height); val b = minOf(items[i].width, items[i].height)
+            if (b > 0) a.toFloat() / b else 0f
+        }
+        fun sameShape(i: Int, j: Int) = shape[i] == 0f || shape[j] == 0f ||
+            kotlin.math.abs(shape[i] - shape[j]) <= 0.1f * minOf(shape[i], shape[j])
+        // Union-find over every pair: 20 000 photos are 200 million cheap bit counts, a few seconds.
+        val parent = IntArray(items.size) { it }
+        fun root(i: Int): Int {
+            var r = i
+            while (parent[r] != r) { parent[r] = parent[parent[r]]; r = parent[r] }
+            return r
+        }
+        for (i in h.indices) for (j in i + 1 until h.size) {
+            if (java.lang.Long.bitCount(h[i] xor h[j]) <= threshold && sameShape(i, j)) {
+                val a = root(i); val b = root(j)
+                if (a != b) parent[b] = a
+            }
+        }
+        val out = JSONArray()
+        items.indices.groupBy(::root).values.filter { it.size > 1 }
+            .map { g -> g.map { items[it] }.sortedBy { it.date } }
+            .sortedByDescending { g -> g.sumOf { it.size } }
+            .forEach { g ->
+                out.put(JSONObject()
+                    .put("ids", JSONArray(g.map { it.id }))
+                    .put("totalSize", g.sumOf { it.size })
+                    .put("items", JSONArray(g.map {
+                        JSONObject().put("id", it.id).put("size", it.size).put("date", it.date).put("width", it.width).put("height", it.height)
+                    })))
+            }
+        return out
+    }
+
+    /**
+     * A 64-bit difference hash of a photo: its thumbnail shrunk to 9×8 grey squares, one bit per
+     * pair of neighbours in a row (is the left one brighter?). Resizing, re-compressing and small
+     * colour changes keep most bits; a different picture changes about half of them.
+     */
+    @Suppress("DEPRECATION")
+    private fun dHash(id: Long): Long? = try {
+        val bmp: Bitmap? = if (Build.VERSION.SDK_INT >= 29) cr.loadThumbnail(uri("image", id), Size(64, 64), null)
+            else MediaStore.Images.Thumbnails.getThumbnail(cr, id, MediaStore.Images.Thumbnails.MICRO_KIND, null)
+        bmp?.let { b ->
+            val w = b.width; val hgt = b.height
+            val px = IntArray(w * hgt)
+            b.getPixels(px, 0, w, 0, 0, w, hgt)
+            b.recycle()
+            // Average the brightness over each of the 9×8 areas (more even than scaling the bitmap).
+            val grey = DoubleArray(72)
+            for (cy in 0 until 8) for (cx in 0 until 9) {
+                val x0 = cx * w / 9; val x1 = maxOf(x0 + 1, (cx + 1) * w / 9)
+                val y0 = cy * hgt / 8; val y1 = maxOf(y0 + 1, (cy + 1) * hgt / 8)
+                var sum = 0.0
+                for (y in y0 until minOf(y1, hgt)) for (x in x0 until minOf(x1, w)) {
+                    val c = px[y * w + x]
+                    sum += 0.299 * (c shr 16 and 0xff) + 0.587 * (c shr 8 and 0xff) + 0.114 * (c and 0xff)
+                }
+                grey[cy * 9 + cx] = sum / ((minOf(x1, w) - x0) * (minOf(y1, hgt) - y0)).coerceAtLeast(1)
+            }
+            var bits = 0L
+            for (cy in 0 until 8) for (cx in 0 until 8) {
+                bits = bits shl 1
+                if (grey[cy * 9 + cx] > grey[cy * 9 + cx + 1]) bits = bits or 1L
+            }
+            bits
+        }
+    } catch (_: Exception) {
+        null
     }
 
     private fun hash(kind: String, id: Long, quick: Boolean): String? = try {
