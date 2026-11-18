@@ -74,6 +74,59 @@ internal object Phone {
         )
     }
 
+    /**
+     * How much the battery holds now and when it was new, as far as Android lets an app see it.
+     * Each value is null when the phone doesn't say; nothing is made up.
+     */
+    class Capacity(
+        val fullUah: Int?,            // a full charge now, in µAh
+        val fullEstimated: Boolean,   // worked out from the charge counter and the level, not reported as such
+        val designUah: Int?,          // when new: the maker's figure from Android's power profile
+        val healthPercent: Int?,      // full vs design, or Android's own figure when [healthReported]
+        val healthReported: Boolean,  // Android 14+ "state of health"; needs BATTERY_STATS, which Andromon can grant over USB
+    )
+
+    /** BatteryManager.BATTERY_PROPERTY_STATE_OF_HEALTH (Android 14), a system API. */
+    private const val PROPERTY_STATE_OF_HEALTH = 10
+
+    /** The power profile only changes with the system, so it is read once. */
+    private var design: Int? = null
+    private var designRead = false
+
+    @Synchronized
+    private fun designUah(ctx: Context): Int? {
+        if (!designRead) {
+            designRead = true
+            design = runCatching {
+                // Hidden but long-standing (battery apps read it too): the capacity the maker put
+                // in the power profile, in mAh. Emulators and some phones keep Android's placeholder.
+                val c = Class.forName("com.android.internal.os.PowerProfile")
+                val profile = c.getConstructor(Context::class.java).newInstance(ctx.applicationContext)
+                c.getMethod("getBatteryCapacity").invoke(profile) as Double
+            }.getOrNull()?.takeIf { it in 300.0..30_000.0 && it != 1000.0 }?.let { (it * 1000).toInt() } // 1000: the placeholder
+        }
+        return design
+    }
+
+    fun capacity(ctx: Context, b: Battery = battery(ctx)): Capacity {
+        val bm = ctx.getSystemService(BatteryManager::class.java)
+        val reported = if (Build.VERSION.SDK_INT >= 34) {
+            runCatching { bm.getIntProperty(PROPERTY_STATE_OF_HEALTH) }.getOrNull()?.takeIf { it in 1..100 }
+        } else null
+        // The charge counter is what is left now; at a known level that gives a full charge. Below
+        // 30 % one percent of rounding is too much of it, so no estimate then.
+        var full: Int? = null
+        val counter = runCatching { bm.getIntProperty(BatteryManager.BATTERY_PROPERTY_CHARGE_COUNTER) }.getOrDefault(0)
+        if (counter > 0 && b.level >= 30) {
+            var est = counter.toLong() * 100 / b.level
+            if (est in 300..30_000) est *= 1000 // some phones count in mAh
+            if (est in 300_000..30_000_000) full = est.toInt()
+        }
+        val design = designUah(ctx)
+        val ratio = if (full != null && design != null) (full.toLong() * 100 / design).toInt().takeIf { it in 20..130 }?.coerceAtMost(100) else null
+        return Capacity(full, full != null, design, reported ?: ratio, reported != null)
+    }
+
     /** Fraction of RAM in use. */
     fun memoryUsed(ctx: Context): Float {
         val m = ActivityManager.MemoryInfo().also { ctx.getSystemService(ActivityManager::class.java).getMemoryInfo(it) }

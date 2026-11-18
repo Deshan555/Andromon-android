@@ -10,6 +10,8 @@ import android.app.job.JobService
 import android.content.ComponentName
 import android.content.Context
 import android.graphics.drawable.Drawable
+import org.json.JSONArray
+import org.json.JSONObject
 import java.io.File
 import java.io.IOException
 import java.io.RandomAccessFile
@@ -123,6 +125,42 @@ internal object BatteryLog {
         return runCatching { readAll(file(ctx)) }.getOrDefault(emptyList())
             .filter { it.level in 0..100 && it.time <= now + 60_000 && now - it.time <= windowMs }
             .sortedBy { it.time }
+    }
+
+    /**
+     * The battery's condition and the samples kept here (at most the last 7 days).
+     * Values the phone doesn't tell an app are null; the PC can read the kernel's own figures
+     * (/sys/class/power_supply/battery) as the shell user and fill them in.
+     */
+    fun healthReport(ctx: Context): JSONObject {
+        record(ctx) // so the history ends with now
+        val b = Phone.battery(ctx)
+        val cap = Phone.capacity(ctx, b)
+        fun orNull(v: Any?) = v ?: JSONObject.NULL
+        val history = JSONArray()
+        for (s in read(ctx)) {
+            history.put(JSONObject().put("time", s.time).put("level", s.level).put("charging", s.charging)
+                .put("tempC", orNull(s.tempC?.let { Math.round(it * 10) / 10.0 })).put("voltageMv", orNull(s.voltageMv)))
+        }
+        return JSONObject()
+            .put("level", b.level)
+            .put("charging", b.charging)
+            .put("plugged", orNull(b.plugged))
+            .put("health", b.healthText)
+            .put("tempC", orNull(b.tempC?.let { Math.round(it * 10) / 10.0 }))
+            .put("voltageMv", orNull(b.voltageMv))
+            .put("technology", orNull(b.technology))
+            .put("cycleCount", orNull(b.cycles))
+            .put("chargeFullUah", orNull(cap.fullUah))
+            .put("chargeFullEstimated", cap.fullEstimated)
+            .put("chargeFullDesignUah", orNull(cap.designUah))
+            .put("healthPercent", orNull(cap.healthPercent))
+            .put("healthPercentFrom", when {
+                cap.healthPercent == null -> JSONObject.NULL
+                cap.healthReported -> "android"
+                else -> "estimate"
+            })
+            .put("history", history)
     }
 
     /**

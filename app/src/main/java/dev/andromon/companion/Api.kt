@@ -37,6 +37,7 @@ class Api(private val ctx: Context) {
         "call.end" -> CallWatch.end(ctx)
         "contacts.update", "contacts.delete", "contacts.photo", "contacts.setPhoto" -> ContactsEdit(ctx).call(method, p)
         "sms.restore", "calls.restore" -> Restore(ctx).call(method, p)
+        "battery.health" -> BatteryLog.healthReport(ctx)
         else -> when {
             method.startsWith("mms.") -> Mms(ctx).call(method, p)
             method.startsWith("calendar.") -> CalendarApi(ctx).call(method, p)

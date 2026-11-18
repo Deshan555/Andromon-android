@@ -174,13 +174,26 @@ internal class BatteryScreen(host: MainActivity) : Screen(host) {
         }
 
         details.removeAllViews()
+        // What a full charge holds now against when new. "About" when it is worked out from the
+        // charge counter rather than reported; a row is left out when the phone doesn't say.
+        val cap = Phone.capacity(host, b)
+        fun mah(uah: Int) = "%,d mAh".format(uah / 1000)
+        val about = if (cap.fullEstimated) "about " else ""
+        val capacity = when {
+            cap.fullUah != null && cap.designUah != null -> "$about${mah(cap.fullUah)} of ${mah(cap.designUah)}"
+            cap.fullUah != null -> about + mah(cap.fullUah)
+            cap.designUah != null -> "${mah(cap.designUah)} when new"
+            else -> null
+        }
         val rows = listOfNotNull(
             b.tempC?.let { "Temperature" to "%.1f °C".format(it) },
             b.voltageMv?.let { "Voltage" to "%.2f V".format(it / 1000f) },
             "Power source" to (b.plugged ?: "Battery"),
             "Health" to b.healthText,
             b.technology?.let { "Technology" to it },
-            b.cycles?.let { "Charge cycles" to "$it" },
+            b.cycles?.let { "Charge cycles" to "%,d".format(it) },
+            capacity?.let { "Capacity" to it },
+            cap.healthPercent?.let { "Capacity left" to (if (cap.healthReported) "" else "about ") + "$it% of new" },
         )
         rows.forEachIndexed { i, (k, v) ->
             val (row, value) = ui.keyValue(k)

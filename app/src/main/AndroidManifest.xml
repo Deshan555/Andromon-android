@@ -75,6 +75,10 @@
     <!-- Cleaner screen: total size of all apps' caches (usage access, an app-op) -->
     <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS"
         tools:ignore="ProtectedPermissions" />
+    <!-- Battery screen and battery.health: Android's own "state of health" figure (Android 14+).
+         Apps can't get this permission; Andromon can grant it over USB (pm grant). -->
+    <uses-permission android:name="android.permission.BATTERY_STATS"
+        tools:ignore="ProtectedPermissions" />
 
     <!-- The floating "Recording" badge while Andromon records a test on the computer (its Test
          automation tab). "Display over other apps" is allowed by Andromon over adb. -->
