@@ -112,7 +112,9 @@ class Api(private val ctx: Context) {
         require(body.isNotEmpty()) { "Message is empty" }
         @Suppress("DEPRECATION")
         val sms: SmsManager = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            ctx.getSystemService(SmsManager::class.java)
+            // The application context: SmsManager keeps the context it was made from in a static
+            // cache, which held on to every stopped PC-link service.
+            ctx.applicationContext.getSystemService(SmsManager::class.java)
         } else {
             SmsManager.getDefault()
         }

@@ -69,7 +69,8 @@ object ShellHelper {
         announce()
         while (true) {
             val s = try { server.accept() } catch (_: IOException) { continue }
-            thread(isDaemon = true) { s.use { handle(it) } }
+            // A client that closes before the reply (Broken pipe) must not end the helper.
+            thread(isDaemon = true) { runCatching { s.use { handle(it) } } }
         }
     }
 
@@ -86,14 +87,14 @@ object ShellHelper {
     private fun controlLoop(control: LocalServerSocket) {
         while (true) {
             val s = try { control.accept() } catch (_: IOException) { continue }
-            s.use {
+            runCatching { s.use {
                 val uid = runCatching { it.peerCredentials.uid }.getOrDefault(-1)
                 if (uid != 0 && uid != 2000) return@use
                 when (readLine(it.inputStream)) {
                     "announce" -> announce()
                     "exit" -> exitProcess(0)
                 }
-            }
+            } }
         }
     }
 

@@ -21,10 +21,12 @@ import android.util.Log
 import org.json.JSONObject
 import java.io.BufferedOutputStream
 import java.io.IOException
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
 import kotlin.concurrent.thread
 
 /**
@@ -74,10 +76,12 @@ class CompanionService : Service() {
     private val workers: ExecutorService = Executors.newFixedThreadPool(6)
     private val main = Handler(Looper.getMainLooper())
     @Volatile private var lastActivity = System.currentTimeMillis()
+    /** Requests still being worked on. A long one (media.similar on a big photo library) mustn't count as idle. */
+    private val busy = AtomicInteger(0)
 
     private val idleCheck = object : Runnable {
         override fun run() {
-            if (System.currentTimeMillis() - lastActivity > IDLE_TIMEOUT_MS) {
+            if (busy.get() == 0 && System.currentTimeMillis() - lastActivity > IDLE_TIMEOUT_MS) {
                 Log.i(TAG, "Idle for 15 minutes, stopping")
                 stopSelf()
             } else {
@@ -120,6 +124,8 @@ class CompanionService : Service() {
         }
         server = null
         RecOverlay.endAll()
+        // The open event streams end with the link; closing them ends their threads.
+        streams.forEach { (sock, t) -> t.interrupt(); runCatching { sock.shutdownInput() }; runCatching { sock.close() } }
         Ringer.stop(applicationContext, "link") // Find my phone can't outlive the link: nothing would time it out
         stateListener?.invoke()
         main.removeCallbacks(idleCheck)
@@ -181,49 +187,96 @@ class CompanionService : Service() {
         }
     }
 
+    /**
+     * The connections that stay open (`events`, `rec.session`). Each runs on a thread of its own:
+     * on the request workers, six of them (a PC reconnecting its event stream while the old one
+     * hadn't noticed yet) left no worker, and every other request waited until one closed.
+     */
+    private val streams = ConcurrentHashMap<LocalSocket, Thread>()
+
     private fun handle(client: LocalSocket) {
-        client.use { sock ->
-            val uid = try { sock.peerCredentials.uid } catch (_: IOException) { -1 }
-            if (uid != SHELL_UID && uid != ROOT_UID) {
-                Log.w(TAG, "Rejected connection from uid $uid")
+        var handedOff = false
+        try {
+            handleRequest(client) { stream ->
+                handedOff = true
+                val t = thread(start = false, name = "pc-link-stream", isDaemon = true) {
+                    try { stream() } catch (e: Throwable) {
+                        // The computer went away mid-stream: that ends the stream, never the app.
+                        if (!isGone(e)) Log.w(TAG, "Stream ended: ${e.javaClass.simpleName}")
+                    } finally { streams.remove(client); runCatching { client.close() } }
+                }
+                streams[client] = t // before it starts, so a stream that ends at once is still removed
+                t.start()
+            }
+        } catch (e: Throwable) {
+            // Reading the request or writing the reply failed, mostly because the computer closed the
+            // connection first (it gave up waiting during a slow request: "Broken pipe"). An uncaught
+            // throwable here would end the request thread and with it the whole app.
+            if (isGone(e)) Log.i(TAG, "The computer closed the connection before the reply")
+            else Log.w(TAG, "Request connection failed", e)
+        } finally {
+            if (!handedOff) runCatching { client.close() }
+        }
+    }
+
+    /** The other side closed the socket: an IOException, also when wrapped (seen as java.lang.Error on some phones). */
+    private fun isGone(e: Throwable): Boolean {
+        var t: Throwable? = e
+        repeat(4) { if (t is IOException) return true; t = t?.cause }
+        return false
+    }
+
+    /** Answers one request on [sock]; a long-lived one is passed to [keepOpen] to run elsewhere. */
+    private fun handleRequest(sock: LocalSocket, keepOpen: (() -> Unit) -> Unit) {
+        val uid = try { sock.peerCredentials.uid } catch (_: IOException) { -1 }
+        if (uid != SHELL_UID && uid != ROOT_UID) {
+            Log.w(TAG, "Rejected connection from uid $uid")
+            return
+        }
+        lastActivity = System.currentTimeMillis()
+
+        val line = readLine(sock) ?: return
+        val response = JSONObject()
+        var stopAfter = false
+        try {
+            val request = JSONObject(line)
+            response.put("id", request.opt("id"))
+            val method = request.getString("method")
+            if (method == "events") {
+                val params = request.optJSONObject("params") ?: JSONObject()
+                keepOpen { streamEvents(sock, params) }
                 return
             }
-            lastActivity = System.currentTimeMillis()
-
-            val line = readLine(sock) ?: return
-            val response = JSONObject()
-            var stopAfter = false
-            try {
-                val request = JSONObject(line)
-                response.put("id", request.opt("id"))
-                val method = request.getString("method")
-                if (method == "events") {
-                    streamEvents(sock, request.optJSONObject("params") ?: JSONObject())
-                    return
-                }
-                if (method == "rec.session") {
-                    recSession(sock, request.opt("id"), request.optJSONObject("params") ?: JSONObject())
-                    return
-                }
-                if (method == "stop") {
-                    stopAfter = true
-                    response.put("result", true)
-                } else {
-                    response.put("result", Api(this).call(method, request.optJSONObject("params") ?: JSONObject()))
-                }
-            } catch (e: SecurityException) {
-                response.put("error", "Permission denied on the phone: ${e.message}")
-            } catch (e: Exception) {
-                Log.w(TAG, "Request failed", e)
-                response.put("error", e.message ?: e.javaClass.simpleName)
+            if (method == "rec.session") {
+                val id = request.opt("id")
+                val params = request.optJSONObject("params") ?: JSONObject()
+                keepOpen { recSession(sock, id, params) }
+                return
             }
-
-            val out = BufferedOutputStream(sock.outputStream, 64 * 1024)
-            out.write(response.toString().toByteArray(Charsets.UTF_8))
-            out.write('\n'.code)
-            out.flush()
-            if (stopAfter) main.post { stopSelf() }
+            if (method == "stop") {
+                stopAfter = true
+                response.put("result", true)
+            } else {
+                busy.incrementAndGet()
+                try {
+                    response.put("result", Api(this).call(method, request.optJSONObject("params") ?: JSONObject()))
+                } finally {
+                    busy.decrementAndGet()
+                    lastActivity = System.currentTimeMillis()
+                }
+            }
+        } catch (e: SecurityException) {
+            response.put("error", "Permission denied on the phone: ${e.message}")
+        } catch (e: Exception) {
+            Log.w(TAG, "Request failed", e)
+            response.put("error", e.message ?: e.javaClass.simpleName)
         }
+
+        if (stopAfter) main.post { stopSelf() } // also when the reply can't be written any more
+        val out = BufferedOutputStream(sock.outputStream, 64 * 1024)
+        out.write(response.toString().toByteArray(Charsets.UTF_8))
+        out.write('\n'.code)
+        out.flush() // throws when the computer already closed the connection; handle() catches it
     }
 
     /**
