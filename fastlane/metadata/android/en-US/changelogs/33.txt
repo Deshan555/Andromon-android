@@ -1,0 +1,1 @@
+A short welcome tour on the first start, and a start-up screen with the Andromon logo. Stop on the PC link now really stops it: Andromon on the computer no longer starts it again until you tap Start. Blur personal data (Settings › Display) hides names, numbers, addresses and messages for screenshots.
