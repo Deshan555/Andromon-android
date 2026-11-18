@@ -1,4 +1,4 @@
-# Droid Desk companion: design guide
+# Andromon companion: design guide
 
 How the Android companion app looks, behaves and reads, and how to build a new screen that fits. Everything here describes what the code does today (`Ui.kt`, `UiRows.kt`, `Screen.kt`, `MainActivity.kt`, `res/values/colors.xml`). Where the code and this guide disagree, fix one of them.
 
@@ -469,7 +469,7 @@ Rules:
 - **Numbers:** a space between number and unit ("1.2 GB", "31 °C"), no space before `%`. Counts get their noun and correct plural ("1 item", "12 files").
 - **Time:** relative for recent ("5 minutes ago"), dated beyond a week.
 - **Say why** when something is limited: name the cause (Android version, missing access) and the way forward.
-- **Names of things:** the file receiver is "Wi‑Fi receive" and its screen is "Receive". The desktop app is "Droid Desk". The link to it is "PC link". Use the same word for the same thing on every screen.
+- **Names of things:** the file receiver is "Wi‑Fi receive" and its screen is "Receive". The desktop app is "Andromon". The link to it is "PC link". Use the same word for the same thing on every screen.
 - **Wi‑Fi** is written with a non-breaking hyphen (`‑`, U+2011) so it never splits across lines.
 - User-visible strings are currently English and mostly inline in Kotlin. Keep each one a complete sentence or label (no concatenating fragments) so they can move to `strings.xml` later.
 
@@ -597,7 +597,7 @@ internal class ExampleScreen(host: MainActivity) : Screen(host) {
 - [ ] Sentence case; buttons are verbs
 - [ ] Limits explained with cause and next step
 - [ ] Estimates labelled as estimates
-- [ ] Same names as the rest of the app ("Receive", "PC link", "Droid Desk")
+- [ ] Same names as the rest of the app ("Receive", "PC link", "Andromon")
 
 **Access**
 - [ ] Icon-only controls have a spoken label

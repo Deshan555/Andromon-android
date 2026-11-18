@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-only
-// Copyright (C) 2026 The Droid Desk authors
+// Copyright (C) 2026 The Andromon authors
 
 pluginManagement {
     repositories { google(); mavenCentral(); gradlePluginPortal() }
@@ -8,5 +8,5 @@ dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories { google(); mavenCentral() }
 }
-rootProject.name = "DroidDeskCompanion"
+rootProject.name = "AndromonCompanion"
 include(":app")

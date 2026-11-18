@@ -1,4 +1,4 @@
-# Checks and builds Droid Desk Companion.
+# Checks and builds Andromon Companion.
 #
 #   Every push to "main" and every pull request:
 #     lint (new problems fail the build; app/lint-baseline.xml lists the old ones) and a debug APK,
@@ -58,7 +58,7 @@ jobs:
       - name: Attach the debug APK
         uses: actions/upload-artifact@v4
         with:
-          name: droid-desk-companion-debug
+          name: andromon-companion-debug
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
 
@@ -95,7 +95,7 @@ jobs:
         run: |
           if [ -n "$KEYSTORE_BASE64" ]; then
             printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/release.keystore"
-            echo "DD_KEYSTORE_FILE=$RUNNER_TEMP/release.keystore" >> "$GITHUB_ENV"
+            echo "ANDROMON_KEYSTORE_FILE=$RUNNER_TEMP/release.keystore" >> "$GITHUB_ENV"
             echo "signed=true" >> "$GITHUB_OUTPUT"
           else
             echo "signed=false" >> "$GITHUB_OUTPUT"
@@ -104,9 +104,9 @@ jobs:
 
       - name: Build the release APK
         env:
-          DD_KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          DD_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          DD_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          ANDROMON_KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          ANDROMON_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          ANDROMON_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: ./gradlew assembleRelease
 
       - name: Remove the signing key
@@ -123,13 +123,13 @@ jobs:
         run: |
           mkdir -p dist
           suffix=""; [ "$SIGNED" = "true" ] || suffix="-test-key"
-          apk="dist/droid-desk-companion-${VERSION}${suffix}.apk"
+          apk="dist/andromon-companion-${VERSION}${suffix}.apk"
           cp app/build/outputs/apk/release/app-release.apk "$apk"
           apksigner="$(ls "$ANDROID_HOME"/build-tools/*/apksigner | sort -V | tail -1)"
           "$apksigner" verify --print-certs "$apk" | tee "$RUNNER_TEMP/certs.txt"
           (cd dist && sha256sum "$(basename "$apk")" > "$(basename "$apk").sha256")
           {
-            echo "### Droid Desk Companion ${VERSION} (code ${CODE})"
+            echo "### Andromon Companion ${VERSION} (code ${CODE})"
             echo
             echo "| | |"
             echo "|---|---|"
@@ -146,7 +146,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: droid-desk-companion-release
+          name: andromon-companion-release
           path: dist/*
           if-no-files-found: error
 
@@ -167,5 +167,5 @@ jobs:
             gh release upload "$TAG" dist/* --clobber
           else
             gh release create "$TAG" dist/* --draft --target "$GITHUB_SHA" \
-              --title "Droid Desk Companion $TAG" --generate-notes
+              --title "Andromon Companion $TAG" --generate-notes
           fi

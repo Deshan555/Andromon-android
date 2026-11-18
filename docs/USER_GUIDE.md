@@ -1,11 +1,11 @@
-# Droid Desk Companion user guide (phone app)
+# Andromon Companion user guide (phone app)
 
-Droid Desk Companion is the phone side of [Droid Desk](https://github.com/Deshan555/Andromon_PC). It does two jobs:
+Andromon Companion is the phone side of [Andromon](https://github.com/Deshan555/Andromon_PC). It does two jobs:
 
-1. **It links the phone to Droid Desk on your computer**, so the computer can show your messages, contacts, call log, calendar, notifications, photos and music.
+1. **It links the phone to Andromon on your computer**, so the computer can show your messages, contacts, call log, calendar, notifications, photos and music.
 2. **It has phone-care tools you use on the phone itself**: memory, cleaner, battery, freezer, network tests, storage, permissions and a hardware test.
 
-This guide shows every screen and explains what each option does. The PC app has its own guide: [Droid Desk user guide](https://github.com/Deshan555/Andromon_PC/blob/main/docs/USER_GUIDE.md).
+This guide shows every screen and explains what each option does. The PC app has its own guide: [Andromon user guide](https://github.com/Deshan555/Andromon_PC/blob/main/docs/USER_GUIDE.md).
 
 The screenshots were taken on an Android 12 emulator with made-up sample data.
 
@@ -37,21 +37,21 @@ The screenshots were taken on an Android 12 emulator with made-up sample data.
 ## 1. How the phone app works with the computer
 
 ```
- Computer (Droid Desk)          USB cable or Wireless debugging          Phone
+ Computer (Andromon)          USB cable or Wireless debugging          Phone
  ─────────────────────          ───────────────────────────────          ─────
  "Show me the messages"  ─────────────────────────────────────►  Companion checks the request
                                                                  really comes from adb,
  list of messages        ◄─────────────────────────────────────  reads them and answers
 ```
 
-- Android only lets **apps on the phone** read SMS, contacts, the call log, the calendar and notifications. The companion is that app: Droid Desk asks, the companion reads and answers.
+- Android only lets **apps on the phone** read SMS, contacts, the call log, the calendar and notifications. The companion is that app: Andromon asks, the companion reads and answers.
 - Requests arrive through **adb**, Android's debugging link (USB cable, or Wireless debugging on Android 11+). The companion checks that each request comes from adb. Other apps on the phone, and other devices on the network, can't talk to it.
-- While a computer is linked, a **"Connected to Droid Desk"** notification is shown. The link stops when you press **Stop** on it, switch it off on the PC link screen, or after 15 idle minutes.
+- While a computer is linked, a **"Connected to Andromon"** notification is shown. The link stops when you press **Stop** on it, switch it off on the PC link screen, or after 15 idle minutes.
 - The phone-care tools work on their own, without a computer. A few of them can do more with **privileged access** (see [section 18](#18-privileged-access-shizuku-helper-root)).
 
 ## 2. Getting the app
 
-You don't install it yourself. Connect the phone to Droid Desk with the USB cable and open **Messages**, **Contacts**, **Call log**, **Photos** or **Music** there; Droid Desk offers **Install companion** and does the rest, including the permissions. Installing this way matters: Android refuses the SMS and call-log permissions for apps installed by tapping an APK file.
+You don't install it yourself. Connect the phone to Andromon with the USB cable and open **Messages**, **Contacts**, **Call log**, **Photos** or **Music** there; Andromon offers **Install companion** and does the rest, including the permissions. Installing this way matters: Android refuses the SMS and call-log permissions for apps installed by tapping an APK file.
 
 ## 3. Finding your way around
 
@@ -80,10 +80,10 @@ This screen is the link to the computer.
 
 | Part | What it does |
 |---|---|
-| **Droid Desk link** switch | On (**Ready**): Droid Desk can connect. Off (**Paused**): it can't, until you switch it on again or start it from the computer over USB. |
+| **Andromon link** switch | On (**Ready**): Andromon can connect. Off (**Paused**): it can't, until you switch it on again or start it from the computer over USB. |
 | **Messages / Contacts / Calls** | How many of each the computer would be able to read. "–" means the permission is missing. |
-| **USB cable** | **How** unfolds the four steps: a cable that carries data, USB debugging on, click Connect in Droid Desk, tap Allow. |
-| **Wi‑Fi** | After the one-time setup in Droid Desk (**Use this phone without the cable**), this is a single button that turns the Wi‑Fi connection on and off. Before the setup it explains what to do. Needs Android 11 or newer. |
+| **USB cable** | **How** unfolds the four steps: a cable that carries data, USB debugging on, click Connect in Andromon, tap Allow. |
+| **Wi‑Fi** | After the one-time setup in Andromon (**Use this phone without the cable**), this is a single button that turns the Wi‑Fi connection on and off. Before the setup it explains what to do. Needs Android 11 or newer. |
 | **Data access** | How many of the data permissions are allowed. Tap to see each one and open its Android setting. |
 
 Turn the Wi‑Fi connection off when you are done; it also switches itself off when the phone leaves the Wi‑Fi network or restarts.
@@ -100,7 +100,7 @@ Finds files that can be deleted safely.
 - **Clean now** deletes what is ticked, after asking once more.
 - **Storage** at the bottom shows how full the phone and each SD card are.
 
-Good to know: apps' private caches, usually the largest part, can't be cleared by any app. Droid Desk on the computer can do it (**Apps › Clear app caches**). Which rules run is set under **Settings › Cleaning rules**, and the size that counts as a "large file" under **Settings › Large files**.
+Good to know: apps' private caches, usually the largest part, can't be cleared by any app. Andromon on the computer can do it (**Apps › Clear app caches**). Which rules run is set under **Settings › Cleaning rules**, and the size that counts as a "large file" under **Settings › Large files**.
 
 ## 7. Network
 
@@ -121,7 +121,7 @@ Moves files between the phone and a computer over Wi‑Fi, without a cable. The 
 | Option | What it does |
 |---|---|
 | **Turn on receiving** | Makes the phone visible to computers on the same Wi‑Fi. Nothing listens on the network while it is off. It turns itself off after 30 minutes without transfers. |
-| **Saved to** | Received files go to `Download/Droid Desk`. |
+| **Saved to** | Received files go to `Download/Andromon`. |
 | **Direct link** | Lets the computer join a private Wi‑Fi the phone opens just for the transfer. Faster for big files than going through the router. |
 | **Received** | The files you received; tap one to open it. **Downloads** opens the folder. |
 
@@ -129,11 +129,11 @@ Every transfer asks first: **Accept** or **Decline**, on the screen or in the no
 
 ### Send
 
-- Pick **Files** or **Photos**, or use **Share › Droid Desk** from the gallery or any other app.
+- Pick **Files** or **Photos**, or use **Share › Andromon** from the gallery or any other app.
 - The screen lists the computers it finds on the Wi‑Fi. **Refresh** searches again; **Enter address** adds one by IP address.
 - Tap a computer, then **Send**. The computer has to accept.
 
-On the computer, open Droid Desk's **Wi‑Fi transfer** page and turn it on.
+On the computer, open Andromon's **Wi‑Fi transfer** page and turn it on.
 
 ## 9. Memory
 
@@ -168,7 +168,7 @@ Each part says what it needs and is greyed out with the reason while that is mis
 
 | Part | What it does | Needs |
 |---|---|---|
-| **Battery Saver** (Turn on / Turn off) | Android's own Battery Saver: limits background activity. | Privileged access, or a permission Droid Desk grants over USB |
+| **Battery Saver** (Turn on / Turn off) | Android's own Battery Saver: limits background activity. | Privileged access, or a permission Andromon grants over USB |
 | **Turn on automatically** | Battery Saver switches on by itself below the level you choose. | The same |
 | **Deep sleep now** | Puts the phone into Android's deep idle mode at once. Ends when the screen turns on. | Privileged access |
 | **When the screen turns off** | Deep sleep every time the screen goes off (not while charging). | Privileged access |
@@ -211,10 +211,10 @@ Apps you are using right now (on screen, playing music, navigating) are skipped.
 
 - **User / System / All** chooses the list; the magnifier searches; the **Size** button changes the order (size, name, install date, last update, screen time, least recently used).
 - Tap an app for its details: version, install and update dates, where it was installed from, app/data/cache size, screen time and last use.
-- Actions per app: **Open**, **App info**, **Play Store**, **Export APK** (to `Download/Droid Desk/APKs`) and **Uninstall**.
+- Actions per app: **Open**, **App info**, **Play Store**, **Export APK** (to `Download/Andromon/APKs`) and **Uninstall**.
 - Tick the circles to uninstall several apps in a row. Android asks for each one.
 
-Sizes and usage figures need usage access (Droid Desk allows it at install).
+Sizes and usage figures need usage access (Andromon allows it at install).
 
 ## 14. Storage
 
@@ -269,7 +269,7 @@ Where the phone can tell the result, it fills it in; otherwise you tap **Passed*
 | Section | Option | What it does |
 |---|---|---|
 | **Appearance** | Theme | Light, dark, or the same as the phone. |
-| **PC link** | Start when the app opens | On: opening the app also starts the link to Droid Desk. Droid Desk can always start the link over USB, even when this is off. |
+| **PC link** | Start when the app opens | On: opening the app also starts the link to Andromon. Andromon can always start the link over USB, even when this is off. |
 | **Tools** | Cleaning rules | Which of the Cleaner's rules run (17 in all). |
 | | Large files | The size from which the Cleaner lists a file as large (50 MB to 1 GB). |
 | | Save data on speed tests | Always runs the shorter speed test, also on Wi‑Fi. |
@@ -283,8 +283,8 @@ Some features need more rights than Android gives a normal app: the Memory scree
 
 | Way | How to turn it on | Lasts |
 |---|---|---|
-| **Shizuku** | Install the free [Shizuku](https://shizuku.rikka.app) app and start it (its own guide explains how; Droid Desk's **Shizuku** page also has **Start Shizuku**). Then tap **Grant permission** in the companion's Settings. No computer is needed afterwards. | Until the phone restarts (always on rooted phones) |
-| **Droid Desk helper** | In Droid Desk on the computer: **Shizuku › Phone RAM manager**. | Until the phone restarts |
+| **Shizuku** | Install the free [Shizuku](https://shizuku.rikka.app) app and start it (its own guide explains how; Andromon's **Shizuku** page also has **Start Shizuku**). Then tap **Grant permission** in the companion's Settings. No computer is needed afterwards. | Until the phone restarts (always on rooted phones) |
+| **Andromon helper** | In Andromon on the computer: **Shizuku › Phone RAM manager**. | Until the phone restarts |
 | **Root** | On rooted phones: **Memory › Use root instead**. | Until the phone restarts |
 
 Under **Settings › Privileged access**:
@@ -292,20 +292,20 @@ Under **Settings › Privileged access**:
 - **In use** shows which way is active right now, or "None".
 - **Shizuku** shows its state: not installed, not running, waiting for permission, or ready.
 - **Prefer** chooses between Automatic (Shizuku first), Shizuku, or the helper/root.
-- **Finish setup without a computer** lets the app grant itself, through Shizuku, the permissions Droid Desk would normally grant over USB.
+- **Finish setup without a computer** lets the app grant itself, through Shizuku, the permissions Andromon would normally grant over USB.
 
 Whichever way is used, the app can only run a fixed list of commands (list processes, stop an app, read battery statistics and so on). It can't touch other apps' private data.
 
 ## 19. Notification buttons and quick-settings tiles
 
-- **"Connected to Droid Desk" notification:** **Stop** ends the link; **Send clipboard to PC** copies the phone's clipboard to the computer.
-- **"From your computer" notification:** appears when you send a link or text from Droid Desk. Tapping it opens the link or copies the text.
-- **Find my phone:** when started from Droid Desk, the phone rings at full volume and shows **Found it**.
+- **"Connected to Andromon" notification:** **Stop** ends the link; **Send clipboard to PC** copies the phone's clipboard to the computer.
+- **"From your computer" notification:** appears when you send a link or text from Andromon. Tapping it opens the link or copies the text.
+- **Find my phone:** when started from Andromon, the phone rings at full volume and shows **Found it**.
 - **Receive notification:** shows progress and **Accept / Decline** for incoming transfers.
 - **Quick-settings tiles** (add them by editing the quick-settings panel): **PC link**, **Receive files**, **Send clipboard to PC** and **Freeze now**.
 
 ## 20. Privacy
 
-- Messages, contacts, the call log, calendar and notifications go **only to Droid Desk** on computers you connected or paired, through the adb link.
+- Messages, contacts, the call log, calendar and notifications go **only to Andromon** on computers you connected or paired, through the adb link.
 - The app uses the network only for the Network screen's tests and for Wi‑Fi receive and send while you have them on.
 - There are no accounts, no ads and no analytics. The app is free software (GPL-3.0); the licences are under **Settings › About**.

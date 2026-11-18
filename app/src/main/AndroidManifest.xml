@@ -9,16 +9,16 @@
     <uses-permission android:name="android.permission.WRITE_CONTACTS" />
     <uses-permission android:name="android.permission.READ_CALL_LOG" />
     <!-- Restoring a call log backup from the PC (calls.restore). Restoring SMS has no permission:
-         it works through the WRITE_SMS app-op, which Droid Desk allows over adb. -->
+         it works through the WRITE_SMS app-op, which Andromon allows over adb. -->
     <uses-permission android:name="android.permission.WRITE_CALL_LOG" />
-    <!-- Calendar tab in Droid Desk: read calendars and events; add events from an .ics file or a
+    <!-- Calendar tab in Andromon: read calendars and events; add events from an .ics file or a
          backup (attendees are never written, so no invitations go out) -->
     <uses-permission android:name="android.permission.READ_CALENDAR" />
     <uses-permission android:name="android.permission.WRITE_CALENDAR" />
     <!-- Call alerts on the PC: see incoming calls (READ_PHONE_STATE), answer or decline them -->
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
     <uses-permission android:name="android.permission.ANSWER_PHONE_CALLS" />
-    <!-- Photos and Music tabs in Droid Desk: the media index and thumbnails (Android 13+;
+    <!-- Photos and Music tabs in Andromon: the media index and thumbnails (Android 13+;
          older versions use READ_EXTERNAL_STORAGE below) -->
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
     <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
@@ -51,7 +51,7 @@
          requires "Nearby devices" (13+) or location (8–12) for it; the app never reads location. -->
     <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
     <!-- PC link › Wi‑Fi connection switch: turns Android's Wireless debugging on/off. Apps can't
-         get this permission themselves; Droid Desk grants it over USB during "Use this phone
+         get this permission themselves; Andromon grants it over USB during "Use this phone
          without the cable" (pm grant), and Android only allows that from the computer. -->
     <uses-permission android:name="android.permission.WRITE_SECURE_SETTINGS"
         tools:ignore="ProtectedPermissions" />
@@ -64,7 +64,7 @@
         android:maxSdkVersion="32" />
     <!-- Memory screen: "Boost" (only works on Android 13 and older) -->
     <uses-permission android:name="android.permission.KILL_BACKGROUND_PROCESSES" />
-    <!-- Cleaner screen: scan and delete junk on shared storage and SD cards (Droid Desk grants
+    <!-- Cleaner screen: scan and delete junk on shared storage and SD cards (Andromon grants
          "All files access" over adb; otherwise the person allows it in Settings) -->
     <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE"
         tools:ignore="ScopedStorage" />
@@ -76,8 +76,8 @@
     <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS"
         tools:ignore="ProtectedPermissions" />
 
-    <!-- The floating "Recording" badge while Droid Desk records a test on the computer (its Test
-         automation tab). "Display over other apps" is allowed by Droid Desk over adb. -->
+    <!-- The floating "Recording" badge while Andromon records a test on the computer (its Test
+         automation tab). "Display over other apps" is allowed by Andromon over adb. -->
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
 
     <!-- App Manager: open Android's own uninstall confirmation for apps the person picks -->
@@ -125,7 +125,7 @@
         android:requestLegacyExternalStorage="true"
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher_round"
-        android:label="Droid Desk Companion"
+        android:label="Andromon Companion"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
 
@@ -157,12 +157,12 @@
             android:exported="true"
             android:permission="android.permission.DUMP" />
 
-        <!-- Phone notifications on the PC. Android binds it only after the person (or Droid Desk,
+        <!-- Phone notifications on the PC. Android binds it only after the person (or Andromon,
              over adb) allows "Notification access"; it passes nothing on unless a PC is listening. -->
         <service
             android:name=".NotifListener"
             android:exported="true"
-            android:label="Droid Desk: notifications on your computer"
+            android:label="Andromon: notifications on your computer"
             android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
             <intent-filter>
                 <action android:name="android.service.notification.NotificationListenerService" />
@@ -182,13 +182,13 @@
             android:name=".SendService"
             android:exported="false"
             android:foregroundServiceType="connectedDevice" />
-        <!-- "Share › Droid Desk" in other apps: queues the shared files, text or links for Wi‑Fi
+        <!-- "Share › Andromon" in other apps: queues the shared files, text or links for Wi‑Fi
              send and opens the Send screen. Nothing is sent until the person picks a device and
              taps Send. No screen of its own; also hosts Android's file and photo pickers. -->
         <activity
             android:name=".ShareActivity"
             android:exported="true"
-            android:label="Droid Desk"
+            android:label="Andromon"
             android:theme="@android:style/Theme.Translucent.NoTitleBar"
             android:excludeFromRecents="true"
             android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|keyboard|keyboardHidden|navigation|uiMode|density|fontScale|locale|layoutDirection">
@@ -208,7 +208,7 @@
 
         <!-- ===== Phone links (Links.kt, ClipSendActivity.kt, Tiles.kt) ===== -->
         <!-- Reads the clipboard once it has the focus and passes it to the PC, then closes.
-             Exported only so Droid Desk can open it over adb ("Get phone's clipboard"), and
+             Exported only so Andromon can open it over adb ("Get phone's clipboard"), and
              guarded by DUMP, which the adb shell has but normal apps cannot get. -->
         <activity
             android:name=".ClipSendActivity"

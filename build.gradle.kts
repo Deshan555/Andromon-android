@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-only
-// Copyright (C) 2026 The Droid Desk authors
+// Copyright (C) 2026 The Andromon authors
 
 plugins {
     id("com.android.application") version "8.13.1" apply false

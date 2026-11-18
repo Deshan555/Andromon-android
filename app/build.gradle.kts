@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-only
-// Copyright (C) 2026 The Droid Desk authors
+// Copyright (C) 2026 The Andromon authors
 
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
@@ -9,11 +9,11 @@ plugins {
 }
 
 android {
-    namespace = "dev.droiddesk.companion"
+    namespace = "dev.andromon.companion"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "dev.droiddesk.companion"
+        applicationId = "dev.andromon.companion"
         minSdk = 26          // Android 8.0: foreground-service start API used by the PC
         targetSdk = 36
         // Keep in sync with COMPANION_VERSION in pc/src/app.js
@@ -25,13 +25,14 @@ android {
     // hand, passes a keystore through these environment variables. Without them the release build
     // is signed with the local debug key, as before. Updates only install over a build signed with
     // the same key, so keep the keystore safe.
-    val releaseKeystore = System.getenv("DD_KEYSTORE_FILE")
+    // DD_*: the same variables under the app's old name (Droid Desk), still accepted
+    val releaseKeystore = (System.getenv("ANDROMON_KEYSTORE_FILE") ?: System.getenv("DD_KEYSTORE_FILE"))
     signingConfigs {
         if (!releaseKeystore.isNullOrBlank()) create("release") {
             storeFile = file(releaseKeystore)
-            storePassword = System.getenv("DD_KEYSTORE_PASSWORD")
-            keyAlias = System.getenv("DD_KEY_ALIAS")
-            keyPassword = System.getenv("DD_KEY_PASSWORD")
+            storePassword = (System.getenv("ANDROMON_KEYSTORE_PASSWORD") ?: System.getenv("DD_KEYSTORE_PASSWORD"))
+            keyAlias = (System.getenv("ANDROMON_KEY_ALIAS") ?: System.getenv("DD_KEY_ALIAS"))
+            keyPassword = (System.getenv("ANDROMON_KEY_PASSWORD") ?: System.getenv("DD_KEY_PASSWORD"))
         }
     }
 
