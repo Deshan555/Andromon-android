@@ -169,9 +169,11 @@ Code: `WifiSend.kt` (discovery, HTTP client, transfer), `SendService.kt`, `Share
 | **Trackers** | Apps › an app › Trackers (`Trackers.kt`) | Lists the tracking and advertising libraries found in the app's code, like an Exodus Privacy report but made on the phone: the class names in the APK's `classes*.dex` are compared with the 428 code signatures in `res/raw/exodus_trackers.tsv`. Nothing is run or sent. A tracker in the code isn't proof that it is switched on, and obfuscated code isn't found. |
 | **DNS records** | Network › Look up (`DnsRecords.kt`) | After the addresses, also shows CNAME, MX, NS, TXT, SOA and CAA records, and the name for an IP address, asked with dnsjava from the DNS server of the current network. |
 | **Automation** | Settings › Tools › Automation (`Automation.kt`) | Off by default. When on, Tasker and similar apps can start `AutomationActivity` with `dev.andromon.companion.action.LINK_ON`, `LINK_OFF`, `RECEIVE_ON`, `RECEIVE_OFF` or `FREEZE` (Send Intent, target Activity, package `dev.andromon.companion`). These do what the quick-settings tiles do; nothing is read, deleted or sent. |
+| **Crash reports** | Settings › About › Crash reports (`CrashReports.kt`) | A crash writes the app and Android version, the phone model and the stack trace to a private file. Nothing is sent. On the next start the app says so once and offers to share the report through any app, read it or delete it. |
 | **Root** | Privileged access (`RamManager.kt`) | The helper is started as root through libsu: one root shell, asked for once. |
 | **Stored key** | `Vault.kt`, `TlsIdentity.kt` | The Wi‑Fi transfer private key is encrypted on disk with an AES-256-GCM key held by the Android Keystore; a key saved by an older version is re-saved encrypted the first time it is read. |
 
+Debug builds also include LeakCanary, which reports memory leaks while developing; none of it is in a release.
 
 ## API (one JSON request per connection)
 
@@ -312,6 +314,7 @@ Anyone who distributes the APK, including inside Andromon's installer, must also
 | [Zip4j](https://github.com/srikanth-lingala/zip4j) 2.11.5 (zip archives) | compiled into the APK | Apache License 2.0, Srikanth Reddy Lingala |
 | [dnsjava](https://github.com/dnsjava/dnsjava) 3.6.3 with slf4j-api 1.7.36 (DNS records) | compiled into the APK | BSD 3-Clause, Brian Wellington and dnsjava.org; SLF4J: MIT, QOS.ch |
 | Tracker code signatures from [Exodus Privacy](https://reports.exodus-privacy.eu.org) (fetched 2026-11-15) | `app/src/main/res/raw/exodus_trackers.tsv` | Published by Exodus Privacy, whose tools are under the GNU AGPL v3; their site does not state a separate licence for the list, so check before redistributing outside this project |
+| [LeakCanary](https://github.com/square/leakcanary) 2.14, debug builds only | not in release APKs | Apache License 2.0, Square |
 | Poppins font, subset to Latin | `app/src/main/res/font/` | SIL Open Font License 1.1 (`res/raw/poppins_ofl.txt`) |
 | [Lucide](https://lucide.dev) icons, converted to vector drawables | `app/src/main/res/drawable/ic_*.xml` | ISC License (`res/raw/lucide_isc.txt`); parts derived from Feather, MIT |
 | Freeze shortcut icon, based on Material Icons (Google LLC) | `res/drawable/ic_freeze_shortcut.xml` | Apache License 2.0 (`res/raw/apache_2_0.txt`) |

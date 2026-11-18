@@ -102,6 +102,7 @@ class MainActivity : Activity() {
         setupSystemBars()
         show(savedInstanceState?.getInt("screen") ?: 0)
         openRequested(intent)
+        CrashReports.offer(this) // once after a crash; nothing is sent unless the person shares it
 
         if (intent?.getBooleanExtra("autostart", false) == true) {
             // Started by the PC as a fallback: get out of the user's way.

@@ -126,6 +126,7 @@
     <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
 
     <application
+        android:name=".App"
         android:allowBackup="false"
         android:enableOnBackInvokedCallback="true"
         android:requestLegacyExternalStorage="true"

@@ -154,6 +154,7 @@ internal class SettingsScreen(host: MainActivity) : Screen(host) {
                 valueRow(R.drawable.ic_desktop, "Andromon Companion", "Helper app for Andromon on your computer", null).text =
                     version?.let { "v$it" } ?: ""
                 valueRow(R.drawable.ic_shield, "Your data", "What the app reads and where it goes") { showPrivacy() }.text = ""
+                valueRow(R.drawable.ic_warning, "Crash reports", "Kept on this phone; you decide whether to share one") { CrashReports.show(host) }.text = ""
                 valueRow(R.drawable.ic_lock, "Licence", "Free software under the GNU GPL version 3") { showLicence() }.text = "GPL-3.0"
                 valueRow(R.drawable.ic_file, "Third-party notices", "SD Maid SE, SuperFreezZ, Exodus Privacy, the libraries, Poppins and Lucide icons") { showThirdParty() }.text = ""
             }, ui.lp(top = 20))
@@ -367,6 +368,7 @@ internal class SettingsScreen(host: MainActivity) : Screen(host) {
             "• The internet is used only for the speed test (speed.cloudflare.com), ping and DNS lookups you start, " +
             "and Wi‑Fi receive while you have it on.\n\n" +
             "• The camera is used only while you scan a code in Send; the picture is read on the phone and not kept.\n\n" +
+            "• If the app crashes, the technical details stay on this phone until you share or delete them.\n\n" +
             "• The Junk Cleaner and App Manager work on the phone itself. Nothing is deleted or uninstalled " +
             "until you confirm.\n\n" +
             "• Settings are stored only on this phone.")

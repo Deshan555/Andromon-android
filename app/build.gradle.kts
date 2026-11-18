@@ -79,4 +79,6 @@ dependencies {
     implementation("net.lingala.zip4j:zip4j:2.11.5")
     // Network › DNS lookup: mail, name-server, text and other records (DnsRecords.kt). BSD-3-Clause.
     implementation("dnsjava:dnsjava:3.6.3")
+    // Debug builds only: reports memory leaks while developing. Nothing of it is in a release.
+    debugImplementation("com.squareup.leakcanary:leakcanary-android:2.14")
 }
