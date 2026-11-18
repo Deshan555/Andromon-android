@@ -32,7 +32,7 @@ import javax.net.ssl.SSLContext
  *
  * Senders identify this phone by the SHA-256 fingerprint of the certificate (announced on the
  * network) and check it when they connect, so the same key is kept across restarts. It lives in
- * app-private storage. Android has no public API for making certificates, so the X.509 structure
+ * app-private storage, with the private key encrypted by the Android Keystore ([Vault]). Android has no public API for making certificates, so the X.509 structure
  * is written by hand with a tiny DER encoder; no libraries are needed.
  */
 internal object TlsIdentity {
@@ -64,9 +64,15 @@ internal object TlsIdentity {
 
     private fun load(ctx: Context): Identity? = try {
         val j = JSONObject(File(ctx.filesDir, FILE_NAME).readText())
-        val key = KeyFactory.getInstance("RSA").generatePrivate(PKCS8EncodedKeySpec(Base64.decode(j.getString("key"), Base64.NO_WRAP)))
+        // "sealed": the key encrypted by the Keystore. "key": plain, from versions before 0.30 (or a
+        // phone whose Keystore doesn't work); it is rewritten encrypted the first time it is read.
+        val pkcs8 = if (j.has("sealed")) Vault.open(j.getString("sealed")) ?: throw IllegalStateException("key unreadable")
+            else Base64.decode(j.getString("key"), Base64.NO_WRAP)
+        val key = KeyFactory.getInstance("RSA").generatePrivate(PKCS8EncodedKeySpec(pkcs8))
+        val certDer = Base64.decode(j.getString("cert"), Base64.NO_WRAP)
+        if (!j.has("sealed")) save(ctx, pkcs8, certDer)
         val cert = CertificateFactory.getInstance("X.509")
-            .generateCertificate(ByteArrayInputStream(Base64.decode(j.getString("cert"), Base64.NO_WRAP))) as X509Certificate
+            .generateCertificate(ByteArrayInputStream(certDer)) as X509Certificate
         // Renew a year before it runs out.
         if (cert.notAfter.time - System.currentTimeMillis() < 365L * 86_400_000) null else Identity(key, cert)
     } catch (_: Exception) {
@@ -77,13 +83,17 @@ internal object TlsIdentity {
         val pair = KeyPairGenerator.getInstance("RSA").apply { initialize(2048) }.generateKeyPair()
         val certDer = selfSigned(pair.public.encoded, pair.private, "Andromon Companion")
         val cert = CertificateFactory.getInstance("X.509").generateCertificate(ByteArrayInputStream(certDer)) as X509Certificate
-        val json = JSONObject()
-            .put("key", Base64.encodeToString(pair.private.encoded, Base64.NO_WRAP))
-            .put("cert", Base64.encodeToString(certDer, Base64.NO_WRAP))
+        save(ctx, pair.private.encoded, certDer)
+        return Identity(pair.private, cert)
+    }
+
+    private fun save(ctx: Context, pkcs8: ByteArray, certDer: ByteArray) {
+        val json = JSONObject().put("cert", Base64.encodeToString(certDer, Base64.NO_WRAP))
+        val sealed = Vault.seal(pkcs8)
+        if (sealed != null) json.put("sealed", sealed) else json.put("key", Base64.encodeToString(pkcs8, Base64.NO_WRAP))
         val tmp = File(ctx.filesDir, "$FILE_NAME.tmp")
         tmp.writeText(json.toString())
         tmp.renameTo(File(ctx.filesDir, FILE_NAME))
-        return Identity(pair.private, cert)
     }
 
     // ---------- X.509 ----------

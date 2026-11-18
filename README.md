@@ -165,6 +165,7 @@ Code: `WifiSend.kt` (discovery, HTTP client, transfer), `SendService.kt`, `Share
 | Feature | Where | How |
 |---|---|---|
 | **Root** | Privileged access (`RamManager.kt`) | The helper is started as root through libsu: one root shell, asked for once. |
+| **Stored key** | `Vault.kt`, `TlsIdentity.kt` | The Wi‑Fi transfer private key is encrypted on disk with an AES-256-GCM key held by the Android Keystore; a key saved by an older version is re-saved encrypted the first time it is read. |
 
 
 ## API (one JSON request per connection)
