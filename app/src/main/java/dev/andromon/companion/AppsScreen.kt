@@ -313,6 +313,7 @@ internal class AppsScreen(host: MainActivity) : Screen(host) {
                     host.startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", app.pkg, null)))
                 })
                 add(Triple("Export APK", R.drawable.ic_down) { export(listOf(app)) })
+                add(Triple("Trackers", R.drawable.ic_shield) { showTrackers(app) })
                 add(Triple("Play Store", R.drawable.ic_globe) {
                     runCatching { host.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=${app.pkg}"))) }
                         .onFailure { host.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=${app.pkg}"))) }
@@ -342,6 +343,30 @@ internal class AppsScreen(host: MainActivity) : Screen(host) {
     }
 
     // ---------- actions ----------
+
+    /** Looks through the app's code for known tracking and advertising libraries (Trackers.kt). */
+    private fun showTrackers(app: AppEntry) {
+        val text = ui.text(14f, color(R.color.ink)) {
+            text = "Looking through the app's code…"
+            setLineSpacing(ui.dp(3).toFloat(), 1f)
+            setTextIsSelectable(true)
+            setPadding(ui.dp(24), ui.dp(12), ui.dp(24), ui.dp(8))
+        }
+        val dialog = AlertDialog.Builder(host)
+            .setTitle("Trackers in ${app.label}")
+            .setView(ScrollView(host).apply { addView(text) })
+            .setPositiveButton("Close", null)
+            .show()
+        background({ Trackers.scan(host, app.apkPaths) to Trackers.known(host) }) { r ->
+            if (!dialog.isShowing) return@background
+            val (found, known) = r.getOrNull() ?: run { text.text = "This app's code couldn't be read."; return@background }
+            val note = "\n\nChecked against $known trackers known to Exodus Privacy. A tracker in the code isn't proof " +
+                "that it is switched on, and well-hidden code isn't found."
+            text.text = if (found.isEmpty()) "No known trackers found.$note" else
+                (if (found.size == 1) "1 tracker found:" else "${found.size} trackers found:") + "\n\n" +
+                    found.joinToString("\n\n") { t -> "• ${t.name}" + if (t.categories.isEmpty()) "" else "\n   ${t.categories}" } + note
+        }
+    }
 
     private fun toast(msg: String) = android.widget.Toast.makeText(host, msg, android.widget.Toast.LENGTH_LONG).show()
 

@@ -411,6 +411,9 @@ internal class SettingsScreen(host: MainActivity) : Screen(host) {
                     "Zip4j\n" +
                     "Makes and opens zip archives in Storage (net.lingala.zip4j 2.11.5), Copyright Srikanth Reddy Lingala, " +
                     "Apache License, Version 2.0.\n\n" +
+                    "Exodus Privacy\n" +
+                    "The tracker signatures used by Apps › Trackers come from Exodus Privacy " +
+                    "(reports.exodus-privacy.eu.org), whose analysis tools are under the GNU AGPL version 3.\n\n" +
                     "Poppins font\n" +
                     "Copyright 2020 The Poppins Project Authors. SIL Open Font License 1.1. " +
                     "This app includes it subset to Latin characters.\n\n" +
