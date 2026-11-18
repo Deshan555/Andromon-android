@@ -356,6 +356,7 @@ internal class SettingsScreen(host: MainActivity) : Screen(host) {
             "go to that computer. Nothing is uploaded.\n\n" +
             "• The internet is used only for the speed test (speed.cloudflare.com), ping and DNS lookups you start, " +
             "and Wi‑Fi receive while you have it on.\n\n" +
+            "• The camera is used only while you scan a code in Send; the picture is read on the phone and not kept.\n\n" +
             "• The Junk Cleaner and App Manager work on the phone itself. Nothing is deleted or uninstalled " +
             "until you confirm.\n\n" +
             "• Settings are stored only on this phone.")
@@ -403,6 +404,9 @@ internal class SettingsScreen(host: MainActivity) : Screen(host) {
                     "permission notice is included. The software is provided “as is”, without warranty of any kind.\n\n" +
                     "libsu\n" +
                     "Root access for Privileged access (com.github.topjohnwu.libsu:core 6.0.0), Copyright John Wu, " +
+                    "Apache License, Version 2.0.\n\n" +
+                    "ZXing\n" +
+                    "Reads the QR code in Send › Scan code (com.google.zxing:core 3.5.3), Copyright ZXing authors, " +
                     "Apache License, Version 2.0.\n\n" +
                     "Poppins font\n" +
                     "Copyright 2020 The Poppins Project Authors. SIL Open Font License 1.1. " +

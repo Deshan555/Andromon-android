@@ -73,4 +73,6 @@ dependencies {
     implementation("dev.rikka.shizuku:provider:$shizuku") { exclude(group = "androidx.annotation") }
     // Privileged access with root: one root shell, asked for once (RamManager.kt). Apache 2.0.
     implementation("com.github.topjohnwu.libsu:core:6.0.0") { exclude(group = "androidx.annotation") }
+    // Send › Scan code: reads the QR code Andromon shows (QrScanActivity.kt). Apache 2.0.
+    implementation("com.google.zxing:core:3.5.3")
 }

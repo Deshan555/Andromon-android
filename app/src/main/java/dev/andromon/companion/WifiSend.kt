@@ -389,6 +389,30 @@ internal object WifiSend {
             changed()
             return
         }
+        probeAll(ctx, listOf(ip), port)
+    }
+
+    /**
+     * Adds the device a scanned code points at (Send › Scan code). Andromon's code is
+     * "andromon://send?ip=192.168.1.20,10.0.0.5&port=53317" (every address of the computer); a
+     * plain address or a web link with one works too. False when the code has no address in it.
+     */
+    fun addFromCode(ctx: Context, code: String): Boolean {
+        val ips = Regex("(?<![\\d.])\\d{1,3}(?:\\.\\d{1,3}){3}(?![\\d.])").findAll(code).map { it.value }
+            .filter { validIp(it) }.distinct().take(6).toList()
+        if (ips.isEmpty()) {
+            message = "That code has no device address in it. In Andromon, open Wi‑Fi transfer and click “Show code”."
+            changed()
+            return false
+        }
+        val port = (Regex("[?&]port=(\\d{1,5})").find(code) ?: Regex("\\d:(\\d{2,5})(?:[/?]|$)").find(code))
+            ?.groupValues?.get(1)?.toIntOrNull()?.takeIf { it in 1..65535 } ?: PORT
+        probeAll(ctx, ips, port)
+        return true
+    }
+
+    /** Asks each address in turn who is there; the first device that answers is added and selected. */
+    private fun probeAll(ctx: Context, ips: List<String>, port: Int) {
         if (probing) return
         probing = true
         message = null
@@ -399,13 +423,15 @@ internal object WifiSend {
                 val id = identity(app)
                 val binder = NetBinder(app)
                 val body = info(app, id).toString().toByteArray(Charsets.UTF_8)
-                // Encrypted first; a device with encryption turned off only answers plain HTTP.
-                runCatching { probe(Tls(id, null), binder, ip, port, body, 3000, 5000, true) }.getOrNull()
-                    ?: runCatching { probe(null, binder, ip, port, body, 3000, 5000, true) }.getOrNull()
+                ips.firstNotNullOfOrNull { ip ->
+                    // Encrypted first; a device with encryption turned off only answers plain HTTP.
+                    runCatching { probe(Tls(id, null), binder, ip, port, body, 3000, 5000, true) }.getOrNull()
+                        ?: runCatching { probe(null, binder, ip, port, body, 3000, 5000, true) }.getOrNull()
+                }
             } catch (e: Exception) { null }
             post {
                 probing = false
-                if (found == null) message = "No device answered at $ip${if (port != PORT) ":$port" else ""}. " +
+                if (found == null) message = "No device answered at ${ips.joinToString(" or ")}${if (port != PORT) ":$port" else ""}. " +
                     "Check the address, that both devices are on the same Wi‑Fi, and that the other one is ready to receive."
             }
         }

@@ -85,6 +85,7 @@ internal class SendPanel(private val host: MainActivity) {
     private lateinit var addressRow: LinearLayout
     private lateinit var addressInput: EditText
     private lateinit var addressPill: TextView
+    private lateinit var scanPill: TextView
     private var devicesShown = ""
 
     private lateinit var sendButton: TextView
@@ -117,6 +118,8 @@ internal class SendPanel(private val host: MainActivity) {
 
     fun onShow() {
         if (!shown) { shown = true; WifiSend.listen(listener) }
+        // Back from Scan code (QrScanActivity) with a code: look for the device it names.
+        QrScanActivity.scanned?.let { QrScanActivity.scanned = null; WifiSend.addFromCode(host, it) }
         val stale = System.currentTimeMillis() - WifiSend.lastScan > 20_000
         if (!WifiSend.active && (WifiSend.devices.isEmpty() || stale)) WifiSend.scan(host, sweep = false)
         refresh()
@@ -220,11 +223,17 @@ internal class SendPanel(private val host: MainActivity) {
         addView(deviceList, ui.lp(top = 4))
         addressPill = ui.pill("Enter address", color(R.color.bg), color(R.color.ink), R.drawable.ic_globe) {
             addressRow.visibility = View.VISIBLE
-            addressPill.visibility = View.GONE
+            (addressPill.parent as View).visibility = View.GONE
             addressInput.requestFocus()
             host.getSystemService(InputMethodManager::class.java)?.showSoftInput(addressInput, 0)
         }
-        addView(addressPill, ui.lp(top = 14))
+        scanPill = ui.pill("Scan code", color(R.color.bg), color(R.color.ink), R.drawable.ic_qr) {
+            runCatching { host.startActivity(Intent(host, QrScanActivity::class.java)) }
+        }
+        addView(ui.row {
+            addView(addressPill, ui.lp(w = 0, weight = 1f))
+            addView(scanPill, ui.lp(w = 0, weight = 1f, start = 8))
+        }, ui.lp(top = 14))
         addressRow = ui.row {
             visibility = View.GONE
             addressInput = input("192.168.1.20", InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_URI) { addAddress() }
@@ -400,8 +409,10 @@ internal class SendPanel(private val host: MainActivity) {
                 "this phone), then tap Refresh. If it still doesn't show up, enter its address."
         }
         if (WifiSend.probing) ui.setLabel(addressPill, "Checking…") else ui.setLabel(addressPill, "Enter address")
-        if (active) { addressRow.visibility = View.GONE; addressPill.visibility = View.GONE }
-        else if (addressRow.visibility != View.VISIBLE) addressPill.visibility = View.VISIBLE
+        val addressPills = addressPill.parent as View // "Enter address" and "Scan code", side by side
+        if (active) { addressRow.visibility = View.GONE; addressPills.visibility = View.GONE }
+        else if (addressRow.visibility != View.VISIBLE) addressPills.visibility = View.VISIBLE
+        ui.setEnabled(scanPill, !WifiSend.probing)
 
         // Send button
         val count = if (q.size == 1) "1 item" else "${q.size} items"

@@ -119,6 +119,12 @@
         </intent>
     </queries>
 
+    <!-- Send › Scan code: reads the QR code Andromon shows on the computer. Asked for when the
+         person opens the scanner; frames are decoded on the phone and never saved or sent. -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
+
     <application
         android:allowBackup="false"
         android:enableOnBackInvokedCallback="true"
@@ -204,6 +210,14 @@
                 <data android:mimeType="text/plain" />
             </intent-filter>
         </activity>
+        <!-- Send › Scan code (QrScanActivity.kt). Opened only by this app. -->
+        <activity
+            android:name=".QrScanActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:theme="@android:style/Theme.Black.NoTitleBar"
+            android:excludeFromRecents="true"
+            tools:ignore="DiscouragedApi,LockedOrientationActivity" />
         <!-- ===== end of Wi‑Fi send ===== -->
 
         <!-- ===== Phone links (Links.kt, ClipSendActivity.kt, Tiles.kt) ===== -->
