@@ -75,4 +75,6 @@ dependencies {
     implementation("com.github.topjohnwu.libsu:core:6.0.0") { exclude(group = "androidx.annotation") }
     // Send › Scan code: reads the QR code Andromon shows (QrScanActivity.kt). Apache 2.0.
     implementation("com.google.zxing:core:3.5.3")
+    // Storage: make and open zip archives, also password-protected ones (Archives.kt). Apache 2.0.
+    implementation("net.lingala.zip4j:zip4j:2.11.5")
 }

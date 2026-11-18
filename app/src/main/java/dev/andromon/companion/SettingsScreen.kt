@@ -408,6 +408,9 @@ internal class SettingsScreen(host: MainActivity) : Screen(host) {
                     "ZXing\n" +
                     "Reads the QR code in Send › Scan code (com.google.zxing:core 3.5.3), Copyright ZXing authors, " +
                     "Apache License, Version 2.0.\n\n" +
+                    "Zip4j\n" +
+                    "Makes and opens zip archives in Storage (net.lingala.zip4j 2.11.5), Copyright Srikanth Reddy Lingala, " +
+                    "Apache License, Version 2.0.\n\n" +
                     "Poppins font\n" +
                     "Copyright 2020 The Poppins Project Authors. SIL Open Font License 1.1. " +
                     "This app includes it subset to Latin characters.\n\n" +

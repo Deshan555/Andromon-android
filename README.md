@@ -165,6 +165,7 @@ Code: `WifiSend.kt` (discovery, HTTP client, transfer), `SendService.kt`, `Share
 | Feature | Where | How |
 |---|---|---|
 | **Scan code** | Receive › Send › Scan code (`QrScanActivity.kt`) | Reads the QR code Andromon shows under Wi‑Fi transfer › Show code (`andromon://send?ip=<addresses>&port=53317`), for networks where the phone doesn't find the computer by itself. A plain address or a link with one works too. The code only carries addresses: the phone still asks who is there and pins the certificate that answers, exactly as for a typed address. Camera frames are decoded on the phone with ZXing and never stored; the camera permission is asked for when the scanner opens. |
+| **Zip archives** | Storage › three dots (`Archives.kt`) | "Compress to zip…" packs a file or folder into a zip beside it, optionally with a password (AES-256). "Extract here" unpacks a zip (also `.apk`, `.jar`, `.epub`, office files) into a new folder beside it and asks for the password when there is one. zip4j does the work and refuses entries that would land outside the folder. Needs All files access, like the rest of Storage. |
 | **Root** | Privileged access (`RamManager.kt`) | The helper is started as root through libsu: one root shell, asked for once. |
 | **Stored key** | `Vault.kt`, `TlsIdentity.kt` | The Wi‑Fi transfer private key is encrypted on disk with an AES-256-GCM key held by the Android Keystore; a key saved by an older version is re-saved encrypted the first time it is read. |
 
@@ -305,6 +306,7 @@ Anyone who distributes the APK, including inside Andromon's installer, must also
 | [Shizuku-API](https://github.com/RikkaApps/Shizuku-API) 13.1.5 (`dev.rikka.shizuku:api`, `:provider`, with their `aidl` and `shared` parts), from Maven Central | compiled into the APK | MIT License, Copyright (c) 2021 RikkaW (notice under Settings › About › Third-party notices) |
 | [libsu](https://github.com/topjohnwu/libsu) core 6.0.0, from JitPack (root shell) | compiled into the APK | Apache License 2.0, John Wu |
 | [ZXing](https://github.com/zxing/zxing) core 3.5.3 (QR code reading) | compiled into the APK | Apache License 2.0, ZXing authors |
+| [Zip4j](https://github.com/srikanth-lingala/zip4j) 2.11.5 (zip archives) | compiled into the APK | Apache License 2.0, Srikanth Reddy Lingala |
 | Poppins font, subset to Latin | `app/src/main/res/font/` | SIL Open Font License 1.1 (`res/raw/poppins_ofl.txt`) |
 | [Lucide](https://lucide.dev) icons, converted to vector drawables | `app/src/main/res/drawable/ic_*.xml` | ISC License (`res/raw/lucide_isc.txt`); parts derived from Feather, MIT |
 | Freeze shortcut icon, based on Material Icons (Google LLC) | `res/drawable/ic_freeze_shortcut.xml` | Apache License 2.0 (`res/raw/apache_2_0.txt`) |

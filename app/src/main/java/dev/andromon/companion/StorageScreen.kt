@@ -398,18 +398,79 @@ internal class StorageScreen(host: MainActivity) : Screen(host) {
 
     private fun menu(r: Row) {
         val target = r.dir?.file ?: r.file!!.file
-        val options = listOf(if (r.dir != null) "Open folder" else "Open", "Delete…")
+        val options = buildList<Pair<String, () -> Unit>> {
+            if (r.dir != null) add("Open folder" to { show(r.dir) }) else add("Open" to { openFile(target) })
+            if (Archives.isZip(target)) add("Extract here" to { extract(target, "") })
+            add("Compress to zip…" to { askCompress(target) })
+            add("Delete…" to { confirmDelete(r, target) })
+        }
         AlertDialog.Builder(host)
             .setTitle(r.name)
-            .setItems(options.toTypedArray()) { _, which ->
-                when {
-                    which == 0 && r.dir != null -> show(r.dir)
-                    which == 0 -> openFile(target)
-                    else -> confirmDelete(r, target)
-                }
-            }
+            .setItems(options.map { it.first }.toTypedArray()) { _, which -> options[which].second() }
             .setNegativeButton("Cancel", null)
             .show()
+    }
+
+    // ---------- zip archives (Archives.kt) ----------
+
+    private fun passwordBox(hintText: String) = android.widget.EditText(host).apply {
+        hint = hintText
+        isSingleLine = true
+        inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD
+    }
+
+    private fun boxed(v: View) = android.widget.FrameLayout(host).apply {
+        setPadding(ui.dp(20), ui.dp(8), ui.dp(20), 0)
+        addView(v)
+    }
+
+    private fun askCompress(target: File) {
+        val box = passwordBox("Password (leave empty for none)")
+        AlertDialog.Builder(host)
+            .setTitle("Compress “${target.name}”")
+            .setMessage("Makes a zip file next to it. The original stays where it is.")
+            .setView(boxed(box))
+            .setNegativeButton("Cancel", null)
+            .setPositiveButton("Compress") { _, _ -> archiveJob("Compressing…") { Archives.compress(target, box.text.toString()) } }
+            .show()
+    }
+
+    private fun extract(zip: File, password: String) {
+        if (password.isEmpty() && Archives.encrypted(zip)) { askPassword(zip, false); return }
+        archiveJob("Extracting…", onWrongPassword = { askPassword(zip, true) }) { Archives.extract(zip, password) }
+    }
+
+    private fun askPassword(zip: File, wrong: Boolean) {
+        val box = passwordBox("Password")
+        AlertDialog.Builder(host)
+            .setTitle(if (wrong) "Wrong password" else "Password needed")
+            .setMessage("“${zip.name}” is protected with a password.")
+            .setView(boxed(box))
+            .setNegativeButton("Cancel", null)
+            .setPositiveButton("Extract") { _, _ -> box.text.toString().takeIf { it.isNotEmpty() }?.let { extract(zip, it) } }
+            .show()
+    }
+
+    /** Runs [work] off the main thread, then measures the folder again so the new zip or folder shows up. */
+    private fun archiveJob(label: String, onWrongPassword: (() -> Unit)? = null, work: () -> File) {
+        val s = scan ?: return
+        val here = cur?.file
+        list.removeAllViews()
+        list.addView(note(label))
+        background({
+            work().also { made ->
+                val paths = if (made.isDirectory) made.walkTopDown().filter { it.isFile }.map { it.path }.take(2000).toList() else listOf(made.path)
+                paths.chunked(500).forEach { MediaScannerConnection.scanFile(host, it.toTypedArray(), null, null) }
+            }
+        }) { res ->
+            val err = res.exceptionOrNull()
+            when {
+                err is Archives.NeedsPassword && onWrongPassword != null -> onWrongPassword()
+                err != null -> toast("That didn't work: ${err.message ?: "the archive is damaged or there is no space left"}")
+                else -> toast("Made “${res.getOrNull()?.name}”")
+            }
+            if (scan === s) open(s.volume, here)
+        }
     }
 
     /** Hands the file to another app through Android's media index (apps may not share file paths directly). */
