@@ -8,7 +8,7 @@ Andromon Companion is the phone side of [Andromon](https://github.com/Deshan555/
 
 This guide shows every screen and explains what each option does. The PC app has its own guide: [Andromon user guide](https://github.com/Deshan555/Andromon_PC/blob/main/docs/USER_GUIDE.md).
 
-The screenshots were taken on an Android 12 emulator with made-up sample data.
+The screenshots were taken on a real phone (Samsung Galaxy S20, Android 13) with **Blur personal data** turned on (Settings › Display › Privacy). The photo thumbnails on the Recover screen were blurred as well.
 
 ## Contents
 
