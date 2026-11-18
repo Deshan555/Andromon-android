@@ -254,10 +254,13 @@ internal class HomeScreen(host: MainActivity) : Screen(host) {
         linkTile = ui.tile(color(R.color.surface), "PC link", R.drawable.ic_desktop) { host.show("PC link") }
         val freezer = ui.tile(color(R.color.surface), "Freezer", R.drawable.ic_snow) { host.show("Freezer") }
         freezer.sub.text = "Stop apps you aren't using"
+        val recover = ui.tile(color(R.color.surface), "Recover", R.drawable.ic_trash) { host.show("Recover") }
+        recover.sub.text = "Deleted photos and files still on the phone"
         return ui.column {
-            listOf(linkTile, memTile, junk, batteryTile, freezer, netTile, apps, storage, perms, hardware).chunked(2).forEachIndexed { r, pair ->
+            listOf(linkTile, memTile, junk, batteryTile, freezer, netTile, apps, storage, recover, perms, hardware).chunked(2).forEachIndexed { r, pair ->
                 addView(ui.row {
                     pair.forEachIndexed { i, t -> addView(t.box, ui.lp(w = 0, h = ui.dp(148), weight = 1f, start = if (i == 0) 0 else 12)) }
+                    if (pair.size == 1) addView(ui.spacer(), ui.lp(w = 0, h = 1, weight = 1f, start = 12)) // odd count: keep the last tile half width
                 }, ui.lp(top = if (r == 0) 0 else 12))
             }
         }
