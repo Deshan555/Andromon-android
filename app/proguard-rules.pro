@@ -3,6 +3,10 @@
 -keep class dev.andromon.companion.ShellHelper {
     public static void main(java.lang.String[]);
 }
+# ClipWatch (the PC's shared clipboard) is started the same way: app_process, by class name.
+-keep class dev.andromon.companion.ClipWatch {
+    public static void main(java.lang.String[]);
+}
 
 # Privileged access through Shizuku: Shizuku creates PrivilegedService by name, in a process of
 # its own, with its no-argument or its Context constructor. Nothing in the app calls them.
