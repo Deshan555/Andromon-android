@@ -36,6 +36,7 @@ internal class SettingsScreen(host: MainActivity) : Screen(host) {
     private lateinit var largeValue: TextView
     private lateinit var rulesValue: TextView
     private lateinit var dataSwitch: Switch
+    private lateinit var autoSwitch: Switch
     private lateinit var filesValue: TextView
     private lateinit var usageValue: TextView
     private lateinit var notifyValue: TextView
@@ -113,6 +114,14 @@ internal class SettingsScreen(host: MainActivity) : Screen(host) {
                 dataSwitch = switchRow(R.drawable.ic_speed, "Save data on speed tests",
                     "Always run the shorter test (about 35 MB), also on Wi‑Fi") { on -> Prefs.setSaveData(host, on) }
             }, ui.lp(top = 20))
+            addView(ui.section("Automation"), ui.lp(top = 26))
+            addView(ui.glassCard(6) {
+                autoSwitch = switchRow(R.drawable.ic_bolt, "Let other apps control this app",
+                    "Tasker, Automate and similar apps can switch the PC link, Wi‑Fi receive and the Freezer") { on ->
+                    Prefs.setAutomation(host, on)
+                }
+                valueRow(R.drawable.ic_info, "How to use it", "The actions an automation app can send") { showAutomation() }.text = ""
+            }, ui.lp(top = 12))
         }
 
         page("access", R.drawable.ic_lock, "Access", "Files, usage, notifications and permissions") {
@@ -211,6 +220,7 @@ internal class SettingsScreen(host: MainActivity) : Screen(host) {
         val rules = Prefs.CLEANING_RULES
         rulesValue.text = "${rules.count { Prefs.ruleOn(host, it.first) }} of ${rules.size} on"
         dataSwitch.isChecked = Prefs.saveData(host)
+        autoSwitch.isChecked = Prefs.automation(host)
         state(filesValue, Cleaner.hasFileAccess(host))
         state(usageValue, Cleaner.hasUsageAccess(host))
         state(notifyValue, Build.VERSION.SDK_INT < 33 ||
@@ -360,6 +370,13 @@ internal class SettingsScreen(host: MainActivity) : Screen(host) {
             "• The Junk Cleaner and App Manager work on the phone itself. Nothing is deleted or uninstalled " +
             "until you confirm.\n\n" +
             "• Settings are stored only on this phone.")
+
+    private fun showAutomation() = textDialog("Automation",
+        "With the switch on, an automation app can start an activity of this app with one of these actions " +
+            "(in Tasker: System › Send Intent, Target “Activity”, Package ${host.packageName}):\n\n" +
+            AutomationActivity.ACTIONS.joinToString("\n\n") { (action, what) -> "$what\n$action" } +
+            "\n\nNothing else can be done this way: no data is read, deleted or sent. While the switch is off, the " +
+            "actions do nothing.")
 
     private fun raw(id: Int, fallback: String) =
         runCatching { host.resources.openRawResource(id).bufferedReader().use { it.readText() } }.getOrDefault(fallback)

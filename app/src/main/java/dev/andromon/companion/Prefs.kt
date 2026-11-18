@@ -42,6 +42,10 @@ internal object Prefs {
         sp(ctx).edit().apply { on.forEach { (k, v) -> putBoolean("rule_$k", v) } }.apply()
 
     /** Always run the smaller speed test, even on Wi‑Fi. */
+    /** Settings › Tools › Automation: other apps may switch the link, Wi‑Fi receive and the Freezer ([AutomationActivity]). Off by default. */
+    fun automation(ctx: Context) = sp(ctx).getBoolean("automation", false)
+    fun setAutomation(ctx: Context, on: Boolean) = sp(ctx).edit().putBoolean("automation", on).apply()
+
     fun saveData(ctx: Context) = sp(ctx).getBoolean("save_data", false)
     fun setSaveData(ctx: Context, on: Boolean) = sp(ctx).edit().putBoolean("save_data", on).apply()
 

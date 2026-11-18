@@ -220,6 +220,27 @@
             tools:ignore="DiscouragedApi,LockedOrientationActivity" />
         <!-- ===== end of Wi‑Fi send ===== -->
 
+        <!-- Automation (Automation.kt): Tasker and similar apps start it with one of its actions.
+             Exported so they can; it does nothing unless the person turned on Settings › Tools ›
+             Automation, and only does what the app's quick-settings tiles already do. -->
+        <activity
+            android:name=".AutomationActivity"
+            android:exported="true"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar"
+            android:label="Andromon automation"
+            android:noHistory="true"
+            android:excludeFromRecents="true"
+            android:taskAffinity="">
+            <intent-filter>
+                <action android:name="dev.andromon.companion.action.LINK_ON" />
+                <action android:name="dev.andromon.companion.action.LINK_OFF" />
+                <action android:name="dev.andromon.companion.action.RECEIVE_ON" />
+                <action android:name="dev.andromon.companion.action.RECEIVE_OFF" />
+                <action android:name="dev.andromon.companion.action.FREEZE" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+
         <!-- ===== Phone links (Links.kt, ClipSendActivity.kt, Tiles.kt) ===== -->
         <!-- Reads the clipboard once it has the focus and passes it to the PC, then closes.
              Exported only so Andromon can open it over adb ("Get phone's clipboard"), and
