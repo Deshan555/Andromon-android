@@ -7,8 +7,8 @@ import android.view.View
 import kotlin.concurrent.thread
 
 /**
- * One page of the app (Home, Memory, Network, Cleaner). [MainActivity] hosts them and switches
- * between them with the bottom bar; each builds its view once and keeps it.
+ * One page of the app (PC link, Transfer, Tools, Stats, Settings and the tool screens). [MainActivity]
+ * hosts them and switches between them with the bottom bar; each builds its view once and keeps it.
  */
 internal abstract class Screen(protected val host: MainActivity) {
     protected val ui: Ui get() = host.ui
@@ -31,8 +31,10 @@ internal abstract class Screen(protected val host: MainActivity) {
     open fun onLeave() {}
     open fun onPermissionsResult() {}
     open fun onActivityResult(requestCode: Int) {}
-    /** Back was pressed. Return true when the screen used it (e.g. to leave a sub-page); false goes Home. */
+    /** Back was pressed. Return true when the screen used it (e.g. to leave a sub-page); false goes back a screen. */
     open fun onBack(): Boolean = false
+    /** Its bottom-bar item was tapped while it is open; the host also scrolls to the top. */
+    open fun onReselect() {}
 
     /** Runs [work] on a background thread, then [done] on the main thread if the screen still exists. */
     protected fun <T> background(work: () -> T, done: (Result<T>) -> Unit) {

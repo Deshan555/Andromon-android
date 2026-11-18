@@ -26,7 +26,7 @@ import java.util.concurrent.Executors
 
 /**
  * F-Droid: browse the catalogue of free and open-source apps, and install or update them on this
- * phone. The downloading and checking is in [Fdroid]. Opened from Home.
+ * phone. The downloading and checking is in [Fdroid]. Opened from Tools.
  */
 internal class FdroidScreen(host: MainActivity) : Screen(host) {
 
@@ -417,17 +417,6 @@ internal class FdroidScreen(host: MainActivity) : Screen(host) {
 
     private fun note(text: String) = ui.glassCard(16) {
         addView(ui.text(14f, color(R.color.ink)) { this.text = text; setLineSpacing(ui.dp(2).toFloat(), 1f) })
-    }
-
-    private fun ago(time: Long): String {
-        val min = (System.currentTimeMillis() - time) / 60_000
-        return when {
-            min < 1 -> "just now"
-            min < 60 -> "$min min ago"
-            min < 48 * 60 -> "${min / 60} h ago"
-            min < 7 * 24 * 60 -> "${min / (24 * 60)} days ago"
-            else -> "on ${dates.format(Date(time))}"
-        }
     }
 
     private fun iconInto(view: ImageView, a: Fdroid.App, forToken: Int? = null) {

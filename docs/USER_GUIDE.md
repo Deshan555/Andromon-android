@@ -4,6 +4,7 @@ Andromon Companion is the phone side of [Andromon](https://github.com/Deshan555/
 
 1. **It links the phone to Andromon on your computer**, so the computer can show your messages, contacts, call log, calendar, notifications, photos and music.
 2. **It has phone-care tools you use on the phone itself**: memory, cleaner, battery, freezer, network tests, storage, permissions and a hardware test.
+3. **It shows statistics about apps**: screen time, data, battery and storage per app, and what the link to the computer did.
 
 This guide shows every screen and explains what each option does. The PC app has its own guide: [Andromon user guide](https://github.com/Deshan555/Andromon_PC/blob/main/docs/USER_GUIDE.md).
 
@@ -14,11 +15,11 @@ The screenshots were taken on an Android 12 emulator with made-up sample data.
 1. [How the phone app works with the computer](#1-how-the-phone-app-works-with-the-computer)
 2. [Getting the app](#2-getting-the-app)
 3. [Finding your way around](#3-finding-your-way-around)
-4. [Home](#4-home)
-5. [PC link](#5-pc-link)
+4. [PC link](#4-pc-link)
+5. [Tools](#5-tools)
 6. [Cleaner](#6-cleaner)
 7. [Network](#7-network)
-8. [Receive and Send (Wi‑Fi)](#8-receive-and-send-wi-fi)
+8. [Transfer: receive and send (Wi‑Fi)](#8-transfer-receive-and-send-wi-fi)
 9. [Memory](#9-memory)
 10. [Battery](#10-battery)
 11. [Battery saver](#11-battery-saver)
@@ -31,6 +32,7 @@ The screenshots were taken on an Android 12 emulator with made-up sample data.
 18. [Privileged access (Shizuku, helper, root)](#18-privileged-access-shizuku-helper-root)
 19. [Notification buttons and quick-settings tiles](#19-notification-buttons-and-quick-settings-tiles)
 20. [Privacy](#20-privacy)
+21. [Stats](#21-stats)
 
 ---
 
@@ -46,7 +48,7 @@ The screenshots were taken on an Android 12 emulator with made-up sample data.
 
 - Android only lets **apps on the phone** read SMS, contacts, the call log, the calendar and notifications. The companion is that app: Andromon asks, the companion reads and answers.
 - Requests arrive through **adb**, Android's debugging link (USB cable, or Wireless debugging on Android 11+). The companion checks that each request comes from adb. Other apps on the phone, and other devices on the network, can't talk to it.
-- While a computer is linked, a **"Connected to Andromon"** notification is shown. The link stops when you press **Stop** on it, switch it off on the PC link screen, or after 15 idle minutes.
+- While the link is on, a **"Connected to Andromon"** notification is shown. The link stops when you press **Stop** on it or on the PC link screen, or after 15 idle minutes.
 - The phone-care tools work on their own, without a computer. A few of them can do more with **privileged access** (see [section 18](#18-privileged-access-shizuku-helper-root)).
 
 ## 2. Getting the app
@@ -55,38 +57,39 @@ You don't install it yourself. Connect the phone to Andromon with the USB cable 
 
 ## 3. Finding your way around
 
-- The **dark bar at the bottom** has six buttons: **Home, PC link, Cleaner, Network, Receive, Settings**. The open one sits on a white square.
-- Every other tool (**Memory, Battery, Freezer, Apps, Storage, Permissions, Hardware**) opens from a tile on Home. **Battery saver** opens from Battery.
-- Android's **Back** gesture returns to the previous screen.
-- Each screen has one green card at the top with the most important figure, and white cards below with details and options.
+- The **dark bar at the bottom** has five buttons, each with its name: **PC link, Transfer, Tools, Stats, Settings**. The open one's icon sits on a white pill. The app opens on **PC link**.
+- Tapping the button of the screen you are on scrolls it back to the top (in Settings, it also goes back to the list of pages).
+- Every tool (**Memory, Cleaner, Network, Battery, Battery saver, Freezer, Apps, Storage, F-Droid, Recover, Permissions, Hardware**) opens from a tile on **Tools**. While one is open, **Tools** is highlighted in the bar.
+- Android's **Back** gesture returns to where you came from: from a tool to Tools (or to Stats, when you opened an app from Stats), and from the other bar screens to PC link. From PC link, Back leaves the app.
+- Each screen has one green card at the top with the most important figure, and lighter cards below with details and options.
 - The round button at the top right of a screen refreshes it or opens its main action.
 
-## 4. Home
-
-| Health and storage | Tool tiles (scroll down) |
-|---|---|
-| ![Home](screenshots/home.png) | ![Home tiles](screenshots/home-tools.png) |
-
-- The line under **Home** sums up the phone's state ("Your phone is in great shape"). It comes from free storage, free memory and battery condition. When something costs points, it is listed with a link to the screen that helps.
-- The **green card** shows one fact at a time (screen, storage, memory…); tap it for the next.
-- **Storage** shows what apps, media and documents use, and how much is free. **See details** opens the Storage screen.
-- Each **tile** opens a tool and shows its current state (for example "46% of RAM in use").
-
-## 5. PC link
+## 4. PC link
 
 ![PC link](screenshots/pc-link.png)
 
-This screen is the link to the computer.
+The screen the app opens on: the link to Andromon on your computer.
 
 | Part | What it does |
 |---|---|
-| **Andromon link** switch | On (**Ready**): Andromon can connect. Off (**Paused**): it can't, until you switch it on again or start it from the computer over USB. |
-| **Messages / Contacts / Calls** | How many of each the computer would be able to read. "–" means the permission is missing. |
+| **Green card** | **Linked** (a computer is talking to the phone), **Ready** (the link is on and waiting) or **Off**. When linked, it shows the computer's name, whether it is connected over USB or Wi‑Fi, and for how long. Until Andromon has said its name, it says "Your computer". **Start / Stop** switches the link on or off. Andromon can also start it itself over USB. |
+| **Quick actions** | **Send files** picks files and opens Transfer › Send. **Send clipboard** sends what is copied on the phone to the computer (or, when no computer is listening on the link, puts it in Transfer › Send to go over Wi‑Fi). **Receive files** opens Transfer › Receive. **Scan code** scans the code Andromon's Wi‑Fi transfer page shows. **Connect over Wi‑Fi** jumps to the Wi‑Fi card below. |
+| **Today** | Time linked, requests from the computer and files moved today. **PC link stats** opens Stats › PC link. |
+| **Recent activity** | What the computer did lately ("Read your messages", "Sent 3 files to Studio Mac"), newest first; repeats are counted instead of listed again. **See all** shows the last 40. |
+| **What the computer can read** | How many messages, contacts and calls Andromon can see, and each data permission. **Allow** asks for the missing ones. If you refused one with "Don't ask again", Android won't ask any more: the row and the button then say **App info**, which opens the page where you can allow it. |
 | **USB cable** | **How** unfolds the four steps: a cable that carries data, USB debugging on, click Connect in Andromon, tap Allow. |
-| **Wi‑Fi** | After the one-time setup in Andromon (**Use this phone without the cable**), this is a single button that turns the Wi‑Fi connection on and off. Before the setup it explains what to do. Needs Android 11 or newer. |
-| **Data access** | How many of the data permissions are allowed. Tap to see each one and open its Android setting. |
+| **Wi‑Fi** | After the one-time setup in Andromon (**Use this phone without the cable**), a single button turns the Wi‑Fi connection on and off. Before the setup it lists the steps (also for pairing by hand in Wireless debugging). If Developer options are off, it says how to turn them on (Settings › About phone › tap Build number seven times), with a button to About phone. Needs Android 11 or newer. |
 
-Turn the Wi‑Fi connection off when you are done; it also switches itself off when the phone leaves the Wi‑Fi network or restarts.
+Turn the Wi‑Fi connection off when you are done; it also switches itself off when the phone leaves the Wi‑Fi network or restarts. The activity list and the figures stay on the phone for 30 days; **Settings › PC link › Clear link history** removes them.
+
+## 5. Tools
+
+![Tools](screenshots/tools.png)
+
+- The line under **Tools** sums up the phone's state ("Your phone is in great shape"). It comes from free storage, free memory and battery condition. When something costs points, it is listed on the green card with a link to the screen that helps.
+- The **green card** shows one fact at a time (health, storage, memory, battery, uptime, network, installed apps, screen, Android version); tap it for the next. The arrow at its top right opens the screen that says more, when there is one.
+- **Storage** shows what apps, media and documents use, and how much is free. The arrow opens the Storage screen (folder sizes); **Free up space with the Cleaner** opens the Cleaner.
+- Each **tile** opens a tool and shows its current state (for example "46% of RAM in use").
 
 ## 6. Cleaner
 
@@ -110,11 +113,11 @@ Good to know: apps' private caches, usually the largest part, can't be cleared b
 - **Speed test** measures ping, download and upload. It uses up to about 125 MB on Wi‑Fi and 35 MB on mobile data. **Settings › Save data on speed tests** always runs the shorter test.
 - **Ping** checks how fast a host answers; **DNS lookup** shows the addresses behind a name.
 
-## 8. Receive and Send (Wi‑Fi)
+## 8. Transfer: receive and send (Wi‑Fi)
 
-![Receive](screenshots/receive.png)
+![Transfer](screenshots/transfer.png)
 
-Moves files between the phone and a computer over Wi‑Fi, without a cable. The switch at the top chooses **Receive** or **Send**.
+Moves files between the phone and a computer over Wi‑Fi, without a cable. The switch at the top chooses **Receive** or **Send**; Transfer opens on the side you used last.
 
 ### Receive
 
@@ -130,8 +133,8 @@ Every transfer asks first: **Accept** or **Decline**, on the screen or in the no
 ### Send
 
 - Pick **Files** or **Photos**, or use **Share › Andromon** from the gallery or any other app.
-- The screen lists the computers it finds on the Wi‑Fi. **Refresh** searches again; **Enter address** adds one by IP address.
-- Tap a computer, then **Send**. The computer has to accept.
+- The screen lists the computers it finds on the Wi‑Fi. **Refresh** searches again; **Enter address** adds one by IP address (the **×** next to the field closes it again); **Scan code** reads the code Andromon shows.
+- Tap a computer, then **Send**. The Send button always stays just above the bottom bar. The computer has to accept.
 
 On the computer, open Andromon's **Wi‑Fi transfer** page and turn it on.
 
@@ -270,10 +273,11 @@ Where the phone can tell the result, it fills it in; otherwise you tap **Passed*
 |---|---|---|
 | **Appearance** | Theme | Light, dark, or the same as the phone. |
 | **PC link** | Start when the app opens | On: opening the app also starts the link to Andromon. Andromon can always start the link over USB, even when this is off. |
+| | Clear link history | Removes the PC link screen's recent activity, the PC link figures in Stats and the names of the computers that connected. |
 | **Tools** | Cleaning rules | Which of the Cleaner's rules run (17 in all). |
 | | Large files | The size from which the Cleaner lists a file as large (50 MB to 1 GB). |
 | | Save data on speed tests | Always runs the shorter speed test, also on Wi‑Fi. |
-| **Access** | All files access, Usage access, Notifications, App permissions | The state of each access the app uses. Tap one to open its Android setting. |
+| **Access** | All files access, Usage access, Notifications, App permissions | The state of each access the app uses. Tap one to open its Android setting. Stats needs Usage access. |
 | **Privileged access** | In use, Shizuku, Get Shizuku, Prefer, Finish setup | See the next section. |
 | **About** | Privacy, Licence, Third-party notices | What the app does with data, and the licences. |
 
@@ -289,7 +293,7 @@ Some features need more rights than Android gives a normal app: the Memory scree
 
 Under **Settings › Privileged access**:
 
-- **In use** shows which way is active right now, or "None".
+- **In use** shows which way is active right now, or "None", and why, in full.
 - **Shizuku** shows its state: not installed, not running, waiting for permission, or ready.
 - **Prefer** chooses between Automatic (Shizuku first), Shizuku, or the helper/root.
 - **Finish setup without a computer** lets the app grant itself, through Shizuku, the permissions Andromon would normally grant over USB.
@@ -309,3 +313,19 @@ Whichever way is used, the app can only run a fixed list of commands (list proce
 - Messages, contacts, the call log, calendar and notifications go **only to Andromon** on computers you connected or paired, through the adb link.
 - The app uses the network only for the Network screen's tests and for Wi‑Fi receive and send while you have them on.
 - There are no accounts, no ads and no analytics. The app is free software (GPL-3.0); the licences are under **Settings › About**.
+
+## 21. Stats
+
+![Stats](screenshots/stats.png)
+
+How apps use the phone, from Android's own records. The chips at the top choose the kind; **Today / 7 days** chooses the time where it applies. Each kind has a green card with the total, a bar chart and a list of apps with their share; tap an app for its details (the same as in Apps).
+
+| Kind | What it shows | Good to know |
+|---|---|---|
+| **Usage** | Screen time and how often each app was opened, when it was last used, and screen time per day for the last 7 days. | An app counts while it is on screen; the home screen and the system bars don't count. Needs usage access. |
+| **Data** | Mobile data and Wi‑Fi per app, and per day for the last 7 days. | As Android counts it, in 2-hour blocks: "Today" can include a little of late yesterday. Apps you uninstalled are grouped as "Removed apps". Needs usage access. |
+| **Battery** | Each app's use since the last full charge, in mAh, as Android estimates it. | Android only shares this with privileged access (Settings › Privileged access); without it the screen says so and offers the setup. |
+| **Storage** | App, data and cache size of every app, the biggest first. | Needs usage access. Caches can be cleared from Andromon on the computer (Apps › Clear app caches). |
+| **PC link** | Sessions, time linked, requests by kind, files and bytes sent and received over Wi‑Fi, clipboard shares and the computers that connected. | Kept on the phone for 30 days. |
+
+When usage access is off, Stats says so and offers **Allow usage access**.

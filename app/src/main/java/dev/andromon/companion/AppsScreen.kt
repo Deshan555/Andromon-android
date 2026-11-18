@@ -36,9 +36,11 @@ internal class AppsScreen(host: MainActivity) : Screen(host) {
     override val navIcon = R.drawable.ic_apps
     override val navColor = R.color.bg
 
-    private companion object {
+    companion object {
         const val REQ_UNINSTALL = 9
         const val MAX_ROWS = 400
+        /** An app whose details to show once the list is loaded (from Stats). */
+        var pendingDetails: String? = null
     }
 
     private enum class Filter(val label: String) { USER("User"), SYSTEM("System"), ALL("All") }
@@ -118,7 +120,16 @@ internal class AppsScreen(host: MainActivity) : Screen(host) {
 
     override fun onShow() {
         usageRow.visibility = if (Cleaner.hasUsageAccess(host)) View.GONE else View.VISIBLE
-        if (!loaded) load()
+        if (!loaded) load() else showPending()
+    }
+
+    /** Stats asked for one app's details: show them, or Android's App info for an app the list doesn't have. */
+    private fun showPending() {
+        val pkg = pendingDetails ?: return
+        pendingDetails = null
+        val app = apps.firstOrNull { it.pkg == pkg }
+        if (app != null) showDetails(app)
+        else runCatching { host.startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", pkg, null))) }
     }
 
     override fun onActivityResult(requestCode: Int) {
@@ -138,6 +149,7 @@ internal class AppsScreen(host: MainActivity) : Screen(host) {
             val keep = apps.filter { it.checked }.map { it.pkg }.toSet()
             apps = r.getOrDefault(emptyList()).onEach { it.checked = it.pkg in keep }
             render()
+            showPending()
         }
     }
 
@@ -207,7 +219,7 @@ internal class AppsScreen(host: MainActivity) : Screen(host) {
     private fun lastUsed(app: AppEntry): String {
         if (!Cleaner.hasUsageAccess(host)) return "No usage data"
         val t = app.lastUsed?.takeIf { it > 0 } ?: return "Not used in ${AppTools.USAGE_DAYS} days"
-        return "Used " + DateUtils.getRelativeTimeSpanString(t, System.currentTimeMillis(), DateUtils.MINUTE_IN_MILLIS)
+        return "Used " + ago(t)
     }
 
     private fun duration(ms: Long): String {

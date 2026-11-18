@@ -59,6 +59,7 @@ class ClipSendActivity : Activity() {
         done = true
         val cut = text.length > Links.MAX_CLIP
         LinkEvents.emit(JSONObject().put("type", "clip").put("text", if (cut) text.take(Links.MAX_CLIP) else text).put("truncated", cut))
+        LinkStats.clipToComputer(this)
         Toast.makeText(applicationContext, "Clipboard sent to your computer", Toast.LENGTH_SHORT).show()
         close()
     }

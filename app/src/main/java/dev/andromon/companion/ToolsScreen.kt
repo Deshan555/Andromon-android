@@ -15,11 +15,14 @@ import android.widget.LinearLayout
 import android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
 import android.widget.TextView
 
-/** Dashboard: a hero card that rotates through the phone's stats, storage at a glance and tiles for every tool and the PC link. */
-internal class HomeScreen(host: MainActivity) : Screen(host) {
+/**
+ * Tools (the bottom bar's middle item; "Home" in earlier versions): a hero card that rotates
+ * through the phone's readings, storage at a glance and a tile for every tool.
+ */
+internal class ToolsScreen(host: MainActivity) : Screen(host) {
 
-    override val name = "Home"
-    override val navIcon = R.drawable.ic_home
+    override val name = "Tools"
+    override val navIcon = R.drawable.ic_grid
     override val navColor = R.color.bg
 
     private lateinit var greetSub: TextView
@@ -34,12 +37,14 @@ internal class HomeScreen(host: MainActivity) : Screen(host) {
     private lateinit var ringBox: FrameLayout
     private lateinit var ringLabel: TextView
     private var heroIndex = -1
-    private var heroScreen = "Cleaner"
+    private var heroScreen: String? = "Cleaner"
+    private lateinit var heroOpen: View
     private var appCounts: Pair<Int, Int>? = null // user apps, system apps (counted off the main thread)
 
     /** One reading the hero card can show: a headline figure, a line under it and, where it helps, a ring. */
     private class HeroStat(
-        val icon: Int, val title: String, val value: CharSequence, val sub: String, val screen: String,
+        /** The screen the arrow opens, or null when no screen says more about this reading. */
+        val icon: Int, val title: String, val value: CharSequence, val sub: String, val screen: String?,
         val ring: Float? = null, val ringValue: CharSequence = "", val ringLabel: String = "",
         val issues: List<Phone.Issue> = emptyList(),
     )
@@ -50,32 +55,24 @@ internal class HomeScreen(host: MainActivity) : Screen(host) {
     private lateinit var memTile: Ui.Tile
     private lateinit var batteryTile: Ui.Tile
     private lateinit var netTile: Ui.Tile
-    private lateinit var linkTile: Ui.Tile
 
     override fun build(): View = ui.column {
-        addView(ui.pageTitle("Home"), ui.lp(top = 12))
-        greetSub = ui.text(15f, color(R.color.ink_soft))
-        addView(greetSub, ui.lp(top = 10))
-        addView(healthCard(), ui.lp(top = 18))
+        addView(ui.topBar("Tools", host::goHome).first)
+        greetSub = ui.subtitle()
+        addView(greetSub, ui.lp(top = 6))
+        addView(healthCard(), ui.lp(top = 20))
         addView(storageCard(), ui.lp(top = 12))
+        addView(ui.section("All tools"), ui.lp(top = 26))
         addView(tiles(), ui.lp(top = 12))
         addView(footer(), ui.lp(top = 24))
     }
 
     override fun onShow() {
-        CompanionService.stateListener = ::refresh // keeps the PC link tile current
-        heroIndex = -1 // a different reading on the hero card each time Home opens
+        heroIndex = -1 // a different reading on the hero card each time Tools opens
         refresh()
         loadStorage()
-        if (appCounts == null) background({
-            val apps = host.packageManager.getInstalledApplications(0)
-            val system = apps.count { it.flags and android.content.pm.ApplicationInfo.FLAG_SYSTEM != 0 }
-            (apps.size - system) to system
-        }) { r -> appCounts = r.getOrNull(); }
-    }
-
-    override fun onHide() {
-        CompanionService.stateListener = null
+        // Counted like the Apps screen counts them, so both say the same number.
+        if (appCounts == null) background({ AppTools.countApps(host) }) { r -> appCounts = r.getOrNull() }
     }
 
     override fun onPermissionsResult() = refresh()
@@ -93,7 +90,8 @@ internal class HomeScreen(host: MainActivity) : Screen(host) {
             addView(heroIcon)
             heroTitle = ui.text(15f, color(R.color.ink), ui.medium) { maxLines = 1 }
             addView(heroTitle, ui.lp(w = 0, weight = 1f, start = 10))
-            addView(ui.circleButton(R.drawable.ic_arrow_up_right, "Open", 36) { host.show(heroScreen) })
+            heroOpen = ui.circleButton(R.drawable.ic_arrow_up_right, "Open", 36) { heroScreen?.let { host.show(it) } }
+            addView(heroOpen)
         })
         addView(ui.row {
             gravity = Gravity.CENTER_VERTICAL
@@ -176,7 +174,7 @@ internal class HomeScreen(host: MainActivity) : Screen(host) {
             else -> ui.withUnit("$up", "min")
         }
         out += HeroStat(R.drawable.ic_timer, "Uptime", upText,
-            if (up >= 7 * 1440) "since the last restart · a restart can help" else "since the last restart", "Memory")
+            if (up >= 7 * 1440) "since the last restart · a restart can help" else "since the last restart", null)
 
         val net = NetTools.info(host)
         out += HeroStat(net.icon, "Network", net.kind, if (net.connected) net.detail else "Not connected", "Network")
@@ -189,7 +187,7 @@ internal class HomeScreen(host: MainActivity) : Screen(host) {
         out += HeroStat(R.drawable.ic_image, "Screen", "${mode.physicalWidth}×${mode.physicalHeight}",
             "%.0f Hz · %d dpi".format(mode.refreshRate, host.resources.displayMetrics.densityDpi), "Hardware")
         out += HeroStat(R.drawable.ic_info, "Android", ui.withUnit(Build.VERSION.RELEASE, "API ${Build.VERSION.SDK_INT}"),
-            Build.VERSION.SECURITY_PATCH.takeIf { it.isNotBlank() }?.let { "Security patch $it" } ?: Build.MODEL, "Permissions")
+            Build.VERSION.SECURITY_PATCH.takeIf { it.isNotBlank() }?.let { "Security patch $it" } ?: Build.MODEL, null)
         return out
     }
 
@@ -205,6 +203,8 @@ internal class HomeScreen(host: MainActivity) : Screen(host) {
         heroIndex = i
         val s = stats[i]
         heroScreen = s.screen
+        heroOpen.visibility = if (s.screen == null) View.INVISIBLE else View.VISIBLE
+        heroOpen.contentDescription = s.screen?.let { "Open $it" }
         heroIcon.setImageDrawable(ui.icon(s.icon, color(R.color.ink)))
         heroTitle.text = s.title
         scoreText.textSize = when { s.value.length <= 6 -> 50f; s.value.length <= 9 -> 40f; else -> 30f }
@@ -221,20 +221,18 @@ internal class HomeScreen(host: MainActivity) : Screen(host) {
         heroDots.text = "${i + 1} of ${stats.size} · tap for another"
     }
 
-    /** Salmon "Breakfast" card: storage split into numbers. */
+    /** Storage split into numbers; the arrow opens the folder sizes, the line below the Cleaner. */
     private fun storageCard() = ui.card(color(R.color.surface), 16) {
         val (head, sub) = ui.cardHeader(R.drawable.ic_sd, "Storage") {
-            addView(ui.circleButton(R.drawable.ic_arrow_right, "Open Junk Cleaner", 36) { host.show("Cleaner") })
+            addView(ui.circleButton(R.drawable.ic_arrow_right, "Open Storage: folder sizes", 36) { host.show("Storage") })
         }
         storageSub = sub
         addView(head)
         val (nums, values) = ui.numbers(listOf("Apps", "Media", "Docs", "Free"))
         storageValues = values
         addView(nums, ui.lp(top = 20))
-        addView(ui.row {
-            addView(ui.text(13f, color(R.color.ink), ui.medium) { text = "Internal storage" }, ui.lp(w = 0, weight = 1f))
-            addView(ui.text(12f, color(R.color.ink_soft)) { text = "See details" }, ui.lp(w = WRAP_CONTENT))
-        }, ui.lp(top = 20))
+        val (free, _) = ui.listPill(R.drawable.ic_broom, "Free up space with the Cleaner") { host.show("Cleaner") }
+        addView(free, ui.lp(top = 18))
     }
 
     private fun tiles(): View {
@@ -251,7 +249,8 @@ internal class HomeScreen(host: MainActivity) : Screen(host) {
         perms.sub.text = "Which apps can use camera, mic, location…"
         val hardware = ui.tile(color(R.color.surface), "Hardware", R.drawable.ic_tools) { host.show("Hardware") }
         hardware.sub.text = "Screen, sound, sensors and more"
-        linkTile = ui.tile(color(R.color.surface), "PC link", R.drawable.ic_desktop) { host.show("PC link") }
+        val saver = ui.tile(color(R.color.surface), "Battery saver", R.drawable.ic_leaf) { host.show("Saver") }
+        saver.sub.text = "Deep sleep, charging alerts, app limits"
         val freezer = ui.tile(color(R.color.surface), "Freezer", R.drawable.ic_snow) { host.show("Freezer") }
         freezer.sub.text = "Stop apps you aren't using"
         val recover = ui.tile(color(R.color.surface), "Recover", R.drawable.ic_trash) { host.show("Recover") }
@@ -259,7 +258,7 @@ internal class HomeScreen(host: MainActivity) : Screen(host) {
         val fdroid = ui.tile(color(R.color.surface), "F-Droid", R.drawable.ic_bag) { host.show("F-Droid") }
         fdroid.sub.text = "Free and open-source apps"
         return ui.column {
-            listOf(linkTile, memTile, junk, batteryTile, freezer, netTile, apps, fdroid, storage, recover, perms, hardware).chunked(2).forEachIndexed { r, pair ->
+            listOf(memTile, junk, batteryTile, saver, freezer, netTile, apps, storage, fdroid, recover, perms, hardware).chunked(2).forEachIndexed { r, pair ->
                 addView(ui.row {
                     pair.forEachIndexed { i, t -> addView(t.box, ui.lp(w = 0, h = ui.dp(148), weight = 1f, start = if (i == 0) 0 else 12)) }
                     if (pair.size == 1) addView(ui.spacer(), ui.lp(w = 0, h = 1, weight = 1f, start = 12)) // odd count: keep the last tile half width
@@ -277,8 +276,6 @@ internal class HomeScreen(host: MainActivity) : Screen(host) {
     // ---------- state ----------
 
     private fun refresh() {
-        linkTile.sub.text = if (CompanionService.running) "Ready · USB or Wi‑Fi" else "Paused · tap to turn on"
-
         val (score, issues) = Phone.health(host)
         greetSub.text = when {
             issues.isEmpty() -> "Your phone is in great shape."

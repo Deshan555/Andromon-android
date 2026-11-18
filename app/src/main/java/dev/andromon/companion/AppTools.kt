@@ -99,6 +99,19 @@ internal object AppTools {
         }
     }
 
+    /**
+     * How many apps the Apps screen lists as user apps and as system apps: every installed package
+     * (also disabled ones) except this app, counted the same way as [load], so Tools and Apps agree.
+     */
+    fun countApps(ctx: Context): Pair<Int, Int> {
+        val flags = PackageManager.MATCH_DISABLED_COMPONENTS or PackageManager.MATCH_DISABLED_UNTIL_USED_COMPONENTS
+        val apps = ctx.packageManager.getInstalledPackages(flags).mapNotNull { p ->
+            p.applicationInfo?.takeIf { p.packageName != ctx.packageName }
+        }
+        val system = apps.count { it.flags and ApplicationInfo.FLAG_SYSTEM != 0 }
+        return (apps.size - system) to system
+    }
+
     /** Screen time and last use over the last [USAGE_DAYS] days, or empty without usage access. */
     private fun usage(ctx: Context): Map<String, Pair<Long, Long>> {
         if (!Cleaner.hasUsageAccess(ctx)) return emptyMap()

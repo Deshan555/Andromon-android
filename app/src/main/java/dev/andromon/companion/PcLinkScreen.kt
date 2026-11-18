@@ -4,27 +4,33 @@
 package dev.andromon.companion
 
 import android.Manifest
+import android.app.AlertDialog
+import android.content.ClipboardManager
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import android.provider.BaseColumns
 import android.provider.CallLog
 import android.provider.ContactsContract
 import android.provider.Settings
 import android.provider.Telephony
+import android.text.TextUtils
 import android.view.Gravity
 import android.view.View
-import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
-import android.widget.Switch
 import android.widget.TextView
+import org.json.JSONObject
 import java.text.NumberFormat
 
 /**
- * The PC companion itself: the USB link to Andromon (on/off), the data the PC can read, how to
- * connect, the permissions it needs, and where the data goes.
+ * Where the app opens: the link to Andromon on the computer. Whether a computer is linked (over
+ * USB or Wi‑Fi, which one, for how long) with one Start/Stop button; quick actions (send files or
+ * the clipboard, receive files, scan the computer's code, connect over Wi‑Fi); what the computer
+ * may read; recent activity and today's figures; and how to connect.
  */
 internal class PcLinkScreen(host: MainActivity) : Screen(host) {
 
@@ -50,160 +56,260 @@ internal class PcLinkScreen(host: MainActivity) : Screen(host) {
         "android.permission.POST_NOTIFICATIONS" to "Show the connection notification",
     )
 
-    /** One data-count row in the link card. */
+    /** One data-count figure in the data access card. */
     private class Count(val value: TextView, val uri: Uri, val permission: String)
 
-    private lateinit var linkState: TextView
-    private lateinit var linkSub: TextView
-    private lateinit var linkSwitch: Switch
-    private lateinit var wifiSub: TextView
-    private lateinit var wifiPill: TextView
+    private lateinit var statusDot: View
+    private lateinit var statusText: TextView
+    private lateinit var heroTitle: TextView
+    private lateinit var heroSub: TextView
+    private lateinit var heroDetail: TextView
+    private lateinit var startStop: TextView
+    private lateinit var actionNote: TextView
     private lateinit var permSub: TextView
     private lateinit var permPill: TextView
     private lateinit var permList: LinearLayout
+    private lateinit var activityList: LinearLayout
+    private lateinit var allActivity: TextView
+    private lateinit var todayValues: List<TextView>
+    private lateinit var wifiCard: View
+    private lateinit var wifiSub: TextView
+    private lateinit var wifiSteps: LinearLayout
+    private lateinit var wifiPill: TextView
     private val counts = mutableListOf<Count>()
     private val numbers = NumberFormat.getIntegerInstance()
 
+    private val handler = Handler(Looper.getMainLooper())
+    private val tick = object : Runnable {
+        override fun run() { refreshLink(); refreshActivity(); handler.postDelayed(this, 20_000) }
+    }
+    private val onStats: () -> Unit = { refreshLink(); refreshActivity() }
+
     override fun build(): View = ui.column {
         addView(ui.topBar("PC link", host::goHome).first)
-        addView(linkCard(), ui.lp(top = 18))
-        addView(usbCard(), ui.lp(top = 12))
-        addView(wirelessCard(), ui.lp(top = 12))
+        addView(ui.subtitle("How Andromon on your computer reaches this phone"), ui.lp(top = 6))
+        addView(heroCard(), ui.lp(top = 20))
+        addView(actionsCard(), ui.lp(top = 12))
+        addView(ui.section("Today"), ui.lp(top = 26))
+        addView(todayCard(), ui.lp(top = 12))
+        addView(ui.section("Recent activity") {
+            allActivity = ui.smallPill("See all") { showAllActivity() }
+            addView(allActivity, ui.lp(w = WRAP_CONTENT))
+        }, ui.lp(top = 26))
+        addView(activityCard(), ui.lp(top = 12))
+        addView(ui.section("What the computer can read"), ui.lp(top = 26))
         addView(permissionsCard(), ui.lp(top = 12))
-        addView(ui.text(12f, color(R.color.ink_faint)) {
+        addView(ui.section("Connect"), ui.lp(top = 26))
+        addView(usbCard(), ui.lp(top = 12))
+        wifiCard = wirelessCard()
+        addView(wifiCard, ui.lp(top = 12))
+        addView(ui.text(12f, color(R.color.ink_soft)) {
             text = "Your messages, contacts and call log only go to Andromon, on computers you connect or pair."
             gravity = Gravity.CENTER
             setLineSpacing(ui.dp(2).toFloat(), 1f)
-        }, ui.lp(top = 16))
+        }, ui.lp(top = 20))
     }
 
     override fun onShow() {
         CompanionService.stateListener = ::refresh
+        LinkStats.listen(onStats)
+        handler.removeCallbacks(tick)
+        handler.postDelayed(tick, 20_000)
         refresh()
     }
 
     override fun onHide() {
         CompanionService.stateListener = null
+        LinkStats.unlisten(onStats)
+        handler.removeCallbacks(tick)
     }
 
     override fun onPermissionsResult() = refresh()
 
     // ---------- sections ----------
 
-    /** The hero card: is the link on, the switch, and how much the PC can read. */
-    private fun linkCard() = ui.heroCard(18) {
+    /** The hero: linked or not, how and for how long, the computer's name, and Start/Stop. */
+    private fun heroCard() = ui.heroCard(18) {
         addView(ui.row {
-            gravity = Gravity.CENTER_VERTICAL
             addView(ui.chipIcon(R.drawable.ic_desktop))
             addView(ui.text(15f, color(R.color.ink), ui.medium) { text = "Andromon link" }, ui.lp(w = 0, weight = 1f, start = 10))
-            linkSwitch = ui.toggle { togglePcLink() }
-            addView(linkSwitch, ui.lp(w = WRAP_CONTENT, start = 8))
+            val (row, dot, label) = ui.dotLabel()
+            statusDot = dot; statusText = label.apply { setTextColor(color(R.color.ink)); typeface = ui.medium }
+            row.background = ui.rounded(color(R.color.glass), 50)
+            row.setPadding(ui.dp(12), ui.dp(7), ui.dp(14), ui.dp(7))
+            addView(row, ui.lp(w = WRAP_CONTENT, start = 8))
         })
-        linkState = ui.text(44f, color(R.color.ink), ui.regular) { letterSpacing = -0.03f; maxLines = 1 }
-        addView(linkState, ui.lp(top = 14))
-        linkSub = ui.text(13f, color(R.color.ink), ui.medium)
-        addView(linkSub, ui.lp(top = 6))
+        heroTitle = ui.text(34f, color(R.color.ink), ui.regular) {
+            letterSpacing = -0.03f; maxLines = 2; ellipsize = TextUtils.TruncateAt.END
+        }
+        addView(heroTitle, ui.lp(top = 16))
+        heroSub = ui.text(14f, color(R.color.ink), ui.medium) { setLineSpacing(ui.dp(2).toFloat(), 1f) }
+        addView(heroSub, ui.lp(top = 8))
+        heroDetail = ui.text(13f, color(R.color.ink)) { setLineSpacing(ui.dp(2).toFloat(), 1f) }
+        addView(heroDetail, ui.lp(top = 4))
+        startStop = ui.action("Start", R.drawable.ic_power) { togglePcLink() }
+        addView(startStop, ui.lp(top = 18))
+    }
+
+    /** Five things people come here to do, as a grid of labelled icons. */
+    private fun actionsCard() = ui.glassCard(10) {
+        val actions = listOf(
+            Triple(R.drawable.ic_up, "Send files") { sendFiles() },
+            Triple(R.drawable.ic_clipboard, "Send clipboard") { sendClipboard() },
+            Triple(R.drawable.ic_down, "Receive files") { TransferScreen.requestMode(send = false); host.show("Transfer"); Unit },
+            Triple(R.drawable.ic_qr, "Scan code") { scanCode() },
+            Triple(R.drawable.ic_wifi, "Connect over Wi‑Fi") { host.scrollTo(wifiCard) },
+        )
+        actions.chunked(3).forEachIndexed { r, chunk ->
+            addView(ui.row {
+                gravity = Gravity.TOP
+                chunk.forEach { (icon, label, go) -> addView(actionCell(icon, label, go), ui.lp(w = 0, weight = 1f)) }
+                repeat(3 - chunk.size) { addView(ui.spacer(), ui.lp(w = 0, h = 1, weight = 1f)) }
+            }, ui.lp(top = if (r == 0) 0 else 4))
+        }
+        actionNote = ui.text(13f, color(R.color.ink_soft)) {
+            visibility = View.GONE; setLineSpacing(ui.dp(2).toFloat(), 1f)
+            setPadding(ui.dp(8), ui.dp(6), ui.dp(8), ui.dp(6))
+        }
+        addView(actionNote)
+    }
+
+    private fun actionCell(icon: Int, label: String, go: () -> Unit) = ui.column {
+        gravity = Gravity.CENTER_HORIZONTAL
+        background = ui.pressable(ui.rounded(android.graphics.Color.TRANSPARENT, 20))
+        setPadding(ui.dp(4), ui.dp(10), ui.dp(4), ui.dp(10))
+        addView(ui.iconTile(icon, color(R.color.ink), color(R.color.glass_strong), 48, 22), ui.lp(w = ui.dp(48), h = ui.dp(48)))
+        addView(ui.text(13f, color(R.color.ink)) { text = label; gravity = Gravity.CENTER; maxLines = 2 }, ui.lp(top = 8))
+        contentDescription = label
+        setOnClickListener { go() }
+    }
+
+    private fun todayCard() = ui.glassCard(16) {
+        val (nums, values) = ui.numbers(listOf("Linked", "Requests", "Files"))
+        todayValues = values
+        addView(nums)
+        val (row, _) = ui.listPill(R.drawable.ic_chart, "PC link stats") { StatsScreen.pending = "PC link"; host.show("Stats") }
+        addView(row, ui.lp(top = 18))
+    }
+
+    private fun activityCard() = ui.glassCard(6) {
+        activityList = this
+    }
+
+    private fun permissionsCard() = ui.glassCard(16) {
+        val (head, sub) = ui.cardHeader(R.drawable.ic_lock, "Data access") {
+            permPill = ui.smallPill("")
+            addView(permPill, ui.lp(w = WRAP_CONTENT, start = 8))
+        }
+        permSub = sub
+        addView(head)
         val (nums, values) = ui.numbers(listOf("Messages", "Contacts", "Calls"))
         listOf(
             Telephony.Sms.CONTENT_URI to Manifest.permission.READ_SMS,
             ContactsContract.Contacts.CONTENT_URI to Manifest.permission.READ_CONTACTS,
             CallLog.Calls.CONTENT_URI to Manifest.permission.READ_CALL_LOG,
         ).forEachIndexed { i, source -> counts += Count(values[i], source.first, source.second) }
-        addView(nums, ui.lp(top = 20))
+        addView(nums, ui.lp(top = 18))
+        permList = ui.column()
+        addView(permList, ui.lp(top = 8))
     }
 
     /** USB: one line, with the four steps tucked behind "How". */
     private fun usbCard() = ui.glassCard(16) {
         val steps = ui.column { visibility = View.GONE }
-        val how = ui.pill("How", color(R.color.surface), color(R.color.ink)).apply { textSize = 13f; minHeight = ui.dp(34) }
+        val how = ui.smallPill("How")
         val (head, sub) = ui.cardHeader(R.drawable.ic_usb, "USB cable") { addView(how, ui.lp(w = WRAP_CONTENT, start = 8)) }
         sub.text = "Plug in, then click Connect in Andromon"
         addView(head)
-        listOf(
+        stepList(steps, listOf(
             "Use a USB cable that carries data.",
             "Turn on Developer options › USB debugging.",
             "Open Andromon on the computer and click Connect.",
             "Tap Allow when the phone asks.",
-        ).forEachIndexed { i, step ->
-            steps.addView(ui.row {
-                gravity = Gravity.CENTER_VERTICAL
+        ))
+        addView(steps, ui.lp(top = 4))
+        fun show(open: Boolean) {
+            steps.visibility = if (open) View.VISIBLE else View.GONE
+            ui.stylePill(how, if (open) "Hide" else "How", color(R.color.glass_strong), color(R.color.ink)) { show(!open) }
+        }
+        show(false)
+    }
+
+    private fun stepList(into: LinearLayout, steps: List<String>) {
+        into.removeAllViews()
+        steps.forEachIndexed { i, step ->
+            into.addView(ui.row {
+                gravity = Gravity.TOP
                 addView(ui.text(13f, color(R.color.on_fab), ui.medium) {
                     text = "${i + 1}"
                     gravity = Gravity.CENTER
                     background = ui.circle(color(R.color.fab))
                 }, ui.lp(w = ui.dp(24), h = ui.dp(24)))
-                addView(ui.text(14f, color(R.color.ink)) { text = step }, ui.lp(w = 0, weight = 1f, start = 12))
+                addView(ui.text(14f, color(R.color.ink)) { text = step; setLineSpacing(ui.dp(2).toFloat(), 1f) },
+                    ui.lp(w = 0, weight = 1f, start = 12).apply { topMargin = ui.dp(2) })
             }, ui.lp(top = 12))
         }
-        addView(steps, ui.lp(top = 4))
-        fun show(open: Boolean) {
-            steps.visibility = if (open) View.VISIBLE else View.GONE
-            ui.stylePill(how, if (open) "Hide" else "How", color(R.color.surface), color(R.color.ink)) { show(!open) }
-        }
-        show(false)
     }
 
     /**
      * Andromon can also connect without a cable through Android's Wireless debugging
-     * (Android 11+): it shows a QR code that the phone scans in Developer options › Wireless
-     * debugging › Pair device with QR code. This card shows how far along the phone is.
+     * (Android 11+). This card shows how far along the phone is, and what to do next, also when
+     * Developer options are still off.
      */
     private fun wirelessCard() = ui.glassCard(16) {
         val (head, sub) = ui.cardHeader(R.drawable.ic_wifi, "Wi‑Fi")
-        wifiSub = sub.apply { maxLines = 3; ellipsize = null; setLineSpacing(ui.dp(2).toFloat(), 1f) }
+        wifiSub = sub.apply { maxLines = 5; ellipsize = null; setLineSpacing(ui.dp(2).toFloat(), 1f) }
         addView(head)
-        wifiPill = ui.pill("", 0, 0).apply { textSize = 13f; minHeight = ui.dp(36) }
-        addView(wifiPill, ui.lp(w = WRAP_CONTENT, top = 12))
+        wifiSteps = ui.column()
+        addView(wifiSteps, ui.lp(top = 2))
+        wifiPill = ui.smallPill("")
+        addView(wifiPill, ui.lp(w = WRAP_CONTENT, top = 14))
     }
 
-    private fun refreshWireless() {
-        val cr = host.contentResolver
-        val devOn = Settings.Global.getInt(cr, Settings.Global.DEVELOPMENT_SETTINGS_ENABLED, 0) == 1
-        val wifiOn = Settings.Global.getInt(cr, ADB_WIFI, 0) == 1
-        // Granted by Andromon during its one-time USB setup ("Use this phone without the cable").
-        val canSwitch = host.checkSelfPermission("android.permission.WRITE_SECURE_SETTINGS") == PackageManager.PERMISSION_GRANTED
-        fun open(action: String): () -> Unit = { runCatching { host.startActivity(Intent(action)) } }
-        wifiPill.visibility = View.VISIBLE
-        when {
-            Build.VERSION.SDK_INT < 30 -> {
-                wifiSub.text = "Needs Android 11 or later"
-                wifiPill.visibility = View.GONE
-            }
-            canSwitch && devOn -> {
-                wifiSub.text = if (wifiOn) "On · click this phone in Andromon (same Wi‑Fi)"
-                else "Use Andromon without the cable, on the same Wi‑Fi"
-                if (wifiOn) ui.stylePill(wifiPill, "Turn off Wi‑Fi connection", color(R.color.surface), color(R.color.ink), null) { setAdbWifi(false) }
-                else ui.stylePill(wifiPill, "Turn on Wi‑Fi connection", color(R.color.fab), color(R.color.on_fab), R.drawable.ic_wifi) { setAdbWifi(true) }
-            }
-            else -> {
-                wifiSub.text = "Set up once over USB: in Andromon, click “Use this phone without the cable”"
-                if (devOn) ui.stylePill(wifiPill, "Set up manually instead", color(R.color.surface), color(R.color.ink), null, open(Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS))
-                else wifiPill.visibility = View.GONE
-            }
+    // ---------- quick actions ----------
+
+    private fun say(text: String?) {
+        actionNote.text = text.orEmpty()
+        actionNote.visibility = if (text.isNullOrEmpty()) View.GONE else View.VISIBLE
+    }
+
+    private fun sendFiles() {
+        say(null)
+        // The picker hands the files to Transfer › Send (ShareActivity), which then opens.
+        TransferScreen.requestMode(send = true)
+        Prefs.setTransferSend(host, true)
+        runCatching { host.startActivity(Intent(host, ShareActivity::class.java).setAction(ShareActivity.ACTION_PICK_FILES)) }
+            .onFailure { host.show("Transfer") }
+    }
+
+    /** The app is in front, so it may read the clipboard itself (Android 10+ allows only that). */
+    private fun sendClipboard() {
+        val text = runCatching {
+            val clip = host.getSystemService(ClipboardManager::class.java).primaryClip
+            if (clip != null && clip.itemCount > 0) clip.getItemAt(0).coerceToText(host)?.toString() else null
+        }.getOrNull()
+        if (text.isNullOrEmpty()) { say("Nothing is copied on this phone."); return }
+        if (LinkEvents.listening) {
+            val cut = text.length > Links.MAX_CLIP
+            LinkEvents.emit(JSONObject().put("type", "clip").put("text", if (cut) text.take(Links.MAX_CLIP) else text).put("truncated", cut))
+            LinkStats.clipToComputer(host)
+            say("Sent the clipboard to ${LinkStats.computerName(host)}.")
+        } else {
+            // No computer is listening on the link: send it over Wi‑Fi instead, like a file.
+            WifiSend.addText(text)
+            TransferScreen.requestMode(send = true)
+            say(null)
+            host.show("Transfer")
         }
     }
 
-    private fun setAdbWifi(on: Boolean) {
-        try {
-            Settings.Global.putInt(host.contentResolver, ADB_WIFI, if (on) 1 else 0)
-        } catch (_: SecurityException) {
-            // The permission was revoked (e.g. after a reinstall): fall back to the Settings screen.
-            runCatching { host.startActivity(Intent(Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS)) }
-        }
-        // Android asks to trust the network the first time; re-read the result shortly after.
-        wifiSub.postDelayed({ if (!host.isDestroyed) refreshWireless() }, 1500)
-        wifiSub.postDelayed({ if (!host.isDestroyed) refreshWireless() }, 6000)
-    }
-
-    private fun permissionsCard() = ui.glassCard(16) {
-        val (head, sub) = ui.cardHeader(R.drawable.ic_lock, "Data access") {
-            permPill = ui.pill("", 0, 0).apply { textSize = 13f; minHeight = ui.dp(34) }
-            addView(permPill, ui.lp(w = WRAP_CONTENT, start = 8))
-        }
-        permSub = sub
-        addView(head)
-        permList = ui.column { setPadding(ui.dp(4), ui.dp(2), ui.dp(4), ui.dp(2)) }
-        addView(permList)
+    private fun scanCode() {
+        say(null)
+        // The code is read by Transfer › Send when the scanner closes (QrScanActivity.scanned).
+        TransferScreen.requestMode(send = true)
+        Prefs.setTransferSend(host, true)
+        host.show("Transfer")
+        runCatching { host.startActivity(Intent(host, QrScanActivity::class.java)) }
     }
 
     // ---------- state ----------
@@ -218,51 +324,219 @@ internal class PcLinkScreen(host: MainActivity) : Screen(host) {
     }
 
     private fun refresh() {
-        val on = CompanionService.running
-        linkState.text = if (on) "Ready" else "Paused"
-        linkSub.text = if (on) "Andromon can connect over USB or Wi‑Fi" else "Turn on to let Andromon connect"
+        refreshLink()
+        refreshActivity()
         refreshWireless()
-        linkSwitch.isChecked = on
-        linkSwitch.contentDescription = if (on) "Stop PC connection" else "Start PC connection"
-
-        val missing = wanted.filter { host.checkSelfPermission(it) != PackageManager.PERMISSION_GRANTED }
-        permSub.text = "${wanted.size - missing.size} of ${wanted.size} allowed"
-        if (missing.isEmpty()) {
-            ui.stylePill(permPill, "All set", color(R.color.mint), color(R.color.ink), R.drawable.ic_check)
-            permList.visibility = View.GONE
-        } else {
-            ui.stylePill(permPill, "Allow", color(R.color.fab), color(R.color.on_fab)) {
-                host.requestPermissions(missing.toTypedArray(), 1)
-            }
-            permList.visibility = View.VISIBLE
-            fillPermissionList(missing)
-        }
+        refreshPermissions()
         loadCounts()
     }
 
-    private fun fillPermissionList(missing: List<String>) {
-        permList.removeAllViews()
-        for (p in wanted) {
-            val ok = p !in missing
-            permList.addView(ui.row {
-                addView(ui.iconView(if (ok) R.drawable.ic_check else R.drawable.ic_dot_empty,
-                    color(if (ok) R.color.good else R.color.ink_faint)), ui.lp(w = ui.dp(18), h = ui.dp(18)))
-                addView(ui.text(15f, color(if (ok) R.color.ink else R.color.ink_soft)) {
-                    text = permissionNames[p] ?: p.substringAfterLast('.')
-                }, ui.lp(w = 0, weight = 1f, start = 12))
-            }, ui.lp(top = 12))
+    private fun refreshLink() {
+        val on = CompanionService.running
+        val linked = LinkStats.linkedNow()
+        val name = LinkStats.computerName(host)
+        val hello = LinkStats.hello(host)
+        statusDot.background = ui.circle(color(when { linked -> R.color.good; on -> R.color.green_dot; else -> R.color.ink_faint }))
+        statusText.text = when { linked -> "Linked"; on -> "Ready"; else -> "Off" }
+        when {
+            linked -> {
+                heroTitle.text = name
+                val how = when (LinkStats.transport(host)) { "usb" -> "Over USB"; "wifi" -> "Over Wi‑Fi"; else -> "Through adb" }
+                val since = LinkStats.sessionStart.takeIf { it > 0 }?.let { System.currentTimeMillis() - it }
+                heroSub.text = how + (since?.let { if (it < 60_000) " · just linked" else " · linked for ${duration(it)}" } ?: "")
+                heroDetail.text = hello?.let { listOf(it.app, it.os).filter { s -> s.isNotBlank() }.joinToString(" on ") }.orEmpty()
+            }
+            on -> {
+                heroTitle.text = "Ready"
+                heroSub.text = "Waiting for ${if (name == "Your computer") "your computer" else name}"
+                heroDetail.text = "Connect with the USB cable or over Wi‑Fi, then open Andromon on the computer." +
+                    (hello?.let { "\nLast linked ${ago(LinkStats.lastTouch.takeIf { t -> t > 0 } ?: it.time)}." } ?: "")
+            }
+            else -> {
+                heroTitle.text = "Link is off"
+                heroSub.text = "Andromon can't reach this phone"
+                heroDetail.text = "Start the link here. Andromon can also start it itself over USB."
+            }
         }
-        val restricted = listOf(Manifest.permission.READ_SMS, Manifest.permission.SEND_SMS, Manifest.permission.READ_CALL_LOG)
-        if (missing.any { it in restricted }) {
-            permList.addView(ui.text(13f, color(R.color.ink_soft)) {
-                text = "Android only allows message and call-log access when Andromon installs " +
-                    "this app over USB, not when the APK is opened on the phone."
-                setLineSpacing(ui.dp(2).toFloat(), 1f)
-            }, ui.lp(top = 14))
+        heroDetail.visibility = if (heroDetail.text.isNullOrEmpty()) View.GONE else View.VISIBLE
+        ui.setLabel(startStop, if (on) "Stop" else "Start")
+        startStop.contentDescription = if (on) "Stop the PC link" else "Start the PC link"
+
+        val today = LinkStats.days(host, 1).last()
+        todayValues[0].text = if (today.linkedMs > 0) duration(today.linkedMs) else "–"
+        todayValues[1].text = numbers.format(today.callTotal)
+        todayValues[2].text = numbers.format(today.filesSent + today.filesReceived)
+        todayValues.forEach { it.textSize = 20f }
+    }
+
+    private fun refreshActivity() {
+        val items = LinkStats.recent(host, 5)
+        activityList.removeAllViews()
+        allActivity.visibility = if (items.size >= 5) View.VISIBLE else View.GONE
+        if (items.isEmpty()) {
+            UiRows(host, ui).note(activityList, "Nothing yet. What Andromon on your computer reads or sends shows up here.")
+            return
+        }
+        items.forEach { activityList.addView(activityRow(it)) }
+    }
+
+    private fun activityRow(a: LinkStats.Activity) = ui.row {
+        setPadding(ui.dp(10), ui.dp(10), ui.dp(12), ui.dp(10))
+        addView(ui.roundIcon(36, color(R.color.glass_strong), kindIcon(a.kind), color(R.color.ink), 17), ui.lp(w = ui.dp(36), h = ui.dp(36)))
+        addView(ui.text(14f, color(R.color.ink)) {
+            text = a.text + if (a.count > 1) " (${a.count}×)" else ""
+            maxLines = 2; ellipsize = TextUtils.TruncateAt.END
+        }, ui.lp(w = 0, weight = 1f, start = 12))
+        addView(ui.text(12f, color(R.color.ink_soft)) { text = ago(a.time); maxLines = 1 }, ui.lp(w = WRAP_CONTENT, start = 8))
+    }
+
+    private fun kindIcon(kind: String) = when (kind) {
+        "sms", "mms" -> R.drawable.ic_sms
+        "contacts" -> R.drawable.ic_person
+        "calls", "call" -> R.drawable.ic_call
+        "calendar" -> R.drawable.ic_timer
+        "media" -> R.drawable.ic_image
+        "notif" -> R.drawable.ic_bell
+        "push", "clip" -> R.drawable.ic_clipboard
+        "phone" -> R.drawable.ic_volume
+        "player" -> R.drawable.ic_music
+        "battery" -> R.drawable.ic_battery
+        "stats" -> R.drawable.ic_chart
+        "send" -> R.drawable.ic_up
+        "receive" -> R.drawable.ic_down
+        else -> R.drawable.ic_desktop
+    }
+
+    private fun showAllActivity() {
+        val list = ui.column { setPadding(ui.dp(12), ui.dp(4), ui.dp(12), ui.dp(4)) }
+        LinkStats.recent(host).forEach { list.addView(activityRow(it)) }
+        AlertDialog.Builder(host)
+            .setTitle("Recent activity")
+            .setView(android.widget.ScrollView(host).apply { addView(list) })
+            .setPositiveButton("Close", null)
+            .show()
+    }
+
+    // ---------- Wi‑Fi ----------
+
+    private fun refreshWireless() {
+        val cr = host.contentResolver
+        val devOn = Settings.Global.getInt(cr, Settings.Global.DEVELOPMENT_SETTINGS_ENABLED, 0) == 1
+        val wifiOn = Settings.Global.getInt(cr, ADB_WIFI, 0) == 1
+        // Granted by Andromon during its one-time USB setup ("Use this phone without the cable").
+        val canSwitch = host.checkSelfPermission("android.permission.WRITE_SECURE_SETTINGS") == PackageManager.PERMISSION_GRANTED
+        fun open(action: String): () -> Unit = { runCatching { host.startActivity(Intent(action)) } }
+        wifiPill.visibility = View.VISIBLE
+        wifiSteps.removeAllViews()
+        when {
+            Build.VERSION.SDK_INT < 30 -> {
+                wifiSub.text = "Needs Android 11 or newer. Use the USB cable instead."
+                wifiPill.visibility = View.GONE
+            }
+            !devOn -> {
+                // Wireless debugging lives in Developer options: say how to get there instead of hiding everything.
+                wifiSub.text = "Developer options are off. Wireless debugging is part of them, so turn them on first:"
+                stepList(wifiSteps, listOf(
+                    "Open Settings › About phone (on some phones: › Software information).",
+                    "Tap Build number seven times, until the phone says you are a developer.",
+                    "Connect once with the USB cable and click “Use this phone without the cable” in Andromon.",
+                ))
+                ui.stylePill(wifiPill, "Open About phone", color(R.color.fab), color(R.color.on_fab), null, open(Settings.ACTION_DEVICE_INFO_SETTINGS))
+            }
+            canSwitch -> {
+                wifiSub.text = if (wifiOn) "On · pick this phone in Andromon (same Wi‑Fi)"
+                else "Use Andromon without the cable, on the same Wi‑Fi"
+                if (wifiOn) ui.stylePill(wifiPill, "Turn off Wi‑Fi connection", color(R.color.glass_strong), color(R.color.ink), null) { setAdbWifi(false) }
+                else ui.stylePill(wifiPill, "Turn on Wi‑Fi connection", color(R.color.fab), color(R.color.on_fab), R.drawable.ic_wifi) { setAdbWifi(true) }
+            }
+            else -> {
+                wifiSub.text = "Set up once over USB: in Andromon, click “Use this phone without the cable”. Or pair by hand:"
+                stepList(wifiSteps, listOf(
+                    "Open Developer options › Wireless debugging and turn it on.",
+                    "Tap Pair device with QR code.",
+                    "Scan the code Andromon shows under Connect › Wi‑Fi.",
+                ))
+                ui.stylePill(wifiPill, "Open Developer options", color(R.color.glass_strong), color(R.color.ink), null, open(Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS))
+            }
         }
     }
 
-    /** Counts are read off the main thread; rows show "No access" when a permission is missing. */
+    private fun setAdbWifi(on: Boolean) {
+        try {
+            Settings.Global.putInt(host.contentResolver, ADB_WIFI, if (on) 1 else 0)
+        } catch (_: SecurityException) {
+            // The permission was revoked (e.g. after a reinstall): fall back to the Settings screen.
+            runCatching { host.startActivity(Intent(Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS)) }
+        }
+        // Android asks to trust the network the first time; re-read the result shortly after.
+        wifiSub.postDelayed({ if (!host.isDestroyed) refreshWireless() }, 1500)
+        wifiSub.postDelayed({
+            if (host.isDestroyed) return@postDelayed
+            refreshWireless()
+            // Android ignores the switch when the phone isn't on a Wi‑Fi network: say so instead
+            // of leaving the button looking as if the tap did nothing.
+            if (on && Settings.Global.getInt(host.contentResolver, ADB_WIFI, 0) != 1) {
+                wifiSub.text = if (WifiServer.wifiLink(host) == null) "Android didn't turn it on: connect this phone to a Wi‑Fi network first"
+                    else "Android didn't turn it on. Try again, or use Developer options › Wireless debugging"
+            }
+        }, 6000)
+    }
+
+    // ---------- data access ----------
+
+    /** Asked before and refused with "don't ask again" (or blocked by Android): only App info can allow it now. */
+    private fun blocked(p: String) = Prefs.askedPermission(host, p) && !host.shouldShowRequestPermissionRationale(p)
+
+    private fun ask(ps: List<String>) {
+        ps.forEach { Prefs.setAskedPermission(host, it) }
+        host.requestPermissions(ps.toTypedArray(), 1)
+    }
+
+    private fun openAppInfo() {
+        runCatching { host.startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", host.packageName, null))) }
+    }
+
+    private fun refreshPermissions() {
+        val missing = wanted.filter { host.checkSelfPermission(it) != PackageManager.PERMISSION_GRANTED }
+        val askable = missing.filterNot(::blocked)
+        permSub.text = "${wanted.size - missing.size} of ${wanted.size} allowed"
+        when {
+            missing.isEmpty() -> ui.stylePill(permPill, "All set", color(R.color.good_bg), color(R.color.ink), R.drawable.ic_check)
+            askable.isNotEmpty() -> ui.stylePill(permPill, "Allow", color(R.color.fab), color(R.color.on_fab)) { ask(askable) }
+            else -> ui.stylePill(permPill, "App info", color(R.color.fab), color(R.color.on_fab)) { openAppInfo() }
+        }
+        permList.removeAllViews()
+        if (missing.isEmpty()) return
+        for (p in wanted) {
+            val ok = p !in missing
+            val stuck = !ok && blocked(p)
+            permList.addView(ui.row {
+                background = if (ok) null else ui.pressable(ui.rounded(android.graphics.Color.TRANSPARENT, 16))
+                setPadding(ui.dp(4), ui.dp(8), ui.dp(4), ui.dp(8))
+                addView(ui.iconView(if (ok) R.drawable.ic_check else R.drawable.ic_dot_empty,
+                    color(if (ok) R.color.good else R.color.ink_faint)), ui.lp(w = ui.dp(18), h = ui.dp(18)))
+                addView(ui.text(14f, color(R.color.ink)) {
+                    text = permissionNames[p] ?: p.substringAfterLast('.')
+                }, ui.lp(w = 0, weight = 1f, start = 12))
+                if (!ok) {
+                    addView(ui.text(13f, color(R.color.ink), ui.medium) { text = if (stuck) "App info" else "Allow" }, ui.lp(w = WRAP_CONTENT, start = 8))
+                    addView(ui.iconView(R.drawable.ic_chevron_right, color(R.color.ink_faint)), ui.lp(w = ui.dp(18), h = ui.dp(18), start = 2))
+                    setOnClickListener { if (stuck) openAppInfo() else ask(listOf(p)) }
+                }
+            })
+        }
+        val notes = ArrayList<String>()
+        if (missing.any(::blocked)) notes += "Android won't ask again for some of these. Allow them in App info › Permissions."
+        val restricted = listOf(Manifest.permission.READ_SMS, Manifest.permission.SEND_SMS, Manifest.permission.READ_CALL_LOG)
+        if (missing.any { it in restricted }) notes += "Android only allows message and call-log access when Andromon installs " +
+            "this app over USB, not when the APK is opened on the phone."
+        if (notes.isNotEmpty()) permList.addView(ui.text(13f, color(R.color.ink_soft)) {
+            text = notes.joinToString("\n\n")
+            setLineSpacing(ui.dp(2).toFloat(), 1f)
+        }, ui.lp(top = 10))
+    }
+
+    /** Counts are read off the main thread; "–" when a permission is missing. */
     private fun loadCounts() {
         val snapshot = counts.toList()
         background({ snapshot.map { count(it.uri, it.permission) } }) { r ->

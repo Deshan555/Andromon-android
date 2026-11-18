@@ -159,7 +159,8 @@ internal class SaverScreen(host: MainActivity) : Screen(host) {
 
     override fun onHide() = handler.removeCallbacks(tick)
 
-    override fun onBack(): Boolean { host.show("Battery"); return true }
+    // Back returns to the screen the Saver was opened from (Battery, or Tools from a notification).
+    override fun onBack(): Boolean = false
 
     override fun onPermissionsResult() = refresh()
 

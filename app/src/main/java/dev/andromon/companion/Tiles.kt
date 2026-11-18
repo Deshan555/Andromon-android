@@ -132,7 +132,7 @@ class ReceiveTile : DeskTile() {
             updateSoon()
             return
         }
-        // Same checks as the Receive screen: without notifications nobody could accept a transfer
+        // Same checks as Transfer › Receive: without notifications nobody could accept a transfer
         // while the app is in the background, and Android 8–9 needs storage access to save files.
         val missing = buildList {
             if (Build.VERSION.SDK_INT >= 33) add(Manifest.permission.POST_NOTIFICATIONS)

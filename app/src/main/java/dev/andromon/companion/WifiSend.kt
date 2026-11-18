@@ -624,6 +624,7 @@ internal object WifiSend {
             val ok = items.filter { it.state == ItemState.DONE }
             val summary = Done(0, dev.alias, ok.size, items.size, ok.sumOf { it.size.coerceAtLeast(0) }, problem, wasCancelled,
                 failed.map { it.name to (it.error ?: "Not sent") })
+            LinkStats.filesSent(ctx, dev.alias, summary.sent, summary.bytes) // Stats › PC link
             WifiSend.post {
                 if (job !== this@Job) return@post
                 job = null

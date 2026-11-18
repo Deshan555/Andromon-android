@@ -18,38 +18,8 @@ import android.widget.LinearLayout
 import android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
 import android.widget.TextView
 
-/** "Receive | Send" style switch: a pill-shaped track with one filled segment. Returns the view and a setter. */
-internal fun segmented(ui: Ui, labels: List<String>, onPick: (Int) -> Unit): Pair<View, (Int) -> Unit> {
-    val parts = ArrayList<TextView>()
-    val select: (Int) -> Unit = { chosen ->
-        parts.forEachIndexed { i, tv ->
-            val on = i == chosen
-            tv.background = if (on) ui.rounded(ui.color(R.color.fab), 50) else ui.pressable(ui.rounded(0, 50))
-            tv.setTextColor(ui.color(if (on) R.color.on_fab else R.color.ink))
-            tv.isSelected = on
-        }
-    }
-    val track = ui.row {
-        background = ui.rounded(ui.color(R.color.glass), 50)
-        val p = ui.dp(4)
-        setPadding(p, p, p, p)
-        labels.forEachIndexed { i, label ->
-            val tv = ui.text(15f, ui.color(R.color.ink), ui.medium) {
-                text = label
-                gravity = android.view.Gravity.CENTER
-                minHeight = ui.dp(40)
-                setOnClickListener { onPick(i) }
-            }
-            parts += tv
-            addView(tv, ui.lp(w = 0, weight = 1f))
-        }
-    }
-    select(0)
-    return track to select
-}
-
 /**
- * The Send side of the transfer screen (shown by [ReceiveScreen] under its "Receive | Send"
+ * The Send side of the transfer screen (shown by [TransferScreen] under its "Receive | Send"
  * switch, and opened by the share target): the queue of things to send, the devices found on
  * the Wi‑Fi, and the running transfer. The work happens in [WifiSend] and [SendService].
  */
@@ -89,6 +59,8 @@ internal class SendPanel(private val host: MainActivity) {
     private var devicesShown = ""
 
     private lateinit var sendButton: TextView
+    /** The Send button, docked above the bottom bar by [TransferScreen] while this side is shown. */
+    val dockButton: View get() { view; return sendButton }
     private lateinit var messageText: TextView
 
     private val listener: () -> Unit = { refresh() }
@@ -105,16 +77,15 @@ internal class SendPanel(private val host: MainActivity) {
         addView(queueCard(), ui.lp(top = 12))
         addView(deviceCard(), ui.lp(top = 12))
         sendButton = ui.action("Send", R.drawable.ic_up) { send() }
-        addView(sendButton, ui.lp(top = 16))
         messageText = ui.text(14f, color(R.color.ink)) { setLineSpacing(ui.dp(2).toFloat(), 1f) }
         addView(messageText, ui.lp(top = 12))
-        val (row, label) = ui.insight(R.drawable.ic_lock, color(R.color.peach))
+        val (row, label) = ui.insight(R.drawable.ic_lock, color(R.color.green_tile))
         label.text = "Nothing is sent until you tap Send and the other device accepts. Transfers are " +
             "encrypted, and the other device is checked against the identity it announced."
         addView(row, ui.lp(top = 12))
     }
 
-    // ---------- lifecycle (driven by ReceiveScreen) ----------
+    // ---------- lifecycle (driven by TransferScreen) ----------
 
     fun onShow() {
         if (!shown) { shown = true; WifiSend.listen(listener) }
@@ -137,7 +108,7 @@ internal class SendPanel(private val host: MainActivity) {
 
     // ---------- sections ----------
 
-    private fun progressCard() = ui.card(color(R.color.blue), 20) {
+    private fun progressCard() = ui.glassCard(18) {
         progCard = this
         addView(ui.row {
             progTitle = ui.text(16f, color(R.color.ink_soft)) { maxLines = 2; ellipsize = TextUtils.TruncateAt.END }
@@ -148,13 +119,13 @@ internal class SendPanel(private val host: MainActivity) {
         })
         progBig = ui.text(48f, color(R.color.ink), ui.light) { letterSpacing = -0.03f }
         addView(progBig, ui.lp(top = 6))
-        progMeter = Meter(context).apply { colors(color(R.color.blue_tile), color(R.color.blue_line)) }
+        progMeter = Meter(context).apply { colors(color(R.color.chip), color(R.color.green_dot)) }
         addView(progMeter, ui.lp(h = ui.dp(10), top = 12))
         progText = ui.text(14f, color(R.color.ink_soft)) { setLineSpacing(ui.dp(2).toFloat(), 1f) }
         addView(progText, ui.lp(top = 10))
     }
 
-    private fun pinCard() = ui.card(color(R.color.yellow), 20) {
+    private fun pinCard() = ui.card(color(R.color.good_bg), 18) {
         pinCard = this
         pinTitle = ui.text(18f, color(R.color.ink), ui.medium) { setLineSpacing(ui.dp(2).toFloat(), 1f) }
         addView(pinTitle)
@@ -170,7 +141,7 @@ internal class SendPanel(private val host: MainActivity) {
         }, ui.lp(top = 12))
     }
 
-    private fun doneCard() = ui.card(color(R.color.green), 20) {
+    private fun doneCard() = ui.card(color(R.color.good_bg), 18) {
         doneCard = this
         addView(ui.row {
             doneTitle = ui.text(18f, color(R.color.ink), ui.medium) { setLineSpacing(ui.dp(2).toFloat(), 1f) }
@@ -183,16 +154,13 @@ internal class SendPanel(private val host: MainActivity) {
         addView(doneText, ui.lp(top = 8))
     }
 
-    private fun queueCard() = ui.card(color(R.color.surface), 20) {
-        addView(ui.row {
-            addView(ui.text(17f, color(R.color.ink), ui.medium) { text = "To send" }, ui.lp(w = WRAP_CONTENT))
-            queueCount = ui.text(14f, color(R.color.ink_soft)) { maxLines = 1; ellipsize = TextUtils.TruncateAt.END }
-            addView(queueCount, ui.lp(w = 0, weight = 1f, start = 10))
-            clearPill = ui.pill("Clear", color(R.color.bg), color(R.color.ink)) { WifiSend.clearQueue() }.apply {
-                textSize = 14f; minHeight = ui.dp(34)
-            }
-            addView(clearPill, ui.lp(w = WRAP_CONTENT))
-        })
+    private fun queueCard() = ui.glassCard(16) {
+        val (head, sub) = ui.cardHeader(R.drawable.ic_up, "To send") {
+            clearPill = ui.smallPill("Clear") { WifiSend.clearQueue() }
+            addView(clearPill, ui.lp(w = WRAP_CONTENT, start = 8))
+        }
+        queueCount = sub
+        addView(head)
         queueEmpty = ui.text(14f, color(R.color.ink_soft)) {
             setLineSpacing(ui.dp(2).toFloat(), 1f)
             text = "Pick files or photos here, or use Share › Andromon in Gallery, Files or another app."
@@ -201,36 +169,42 @@ internal class SendPanel(private val host: MainActivity) {
         queueList = ui.column()
         addView(queueList, ui.lp(top = 4))
         queueButtons = ui.row {
-            addView(ui.pill("Files", color(R.color.bg), color(R.color.ink), R.drawable.ic_file) { pick(ShareActivity.ACTION_PICK_FILES) },
+            addView(ui.pill("Files", color(R.color.glass_strong), color(R.color.ink), R.drawable.ic_file) { pick(ShareActivity.ACTION_PICK_FILES) },
                 ui.lp(w = 0, weight = 1f))
-            addView(ui.pill("Photos", color(R.color.bg), color(R.color.ink), R.drawable.ic_image) { pick(ShareActivity.ACTION_PICK_PHOTOS) },
+            addView(ui.pill("Photos", color(R.color.glass_strong), color(R.color.ink), R.drawable.ic_image) { pick(ShareActivity.ACTION_PICK_PHOTOS) },
                 ui.lp(w = 0, weight = 1f, start = 10))
         }
         addView(queueButtons, ui.lp(top = 14))
     }
 
-    private fun deviceCard() = ui.card(color(R.color.surface), 20) {
-        addView(ui.row {
-            addView(ui.text(17f, color(R.color.ink), ui.medium) { text = "Send to" }, ui.lp(w = 0, weight = 1f))
-            refreshPill = ui.pill("Refresh", color(R.color.bg), color(R.color.ink), R.drawable.ic_refresh).apply {
-                textSize = 14f; minHeight = ui.dp(34)
-            }
-            addView(refreshPill, ui.lp(w = WRAP_CONTENT))
-        })
+    private fun deviceCard() = ui.glassCard(16) {
+        val (head, headSub) = ui.cardHeader(R.drawable.ic_desktop, "Send to") {
+            refreshPill = ui.smallPill("Refresh", false, R.drawable.ic_refresh)
+            addView(refreshPill, ui.lp(w = WRAP_CONTENT, start = 8))
+        }
+        headSub.text = "Devices on this Wi‑Fi"
+        headSub.maxLines = 2
+        addView(head)
         deviceEmpty = ui.text(14f, color(R.color.ink_soft)) { setLineSpacing(ui.dp(2).toFloat(), 1f) }
         addView(deviceEmpty, ui.lp(top = 12))
         deviceList = ui.column()
         addView(deviceList, ui.lp(top = 4))
-        addressPill = ui.pill("Enter address", color(R.color.bg), color(R.color.ink), R.drawable.ic_globe) {
+        addressPill = ui.pill("Enter address", color(R.color.glass_strong), color(R.color.ink), R.drawable.ic_globe) {
             addressRow.visibility = View.VISIBLE
-            (addressPill.parent as View).visibility = View.GONE
+            // Only this pill gives way to the address field: hiding both left no way to Scan code.
+            addressPill.visibility = View.GONE
             addressInput.requestFocus()
             host.getSystemService(InputMethodManager::class.java)?.showSoftInput(addressInput, 0)
         }
-        scanPill = ui.pill("Scan code", color(R.color.bg), color(R.color.ink), R.drawable.ic_qr) {
+        scanPill = ui.pill("Scan code", color(R.color.glass_strong), color(R.color.ink), R.drawable.ic_qr) {
             runCatching { host.startActivity(Intent(host, QrScanActivity::class.java)) }
         }
-        addView(ui.row {
+        // Side by side; one above the other when a large text size wouldn't fit both labels.
+        val stacked = Prefs.textSize(host).scale >= 1.3f
+        addView(if (stacked) ui.column {
+            addView(addressPill)
+            addView(scanPill, ui.lp(top = 8))
+        } else ui.row {
             addView(addressPill, ui.lp(w = 0, weight = 1f))
             addView(scanPill, ui.lp(w = 0, weight = 1f, start = 8))
         }, ui.lp(top = 14))
@@ -239,6 +213,8 @@ internal class SendPanel(private val host: MainActivity) {
             addressInput = input("192.168.1.20", InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_URI) { addAddress() }
             addView(addressInput, ui.lp(w = 0, weight = 1f))
             addView(ui.pill("Add", color(R.color.fab), color(R.color.on_fab)) { addAddress() }, ui.lp(w = WRAP_CONTENT, start = 8))
+            // The field can be put away again without adding anything.
+            addView(ui.circleButton(R.drawable.ic_close, "Close address field") { closeAddress() }, ui.lp(w = ui.dp(42), h = ui.dp(42), start = 6))
         }
         addView(addressRow, ui.lp(top = 14))
     }
@@ -251,7 +227,7 @@ internal class SendPanel(private val host: MainActivity) {
         isSingleLine = true
         inputType = type
         imeOptions = EditorInfo.IME_ACTION_GO
-        background = ui.rounded(color(R.color.bg), 18)
+        background = ui.rounded(color(R.color.glass_strong), 18)
         setPadding(ui.dp(16), ui.dp(12), ui.dp(16), ui.dp(12))
         setOnEditorActionListener { _, action, _ -> if (action == EditorInfo.IME_ACTION_GO) { onGo(); true } else false }
     }
@@ -266,6 +242,13 @@ internal class SendPanel(private val host: MainActivity) {
     private fun hideKeyboard(v: View) {
         (host.getSystemService(Context.INPUT_METHOD_SERVICE) as? InputMethodManager)?.hideSoftInputFromWindow(v.windowToken, 0)
         v.clearFocus()
+    }
+
+    private fun closeAddress() {
+        hideKeyboard(addressInput)
+        addressInput.setText("")
+        addressRow.visibility = View.GONE
+        addressPill.visibility = View.VISIBLE
     }
 
     private fun addAddress() {
@@ -348,7 +331,7 @@ internal class SendPanel(private val host: MainActivity) {
         doneCard.visibility = if (d != null && !active) View.VISIBLE else View.GONE
         if (d != null) {
             val clean = d.problem == null && d.failed.isEmpty()
-            doneCard.background = ui.rounded(color(if (clean) R.color.green else R.color.peach), 26)
+            doneCard.background = ui.rounded(color(if (clean) R.color.good_bg else R.color.surface), 26)
             val files = if (d.sent == 1) "1 item" else "${d.sent} items"
             doneTitle.text = when {
                 d.cancelled -> "Transfer cancelled"
@@ -371,8 +354,8 @@ internal class SendPanel(private val host: MainActivity) {
         val known = q.filter { it.size >= 0 }.sumOf { it.size }
         queueCount.text = when {
             WifiSend.adding -> "Adding…"
-            q.isEmpty() -> ""
-            else -> "${q.size} · ${fmtSize(known)}"
+            q.isEmpty() -> "Nothing picked yet"
+            else -> (if (q.size == 1) "1 item" else "${q.size} items") + " · ${fmtSize(known)}"
         }
         val stamp = q.joinToString(",") { "${it.id}:${it.state.ordinal}" } + "|$active"
         if (stamp != queueShown) {
@@ -391,7 +374,7 @@ internal class SendPanel(private val host: MainActivity) {
         // Devices
         val scanning = WifiSend.scanning
         val rescan: (() -> Unit)? = if (scanning) null else ({ WifiSend.scan(host, sweep = true) })
-        ui.stylePill(refreshPill, if (scanning) "Looking…" else "Refresh", color(R.color.bg),
+        ui.stylePill(refreshPill, if (scanning) "Looking…" else "Refresh", color(R.color.glass_strong),
             color(if (scanning) R.color.ink_soft else R.color.ink), R.drawable.ic_refresh,
             rescan)
         val devs = WifiSend.devices
@@ -411,7 +394,10 @@ internal class SendPanel(private val host: MainActivity) {
         if (WifiSend.probing) ui.setLabel(addressPill, "Checking…") else ui.setLabel(addressPill, "Enter address")
         val addressPills = addressPill.parent as View // "Enter address" and "Scan code", side by side
         if (active) { addressRow.visibility = View.GONE; addressPills.visibility = View.GONE }
-        else if (addressRow.visibility != View.VISIBLE) addressPills.visibility = View.VISIBLE
+        else {
+            addressPills.visibility = View.VISIBLE
+            addressPill.visibility = if (addressRow.visibility == View.VISIBLE) View.GONE else View.VISIBLE
+        }
         ui.setEnabled(scanPill, !WifiSend.probing)
 
         // Send button
@@ -451,7 +437,7 @@ internal class SendPanel(private val host: MainActivity) {
             item.mime == "application/vnd.android.package-archive" -> R.drawable.ic_apk
             else -> R.drawable.ic_file
         }
-        addView(ui.roundIcon(44, color(R.color.bg), icon, color(R.color.ink), 20))
+        addView(ui.roundIcon(40, color(R.color.glass_strong), icon, color(R.color.ink), 19))
         addView(ui.column {
             addView(ui.text(15f, color(R.color.ink)) {
                 text = if (item.text != null) String(item.text, Charsets.UTF_8).take(80).replace('\n', ' ') else item.name
@@ -463,19 +449,19 @@ internal class SendPanel(private val host: MainActivity) {
             queueSubs += item to sub
             addView(sub, ui.lp(top = 4))
         }, ui.lp(w = 0, weight = 1f, start = 12))
-        if (!active) addView(ui.circleButton(R.drawable.ic_trash, "Remove ${item.name}", 38, color(R.color.bg)) { WifiSend.remove(item) },
+        if (!active) addView(ui.circleButton(R.drawable.ic_trash, "Remove ${item.name}", 38, color(R.color.glass_strong)) { WifiSend.remove(item) },
             ui.lp(w = ui.dp(38), h = ui.dp(38), start = 8))
     }
 
     private fun deviceRow(d: WifiSend.Device, chosen: Boolean, active: Boolean) = ui.row {
-        background = ui.pressable(ui.rounded(color(if (chosen) R.color.good_bg else R.color.surface), 22))
+        background = ui.pressable(ui.rounded(color(if (chosen) R.color.good_bg else R.color.glass_strong), 22))
         setPadding(ui.dp(4), ui.dp(8), ui.dp(10), ui.dp(8))
         val icon = when (d.type.lowercase()) {
             "mobile" -> R.drawable.ic_cell
             "web" -> R.drawable.ic_globe
             else -> R.drawable.ic_desktop
         }
-        addView(ui.roundIcon(44, color(if (chosen) R.color.surface else R.color.bg), icon, color(R.color.ink), 20))
+        addView(ui.roundIcon(40, color(R.color.surface), icon, color(R.color.ink), 19))
         addView(ui.column {
             addView(ui.text(15f, color(R.color.ink), ui.medium) {
                 text = d.alias; maxLines = 1; ellipsize = TextUtils.TruncateAt.END

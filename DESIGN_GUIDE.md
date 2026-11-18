@@ -126,7 +126,7 @@ Use `ui.text(sizeSp, color, face)`. It turns off font padding so spacing values 
 
 | Role | Size | Weight | Tracking | Colour | Where |
 |---|---|---|---|---|---|
-| Display heading | 38sp | Light | -0.03, line height 0.95 | `ink` | `ui.heading()` on Home and intro screens |
+| Display heading | 38sp | Light | -0.03, line height 0.95 | `ink` | `ui.heading()` on intro screens |
 | Hero figure | 40 to 52sp | Regular | -0.03 | `ink` | The headline number in the hero card |
 | Page title | 28 to 30sp | Light | -0.02 | `ink` | `ui.topBar()`, `ui.pageTitle()` |
 | Stat value | 24sp | Regular | 0 | `ink` | `ui.stat()`, `ui.numbers()` |
@@ -161,7 +161,7 @@ All measurements in dp through `ui.dp()`. The base unit is 2dp; most gaps are mu
 |---|---|
 | Side padding | 20dp, plus the system inset |
 | Top padding | 16dp, plus the status bar inset |
-| Bottom padding | Bottom bar (64dp) + 20dp + system inset; with the keyboard open, keyboard height + 24dp |
+| Bottom padding | Bottom bar (68dp) + 20dp + system inset, plus 80dp while a screen has a docked button; with the keyboard open, keyboard height + 24dp |
 
 `MainActivity.applyInsets()` sets this padding on every screen's root view. A screen never adds its own page padding and never reads insets itself. The host also puts each screen inside its one `ScrollView`, so `build()` returns a plain column and never its own scroller.
 
@@ -201,7 +201,9 @@ Set gaps with `ui.lp(top = …)` on the child being added, not with padding on t
 | Header button | 42dp |
 | Icon chip in a card header | 34dp |
 | Row icon | 40dp circle, 19dp glyph |
-| Nav item | 48dp square, 22dp glyph |
+| Nav item | Whole cell is the target; 56 × 32dp pill, 22dp glyph, 12sp label (at most 14dp) |
+| Small pill | 36dp |
+| Docked button | 56dp, 17dp above the bottom bar |
 | Switch | 50 × 30dp |
 | Chevron, trailing arrow | 20dp |
 
@@ -222,7 +224,7 @@ Screens are a single column. Two-up grids (tiles, stat cards) use equal weights 
 | 24dp | Tiles, note rows, top corners of the bottom bar |
 | 22dp | Stat cards |
 | 20dp | Tappable row highlight |
-| 16dp | Active nav item square, switch track |
+| 16dp | Active nav item pill, switch track |
 | Size ÷ 3 | Square icon buttons and icon tiles (42dp → 14dp) |
 | Circle | Icon chips, row icons, dots, day chips |
 
@@ -278,12 +280,16 @@ Rules for anything new: 150 to 300ms for small state changes, up to 700ms for a 
 
 ## 8. Navigation
 
-- **Bottom bar:** docked to the screen edge, `nav_bg`, 64dp tall above the system navigation area, top corners 24dp. Six items: Home, PC link, Cleaner, Network, Receive, Settings. Icons only, evenly spaced. The open item is an `ink` glyph on a white 48dp rounded square; the rest are white glyphs on the bar.
-- **Second-level screens** (Memory, Battery, Freezer, Apps, Storage analyzer, Permission audit, Hardware test) open from Home tiles; Battery saver opens from Battery. The bottom bar stays visible.
-- **No back arrow in headers.** Android's Back gesture leaves the screen: `Screen.onBack()` returns true if the screen used it (to leave a sub-page), otherwise the app goes Home. From Home, Back leaves the app.
-- **Keyboard:** the bottom bar hides while the keyboard is open.
+- **Bottom bar:** docked to the screen edge, `nav_bg`, 68dp tall above the system navigation area, top corners 24dp. Five items, left to right: **PC link** (where the app opens), **Transfer**, **Tools**, **Stats**, **Settings**. Each is an icon on a 56 × 32dp pill with a 12sp label under it (Medium when open), evenly spaced; the whole cell is the touch target. The open item's icon is `ink` on a white pill; the rest are white on the bar.
+- **Tool screens** (Memory, Cleaner, Network, Battery, Battery saver, Freezer, Apps, Storage, F-Droid, Recover, Permissions, Hardware) open from tiles on Tools. While one is open, **Tools** is highlighted. The bottom bar stays visible.
+- **Tapping the open item** scrolls its screen back to the top (`Screen.onReselect()` can do more, e.g. Settings returns to its list of pages).
+- **Back:** `Screen.onBack()` first (to leave a sub-page). Then the screen this one was opened from: `MainActivity` remembers it when a tool screen opens (Stats › an app's details › Back returns to Stats). Then Tools for a tool screen, PC link for the other bar screens. From PC link, Back leaves the app. Screens opened from outside (a notification, a tile, automation) don't remember where the app was: Back goes to their parent.
+- **Names:** each screen's `name` is its key for `host.show(…)` and the `screen` intent extra. Names from earlier versions keep working (`MainActivity.ALIASES`): `Home` → Tools, `Receive` / `Send` → Transfer on that side. Never rename a key without adding an alias.
+- **Docked button:** a screen whose main button must always be reachable (Transfer › Send) passes it to `host.setDock(view)`; it sits on a strip of page colour just above the bar and the content gets extra bottom padding. The host clears it when another screen opens.
+- **No back arrow in headers**, except inside Settings' pages.
+- **Keyboard:** the bottom bar and any docked button hide while the keyboard is open.
 - **System bars:** edge to edge, transparent. Status bar icons are dark in light theme. Navigation bar icons stay light because they sit on the dark bottom bar.
-- **Adding a destination:** it belongs in the bottom bar only if people open it every session. Otherwise add a Home tile. Six is the maximum for the bar.
+- **Adding a destination:** it belongs in the bottom bar only if people open it every session. Otherwise add a tile on Tools. Five is the maximum for the bar.
 
 ---
 
@@ -295,8 +301,9 @@ All built by `Ui` (`host.ui`) unless noted. Use these before writing a new view.
 
 | Component | Call | Notes |
 |---|---|---|
-| Top bar | `ui.topBar(title, host::goHome, actionIcon, actionLabel) { … }` | 28sp Light title, one line. Optional single 42dp action button on the right; `actionLabel` is its spoken description. Returns the bar and the button. |
-| Display heading | `ui.heading("Line one\n", "line two")` | 38sp. For Home and intro screens only. |
+| Top bar | `ui.topBar(title, host::goHome, actionIcon, actionLabel) { … }` | 28sp Light title, one line. Optional single 42dp action button on the right; `actionLabel` is its spoken description. Returns the bar and the button. Every screen starts with it. |
+| Subtitle | `ui.subtitle("…")` | 15sp line under the top bar on the bottom-bar screens: what the screen is for, or its state (Tools). 6dp below the top bar, 20dp above the next card. |
+| Display heading | `ui.heading("Line one\n", "line two")` | 38sp. For intro screens only. |
 | Section heading | `ui.section("Details") { /* trailing view */ }` | 22sp Light. May hold one trailing pill or link. |
 | Hero card | `ui.heroCard(16) { … }` | The gradient. One per screen. |
 | Card | `ui.glassCard(16) { … }` | The default container. Padding 6 when it holds `UiRows`. |
@@ -309,12 +316,14 @@ All built by `Ui` (`host.ui`) unless noted. Use these before writing a new view.
 |---|---|---|
 | Primary button | `ui.action("Clean now", R.drawable.ic_broom) { … }` | The one main action of a screen. 56dp, full width, ink fill. At most one visible at a time. |
 | Pill button | `ui.pill("Stop", color(R.color.fab), color(R.color.on_fab)) { … }` | Secondary actions and per-row actions. 42dp. |
+| Small pill | `ui.smallPill("Clear", filled = false, icon) { … }` | 36dp, 13sp. Actions in a card header or a section heading ("See all", "Refresh", "How"). Quiet (`glass_strong`) by default; `filled` for the one action that matters in that card. Also the Stats segment chips. |
 | Quiet pill | `ui.pill("Details", color(R.color.glass_strong), color(R.color.ink)) { … }` | Lower-priority action next to a filled one. |
 | Badge | `ui.pill("Estimate", color(R.color.chip), color(R.color.ink))` | No `onClick`: a non-interactive label. |
 | Header button | `ui.circleButton(icon, description) { … }` | Icon-only action. The description is required. |
 | Switch | `ui.toggle { on -> … }` | Ink track when on, `ink_faint` when off. |
 | Checkbox | `ui.setCheck(imageView, checked)` | Round: filled check or empty ring. For multi-select lists. |
 | Round chip | `ui.styleDayChip(textView, selected)` | Small one-of-several pickers. |
+| Segmented switch | `segmented(ui, listOf("Today", "7 days")) { i -> … }` | Two or three equal choices that switch what the screen shows (Transfer's Receive \| Send, Stats' range). Returns the view and a setter. |
 
 Changing a pill later: `ui.setLabel(tv, "Stopping…")` keeps its icon; `ui.stylePill(…)` restyles it.
 
@@ -330,13 +339,16 @@ Button hierarchy on one screen: one `action`, any number of pills, and destructi
 | Key and value | `ui.keyValue("Voltage")` | Key soft on the left, value Medium on the right, up to 3 lines. |
 | List pill | `ui.listPill(icon, label) { … }` | Translucent pill row inside a hero or coloured card. |
 | Note row | `ui.insight(icon, iconBg) { … }` | Icon, a sentence, arrow when tappable. For tips and findings. |
-| Status label | `ui.dotLabel()` | 8dp dot plus text. Set both colour and words. |
+| Status label | `ui.dotLabel()` | 8dp dot plus text. Set both colour and words. On the hero, put it on a `glass` pill with `ink` text (PC link's Linked / Ready / Off). |
+| Share row | `ui.shareRow(icon, fallbackIcon, title, figure, share, sub) { … }` | One app (or group) in a statistics list: icon, name, figure on the right, a 6dp share bar and a line under it ("23% · 14 opens"). The whole row is the target. |
+| Empty card | `ui.emptyCard(icon, "Sentence.", "Action") { … }` | Empty, unavailable and needs-access states: an icon chip, one sentence, an optional filled small pill. |
 
 ### Dashboard
 
 | Component | Call | Notes |
 |---|---|---|
-| Tile | `ui.tile(bg, title, icon) { … }` | Home grid entry. Returns the box and a subtitle for a live value. |
+| Tile | `ui.tile(bg, title, icon) { … }` | Tools grid entry. Returns the box and a subtitle for a live value. |
+| Action cell | (PcLinkScreen `actionCell`) | Quick action: 48dp rounded icon tile and a 13sp label under it, three across in a card. |
 | Stat card | `ui.stat(bg, icon, caption)` | Caption and icon on top, 24sp value below. Two or three across. |
 | Number row | `ui.numbers(listOf("Used", "Free", "Total"))` | Small labels over big numbers, equal widths. |
 
@@ -349,6 +361,7 @@ Button hierarchy on one screen: one `action`, any number of pills, and destructi
 | Ring gauge | `Ring` | One fraction of a whole (memory used, health score). 14dp stroke, round ends. | `colors(track, start, end)`: a lime gradient on a `glass_strong` or `chip` track |
 | Donut | `Ring` with `segments` | A whole split into parts (storage). 2.5° gaps. | Category colours, with a legend |
 | Progress bar | `Meter` | Linear progress or a share of a total inside a row. Height 6 to 10dp. | `colors(track, fill)` |
+| Bar chart | `BarChart` | Values per slot (a day, an app). Bars can stack several values (`colors(stack, …)`, bottom first); 12sp labels under the bars, the `highlight` one (today) in `ink`, the others `ink_soft`. An empty slot shows a short stub. 150dp tall in a card with a header saying the range ("Last 7 days"). | `green_dot` for one series; `cat_blue`, `green_dot`, `cat_yellow` for stacks, with a `dotLabel` legend |
 | Line chart | `LineChart` | A value over time. Smooth line, 2.5dp, dashed guides, a dot on the latest value. Optional soft fill and marker. | `colors(line, guide, dotRing)`: `chart`, `line`, card colour |
 | Battery | `BatteryView` | Battery level only | See `BatteryScreen` |
 | Wave | `Wave` | Decoration along the bottom of a card. Carries no data. | One tint |
@@ -358,7 +371,8 @@ Rules:
 - A gauge always has its figure as text beside or inside it. The picture is never the only way to read the value.
 - Before the first reading, values show an en dash (`–`), never `0`.
 - Sizes use `fmtSize()` / `sizeParts()`: 1000-based units to match Android's storage screens.
-- Charts state their range in words ("Last 24 hours") and mark gaps honestly (dashed stretches where there are no samples).
+- Charts state their range in words ("Last 24 hours", "Last 7 days") and mark gaps honestly (dashed stretches where there are no samples).
+- A chart is never the only way to read its figures: set a `contentDescription` with the values in words, and list them below.
 - An estimate is labelled as an estimate next to the figure.
 - Set `floorZero = true` when the quantity is an amount, so small changes aren't exaggerated.
 
@@ -390,15 +404,23 @@ Rules:
 │ │ (❄) Freezer            › │ │
 │ ╰──────────────────────────╯ │
 ├──────────────────────────────┤
-│  ⌂    ▭    ✦    ◉    ↓    ⚙  │  bottom bar
+│  ▭     ⇄     ▦     ▮     ⚙   │  bottom bar: PC link, Transfer, Tools, Stats, Settings
 └──────────────────────────────┘
 ```
 
 Order of content: the answer, then what it means, then the details, then things to do about it, then links to related screens.
 
-### Home
+### PC link (where the app opens)
 
-Display heading, a hero card for the connection or health headline, then a two-column grid of tiles, each showing a live value in its subtitle.
+Top bar and subtitle; a hero card with the link's state (status pill, the computer's name or "Ready", how and how long, one primary Start/Stop button); a card of quick actions; then sections: Today (number row and a link to Stats), Recent activity (rows with a time), What the computer can read, Connect (USB and Wi‑Fi cards with numbered steps).
+
+### Tools
+
+Top bar and a subtitle with the health verdict, a hero card that rotates through readings, the storage card, then "All tools": a two-column grid of tiles, each showing a live value in its subtitle.
+
+### Stats
+
+Top bar and subtitle, a scrolling row of segment chips, the range switch where it applies, then per segment: a hero with the total, a chart card, a section heading with the count, and a card of share rows (15 shown, "Show all N"). A note at the end of the list says where the figures come from. Missing access replaces all of it with an empty card and the button to grant it.
 
 ### Scan, review, act (Cleaner, Freezer, Apps)
 
@@ -426,7 +448,7 @@ Every screen and every card that loads data handles all of these.
 |---|---|
 | **Not yet loaded** | `–` in value fields. No skeletons, no layout shift when values arrive. |
 | **Working** | `Ring.busy = true` for a headline measure; otherwise change the button label ("Checking…") and disable it. Work runs through `Screen.background { … }`, never on the main thread. |
-| **Empty** | One sentence in a card saying what is true and, if useful, what to do: "No large files found." Not a blank card and not an illustration. |
+| **Empty** | One sentence in a card saying what is true and, if useful, what to do: "No large files found." Not a blank card and not an illustration. `ui.emptyCard()` or `UiRows.note()` inside the list's card. |
 | **Not enough data** | "Not enough data yet", with when to expect it if known. |
 | **Failed** | What happened and what to try, in the place where the result would have been. `danger` for the icon or title only. Offer a retry pill when retrying can help. |
 | **Unavailable on this phone** | Keep the row, grey it with `Row.available(false, ui, why = "Needs Android 14 or newer")`. |
@@ -467,9 +489,9 @@ Rules:
 - **Row titles are nouns**, row explanations say what the thing does in one line.
 - **No exclamation marks**, no "please", no "oops", no "successfully".
 - **Numbers:** a space between number and unit ("1.2 GB", "31 °C"), no space before `%`. Counts get their noun and correct plural ("1 item", "12 files").
-- **Time:** relative for recent ("5 minutes ago"), dated beyond a week.
+- **Time:** always through `ago(time)`: "just now", "5 min ago", "3 h ago", "yesterday", "4 days ago", then the date. Never "0 minutes ago". Lengths of time through `duration(ms)`: "45 s", "12 min", "3 h 5 min" (number and unit never split across lines).
 - **Say why** when something is limited: name the cause (Android version, missing access) and the way forward.
-- **Names of things:** the file receiver is "Wi‑Fi receive" and its screen is "Receive". The desktop app is "Andromon". The link to it is "PC link". Use the same word for the same thing on every screen.
+- **Names of things:** the Wi‑Fi file screen is "Transfer", with "Receive" and "Send" sides; the feature is "Wi‑Fi receive" / "Wi‑Fi send". The desktop app is "Andromon"; before it says its name, the computer is "your computer". The link to it is "PC link". The junk tool is "Cleaner". Use the same word for the same thing on every screen.
 - **Wi‑Fi** is written with a non-breaking hyphen (`‑`, U+2011) so it never splits across lines.
 - User-visible strings are currently English and mostly inline in Kotlin. Keep each one a complete sentence or label (no concatenating fragments) so they can move to `strings.xml` later.
 
@@ -568,7 +590,7 @@ internal class ExampleScreen(host: MainActivity) : Screen(host) {
 }
 ```
 
-6. **Register it** in `MainActivity.screens`; add its name to `navOrder` only if it belongs in the bottom bar, otherwise add a tile on Home.
+6. **Register it** in `MainActivity.screens`; add its name to `navOrder` only if it belongs in the bottom bar, otherwise add a tile on Tools.
 7. **Stop work in `onHide()`**: receivers, timers, sensors, animations.
 8. **Check it** against the list below on a small phone and a large one, in both themes.
 9. **Ship it:** bump `versionCode` in `app/build.gradle.kts` and `COMPANION_VERSION` in `pc/src/app.js` together, and describe the screen in `README.md`.
@@ -589,7 +611,7 @@ internal class ExampleScreen(host: MainActivity) : Screen(host) {
 - [ ] Values show `–` before data arrives; no layout jump when it does
 - [ ] Working, empty, failed, unavailable and needs-access states all exist
 - [ ] Nothing slow on the main thread
-- [ ] Back does the expected thing
+- [ ] Back does the expected thing; the bottom bar highlights the right item
 - [ ] Destructive actions confirm with count and consequence
 - [ ] Listeners and timers stop in `onHide()`
 
@@ -597,7 +619,8 @@ internal class ExampleScreen(host: MainActivity) : Screen(host) {
 - [ ] Sentence case; buttons are verbs
 - [ ] Limits explained with cause and next step
 - [ ] Estimates labelled as estimates
-- [ ] Same names as the rest of the app ("Receive", "PC link", "Andromon")
+- [ ] Same names as the rest of the app ("Transfer", "PC link", "Andromon")
+- [ ] Times through `ago()` and `duration()`
 
 **Access**
 - [ ] Icon-only controls have a spoken label
@@ -620,3 +643,4 @@ Where the app doesn't yet meet this guide. Fix when touching the area.
 - **Strings are inline** in Kotlin, English only.
 - **Legacy colour names** (`salmon`, `purple`, `blue_tile`, `lime` meaning ink in light theme) are misleading. `R.color.lime` in particular is `#292A2C` in light theme; use `fab`/`on_fab` for buttons and `good_bg` for the lime tint.
 - **Poppins is subset to Latin.** Text in other scripts falls back to the system font.
+- **Older tool screens** (Cleaner, Freezer, Battery saver, Hardware…) still use some 34dp pills and the legacy pastel names for card tints. PC link, Transfer, Tools, Stats and Settings follow this guide; bring the others over when touching them (`ui.smallPill`, `glassCard`, `cardHeader`).

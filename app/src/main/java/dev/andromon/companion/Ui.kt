@@ -479,6 +479,61 @@ internal class Ui(private val ctx: Context) {
         }))
         tv.setTextColor(if (selected) color(R.color.on_fab) else color(R.color.ink))
     }
+
+    /** Small pill for actions inside a card header or row: 36dp, 13sp. [filled] = the ink (lime in dark) primary look. */
+    fun smallPill(label: String, filled: Boolean = false, iconRes: Int? = null, onClick: (() -> Unit)? = null) =
+        pill(label, color(if (filled) R.color.fab else R.color.glass_strong), color(if (filled) R.color.on_fab else R.color.ink), iconRes, onClick).apply {
+            textSize = 13f
+            minHeight = dp(36)
+            setPadding(dp(14), 0, dp(14), 0)
+        }
+
+    /** Line under a screen's title: what the screen is about or its state, 15sp. */
+    fun subtitle(text: CharSequence = "") = text(15f, color(R.color.ink_soft)) {
+        this.text = text; setLineSpacing(dp(2).toFloat(), 1f)
+    }
+
+    /** Empty or unavailable state: an icon chip and one sentence (and an optional action) in a card. */
+    fun emptyCard(iconRes: Int, message: CharSequence, actionLabel: String? = null, onAction: (() -> Unit)? = null): Pair<LinearLayout, TextView> {
+        val label = text(14f, color(R.color.ink)) { this.text = message; setLineSpacing(dp(2).toFloat(), 1f) }
+        val card = glassCard(16) {
+            addView(row {
+                gravity = Gravity.TOP
+                addView(chipIcon(iconRes))
+                addView(label, lp(w = 0, weight = 1f, start = 12).apply { topMargin = dp(6) })
+            })
+            if (actionLabel != null && onAction != null) addView(smallPill(actionLabel, true, null, onAction),
+                lp(w = LinearLayout.LayoutParams.WRAP_CONTENT, top = 12).apply { marginStart = dp(46) })
+        }
+        return card to label
+    }
+
+    /**
+     * One app (or group) in a statistics list: icon, name, the figure on the right, a bar for its
+     * share and a line under it ("23% · 14 opens"). Tappable when [onClick] is set.
+     */
+    fun shareRow(icon: Drawable?, fallbackIcon: Int, title: String, figure: CharSequence, share: Float, sub: String,
+                 onClick: (() -> Unit)?): LinearLayout = row {
+        gravity = Gravity.TOP
+        background = if (onClick != null) pressable(rounded(android.graphics.Color.TRANSPARENT, 20)) else null
+        setPadding(dp(10), dp(10), dp(10), dp(10))
+        if (icon != null) addView(ImageView(ctx).apply { setImageDrawable(icon) }, lp(w = dp(40), h = dp(40)))
+        else addView(roundIcon(40, color(R.color.glass_strong), fallbackIcon, color(R.color.ink), 19), lp(w = dp(40), h = dp(40)))
+        addView(column {
+            addView(row {
+                addView(text(15f, color(R.color.ink), medium) { text = title; maxLines = 1; ellipsize = TextUtils.TruncateAt.END },
+                    lp(w = 0, weight = 1f))
+                addView(text(14f, color(R.color.ink), medium) { text = figure; maxLines = 1 }, lp(w = LinearLayout.LayoutParams.WRAP_CONTENT, start = 8))
+            })
+            addView(Meter(ctx).apply {
+                colors(color(R.color.chip), color(R.color.green_dot)); fraction = share
+                importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+            }, lp(h = dp(6), top = 8))
+            addView(text(12f, color(R.color.ink_soft)) { text = sub; maxLines = 2; ellipsize = TextUtils.TruncateAt.END }, lp(top = 6))
+        }, lp(w = 0, weight = 1f, start = 12))
+        if (onClick != null) setOnClickListener { onClick() }
+        contentDescription = "$title, $figure, $sub"
+    }
 }
 
 /** Switches a run of text to another typeface (the real Poppins italic, not a synthetic slant). */
@@ -812,6 +867,143 @@ internal class BatteryView(ctx: Context) : View(ctx) {
             boltPath.close()
             p.shader = null; p.color = bolt
             canvas.drawPath(boltPath, p)
+        }
+    }
+}
+
+/** "Receive | Send" style switch: a pill-shaped track with one filled segment. Returns the view and a setter. */
+internal fun segmented(ui: Ui, labels: List<String>, onPick: (Int) -> Unit): Pair<View, (Int) -> Unit> {
+    val parts = ArrayList<TextView>()
+    val select: (Int) -> Unit = { chosen ->
+        parts.forEachIndexed { i, tv ->
+            val on = i == chosen
+            tv.background = if (on) ui.rounded(ui.color(R.color.fab), 50) else ui.pressable(ui.rounded(0, 50))
+            tv.setTextColor(ui.color(if (on) R.color.on_fab else R.color.ink))
+            tv.isSelected = on
+        }
+    }
+    val track = ui.row {
+        background = ui.rounded(ui.color(R.color.glass), 50)
+        val p = ui.dp(4)
+        setPadding(p, p, p, p)
+        labels.forEachIndexed { i, label ->
+            val tv = ui.text(15f, ui.color(R.color.ink), ui.medium) {
+                text = label
+                gravity = android.view.Gravity.CENTER
+                minHeight = ui.dp(40)
+                setOnClickListener { onPick(i) }
+            }
+            parts += tv
+            addView(tv, ui.lp(w = 0, weight = 1f))
+        }
+    }
+    select(0)
+    return track to select
+}
+
+/**
+ * When something happened, the same way on every screen: "just now", "5 min ago", "3 h ago",
+ * "yesterday", "4 days ago", then the date. Never "0 minutes ago".
+ */
+internal fun ago(time: Long, now: Long = System.currentTimeMillis()): String {
+    val min = (now - time) / 60_000
+    return when {
+        time <= 0 -> "never"
+        min < 1 -> "just now"
+        min < 60 -> "$min min ago"
+        min < 24 * 60 -> "${min / 60} h ago"
+        min < 48 * 60 -> "yesterday"
+        min < 7 * 24 * 60 -> "${min / (24 * 60)} days ago"
+        else -> "on " + java.text.DateFormat.getDateInstance(java.text.DateFormat.MEDIUM).format(java.util.Date(time))
+    }
+}
+
+/** A length of time: "45 s", "12 min", "3 h 5 min", "2 h". Number and unit never split across lines. */
+internal fun duration(ms: Long): String {
+    val s = ms / 1000
+    val min = s / 60
+    val nb = '\u00A0'
+    return when {
+        s < 60 -> "$s${nb}s"
+        min < 60 -> "$min${nb}min"
+        min % 60 == 0L -> "${min / 60}${nb}h"
+        else -> "${min / 60}${nb}h ${min % 60}${nb}min"
+    }
+}
+
+/**
+ * Vertical bars, one per slot (a day, an app), drawn in code. Each bar can stack several values
+ * (bottom first, in [colors] order); labels sit under the bars in 12sp. The [highlight] bar's label
+ * is in ink and Medium (today), the others are softer. Bars grow from zero; an empty slot shows a
+ * short stub so the row of slots stays readable.
+ */
+internal class BarChart(ctx: Context) : View(ctx) {
+    var bars: List<List<Float>> = emptyList()
+        set(v) { field = v; invalidate() }
+    var labels: List<String> = emptyList()
+        set(v) { field = v; invalidate() }
+    var highlight = -1
+        set(v) { field = v; invalidate() }
+
+    private val d = resources.displayMetrics.density
+    private var stack = listOf(0)
+    private val bar = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val stub = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val label = Paint(Paint.ANTI_ALIAS_FLAG).apply { textAlign = Paint.Align.CENTER }
+    private val guide = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE; strokeWidth = 1f * d
+        pathEffect = DashPathEffect(floatArrayOf(3 * d, 4 * d), 0f) }
+    private var soft = 0; private var strong = 0
+    private val rect = RectF()
+    private val clip = Path()
+
+    /** [stackColors] bottom first; [track] for empty stubs; label colours; [guideColor] for the top line. */
+    fun colors(stackColors: List<Int>, track: Int, labelSoft: Int, labelStrong: Int, guideColor: Int, face: Typeface?) {
+        stack = stackColors; stub.color = track; soft = labelSoft; strong = labelStrong; guide.color = guideColor
+        label.typeface = face
+        label.textSize = android.util.TypedValue.applyDimension(android.util.TypedValue.COMPLEX_UNIT_SP, 12f, resources.displayMetrics)
+        invalidate()
+    }
+
+    override fun onDraw(canvas: Canvas) {
+        val n = bars.size
+        if (n == 0 || width == 0) return
+        val labelH = if (labels.isEmpty()) 0f else label.textSize + 10 * d
+        val top = 6 * d
+        val bottom = height - labelH
+        canvas.drawLine(0f, top, width.toFloat(), top, guide)
+        val max = bars.maxOf { it.sum() }.takeIf { it > 0f } ?: 1f
+        val slot = width / n.toFloat()
+        val bw = minOf(slot * 0.56f, 28 * d)
+        for (i in 0 until n) {
+            val cx = slot * i + slot / 2
+            val values = bars[i]
+            val total = values.sum()
+            rect.set(cx - bw / 2, 0f, cx + bw / 2, bottom)
+            if (total <= 0f) {
+                rect.top = bottom - 4 * d
+                canvas.drawRoundRect(rect, 2 * d, 2 * d, stub)
+            } else {
+                val h = maxOf((bottom - top) * total / max, 4 * d)
+                rect.top = bottom - h
+                val r = minOf(bw / 2, 8 * d)
+                canvas.save()
+                clip.reset(); clip.addRoundRect(rect, r, r, Path.Direction.CW)
+                canvas.clipPath(clip)
+                var y = bottom
+                values.forEachIndexed { k, v ->
+                    if (v <= 0f) return@forEachIndexed
+                    val part = h * v / total
+                    bar.color = stack[k.coerceAtMost(stack.size - 1)]
+                    canvas.drawRect(rect.left, y - part, rect.right, y, bar)
+                    y -= part
+                }
+                canvas.restore()
+            }
+            labels.getOrNull(i)?.let {
+                label.color = if (i == highlight) strong else soft
+                label.isFakeBoldText = false
+                canvas.drawText(it, cx, height - 4 * d, label)
+            }
         }
     }
 }

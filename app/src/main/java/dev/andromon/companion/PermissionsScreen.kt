@@ -432,12 +432,6 @@ internal class PermissionsScreen(host: MainActivity) : Screen(host) {
         val use = lastUse ?: return null
         if (h.granted != true || h.pkg !in use) return null
         val ago = use[h.pkg] ?: return "no use on record"
-        val min = ago / 60_000
-        return "used " + when {
-            min < 1 -> "just now"
-            min < 60 -> "$min min ago"
-            min < 48 * 60 -> "${min / 60} h ago"
-            else -> "${min / (24 * 60)} days ago"
-        }
+        return "used " + ago(System.currentTimeMillis() - ago)
     }
 }

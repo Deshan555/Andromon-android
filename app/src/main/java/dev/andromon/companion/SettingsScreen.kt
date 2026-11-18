@@ -20,7 +20,7 @@ import android.widget.ScrollView
 import android.widget.Switch
 import android.widget.TextView
 
-/** Appearance, PC link, tool options, access the app has, and about. Opened from Home. */
+/** Appearance, PC link, tool options, access the app has, and about. The last item in the bottom bar. */
 internal class SettingsScreen(host: MainActivity) : Screen(host) {
 
     override val name = "Settings"
@@ -57,6 +57,7 @@ internal class SettingsScreen(host: MainActivity) : Screen(host) {
     private lateinit var title: TextView
     private lateinit var backBtn: View
     private lateinit var menu: LinearLayout
+    private lateinit var menuSub: View
 
     /**
      * The first page lists the pages; a tap opens one in place, and Back (or the arrow beside the
@@ -98,19 +99,27 @@ internal class SettingsScreen(host: MainActivity) : Screen(host) {
             }, ui.lp(top = 12))
         }
 
-        page("link", R.drawable.ic_usb, "PC link", "When the link to your computer starts") {
+        page("link", R.drawable.ic_usb, "PC link", "When the link starts, and its history") {
             addView(ui.glassCard(6) {
                 linkSwitch = switchRow(R.drawable.ic_usb, "Start when the app opens",
                     "Andromon can still start the link over USB when this is off") { on ->
                     Prefs.setStartLinkOnOpen(host, on)
                 }
+                valueRow(R.drawable.ic_clock, "Clear link history", "Recent activity, PC link stats and the computers' names, kept on this phone for 30 days") {
+                    AlertDialog.Builder(host)
+                        .setTitle("Clear link history?")
+                        .setMessage("Recent activity, the PC link figures in Stats and the names of the computers that connected will be removed from this phone.")
+                        .setPositiveButton("Clear") { _, _ -> LinkStats.clear(host) }
+                        .setNegativeButton("Cancel", null)
+                        .show()
+                }.text = ""
             }, ui.lp(top = 20))
         }
 
-        page("tools", R.drawable.ic_broom, "Tools", "Junk Cleaner rules, speed tests and automation") {
+        page("tools", R.drawable.ic_broom, "Tools", "Cleaner rules, speed tests and automation") {
             addView(ui.glassCard(6) {
-                rulesValue = valueRow(R.drawable.ic_broom, "Cleaning rules", "What the Junk Cleaner looks for") { pickRules() }
-                largeValue = valueRow(R.drawable.ic_big_file, "Large files", "Size from which the Junk Cleaner lists a file") { pickLargeSize() }
+                rulesValue = valueRow(R.drawable.ic_broom, "Cleaning rules", "What the Cleaner looks for") { pickRules() }
+                largeValue = valueRow(R.drawable.ic_big_file, "Large files", "Size from which the Cleaner lists a file") { pickLargeSize() }
                 dataSwitch = switchRow(R.drawable.ic_speed, "Save data on speed tests",
                     "Always run the shorter test (about 35 MB), also on Wi‑Fi") { on -> Prefs.setSaveData(host, on) }
             }, ui.lp(top = 20))
@@ -126,10 +135,10 @@ internal class SettingsScreen(host: MainActivity) : Screen(host) {
 
         page("access", R.drawable.ic_lock, "Access", "Files, usage, notifications and permissions") {
             addView(ui.glassCard(6) {
-                filesValue = valueRow(R.drawable.ic_folder, "All files access", "Lets the Junk Cleaner scan your storage") {
+                filesValue = valueRow(R.drawable.ic_folder, "All files access", "Lets the Cleaner scan your storage") {
                     openAppSetting(if (Build.VERSION.SDK_INT >= 30) Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION else null)
                 }
-                usageValue = valueRow(R.drawable.ic_apps, "Usage access", "Lets the app measure app sizes and caches") {
+                usageValue = valueRow(R.drawable.ic_apps, "Usage access", "Stats, app sizes and caches") {
                     openAppSetting(Settings.ACTION_USAGE_ACCESS_SETTINGS)
                 }
                 notifyValue = valueRow(R.drawable.ic_info, "Notifications", "PC link status and Wi‑Fi receive requests") {
@@ -163,7 +172,9 @@ internal class SettingsScreen(host: MainActivity) : Screen(host) {
         menu = ui.glassCard(6) {
             for (p in pages) valueRow(p.icon, p.title, p.sub) { showPage(p) }.text = ""
         }
-        addView(menu, 1, ui.lp(top = 20))
+        menuSub = ui.subtitle("Look, the PC link, tools and the access this app has")
+        addView(menuSub, 1, ui.lp(top = 6))
+        addView(menu, 2, ui.lp(top = 20))
         showPage(null)
     }
 
@@ -181,6 +192,7 @@ internal class SettingsScreen(host: MainActivity) : Screen(host) {
         backBtn.visibility = if (page == null) View.GONE else View.VISIBLE
         title.setPadding(if (page == null) 0 else ui.dp(10), 0, 0, 0)
         menu.visibility = if (page == null) View.VISIBLE else View.GONE
+        menuSub.visibility = menu.visibility
         for (p in pages) p.box.visibility = if (p === page) View.VISIBLE else View.GONE
         host.scrollToTop()
     }
@@ -198,6 +210,8 @@ internal class SettingsScreen(host: MainActivity) : Screen(host) {
     }
 
     override fun onLeave() { if (pending == null) showPage(null) }
+
+    override fun onReselect() { if (open != null) showPage(null) }
 
     override fun onShow() {
         view // builds the pages on first use
@@ -369,7 +383,7 @@ internal class SettingsScreen(host: MainActivity) : Screen(host) {
             "and Wi‑Fi receive while you have it on.\n\n" +
             "• The camera is used only while you scan a code in Send; the picture is read on the phone and not kept.\n\n" +
             "• If the app crashes, the technical details stay on this phone until you share or delete them.\n\n" +
-            "• The Junk Cleaner and App Manager work on the phone itself. Nothing is deleted or uninstalled " +
+            "• The Cleaner and the Apps screen work on the phone itself. Nothing is deleted or uninstalled " +
             "until you confirm.\n\n" +
             "• Settings are stored only on this phone.")
 
@@ -409,7 +423,7 @@ internal class SettingsScreen(host: MainActivity) : Screen(host) {
             .setTitle("Third-party notices")
             .setView(dialogText(
                 "SD Maid SE\n" +
-                    "The Junk Cleaner's cleaning rules (System Cleaner filters and CorpseFinder) and its " +
+                    "The Cleaner's cleaning rules (System Cleaner filters and CorpseFinder) and its " +
                     "leftover-folder database are ported from SD Maid SE by the SD Maid SE authors " +
                     "(github.com/d4rken-org/sdmaid-se), GNU GPL version 3.\n\n" +
                     "SuperFreezZ\n" +

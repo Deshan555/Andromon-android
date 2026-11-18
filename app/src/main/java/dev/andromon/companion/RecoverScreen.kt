@@ -23,7 +23,7 @@ import java.util.Date
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
 
-/** Recover: deleted photos, videos and files that are still on the phone (see [Recovery]). Opened from Home. */
+/** Recover: deleted photos, videos and files that are still on the phone (see [Recovery]). Opened from Tools. */
 internal class RecoverScreen(host: MainActivity) : Screen(host) {
 
     override val name = "Recover"

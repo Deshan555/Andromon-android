@@ -38,6 +38,8 @@ class Api(private val ctx: Context) {
         "contacts.update", "contacts.delete", "contacts.photo", "contacts.setPhoto" -> ContactsEdit(ctx).call(method, p)
         "sms.restore", "calls.restore" -> Restore(ctx).call(method, p)
         "battery.health" -> BatteryLog.healthReport(ctx)
+        // The computer names itself for the PC link screen: {computer, os, app}, all optional strings.
+        "link.hello" -> LinkStats.hello(ctx, p.optString("computer"), p.optString("os"), p.optString("app"))
         else -> when {
             method.startsWith("mms.") -> Mms(ctx).call(method, p)
             method.startsWith("calendar.") -> CalendarApi(ctx).call(method, p)
@@ -46,6 +48,7 @@ class Api(private val ctx: Context) {
             method.startsWith("apps.") -> AppIcons.call(ctx, method, p)
             method.startsWith("push.") || method.startsWith("clip.") || method.startsWith("phone.") -> Links.call(ctx, method, p)
             method.startsWith("player.") -> Player.call(ctx, method, p)
+            method.startsWith("stats.") -> AppStats.call(ctx, method, p) // Stats screen figures (AppStats.kt, LinkStats.kt)
             else -> throw IllegalArgumentException("Unknown method: $method")
         }
     }

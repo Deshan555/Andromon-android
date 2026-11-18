@@ -53,7 +53,7 @@ class AutomationActivity : Activity() {
             LINK_OFF -> if (CompanionService.running)
                 startService(Intent(this, CompanionService::class.java).setAction(CompanionService.ACTION_STOP))
             RECEIVE_ON -> {
-                // Same checks as the Receive screen and its tile: without them a transfer couldn't be accepted or saved.
+                // Same checks as Transfer › Receive and its tile: without them a transfer couldn't be accepted or saved.
                 val missing = buildList {
                     if (Build.VERSION.SDK_INT >= 33) add(Manifest.permission.POST_NOTIFICATIONS)
                     if (Build.VERSION.SDK_INT < 29) add(Manifest.permission.WRITE_EXTERNAL_STORAGE)

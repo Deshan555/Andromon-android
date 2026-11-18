@@ -183,7 +183,7 @@ internal class BatteryHistoryPanel(private val host: MainActivity) {
                 else -> "Not enough data yet"
             },
             "Last seen at 100%" to (s.lastFull?.let {
-                DateUtils.getRelativeTimeSpanString(it, now, DateUtils.MINUTE_IN_MILLIS).toString()
+                ago(it, now).replaceFirstChar { c -> c.uppercase() }
             } ?: "Not in the recorded history"),
             "Temperature ($range)" to (if (s.tempMin != null && s.tempMax != null && s.tempAvg != null)
                 "%.1f–%.1f °C\naverage %.1f °C".format(s.tempMin, s.tempMax, s.tempAvg) else "Not reported"),

@@ -46,6 +46,20 @@ internal object Prefs {
     fun automation(ctx: Context) = sp(ctx).getBoolean("automation", false)
     fun setAutomation(ctx: Context, on: Boolean) = sp(ctx).edit().putBoolean("automation", on).apply()
 
+    /** Transfer opens on the side used last: Send (true) or Receive. */
+    fun transferSend(ctx: Context) = sp(ctx).getBoolean("transfer_send", false)
+    fun setTransferSend(ctx: Context, send: Boolean) = sp(ctx).edit().putBoolean("transfer_send", send).apply()
+
+    /** Stats: the segment and range shown last. */
+    fun statsSegment(ctx: Context) = sp(ctx).getInt("stats_segment", 0)
+    fun setStatsSegment(ctx: Context, i: Int) = sp(ctx).edit().putInt("stats_segment", i).apply()
+    fun statsWeek(ctx: Context) = sp(ctx).getBoolean("stats_week", false)
+    fun setStatsWeek(ctx: Context, week: Boolean) = sp(ctx).edit().putBoolean("stats_week", week).apply()
+
+    /** Runtime permissions this app has asked for once, so a later refusal can be told apart from "never asked". */
+    fun askedPermission(ctx: Context, p: String) = sp(ctx).getBoolean("asked_$p", false)
+    fun setAskedPermission(ctx: Context, p: String) = sp(ctx).edit().putBoolean("asked_$p", true).apply()
+
     fun saveData(ctx: Context) = sp(ctx).getBoolean("save_data", false)
     fun setSaveData(ctx: Context, on: Boolean) = sp(ctx).edit().putBoolean("save_data", on).apply()
 

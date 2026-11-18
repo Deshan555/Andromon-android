@@ -576,6 +576,7 @@ internal class WifiServer(private val ctx: Context) {
         releaseTransferLocks()
         if (s.direct != null) DirectLink.stop()
         val count = s.saved.size
+        LinkStats.filesReceived(ctx, s.from, count, synchronized(s.saved) { s.saved.sumOf { it.size } }) // Stats › PC link
         WifiReceive.post {
             progress = null
             done = WifiReceive.Done((done?.seq ?: 0) + 1, s.from, count, problem)

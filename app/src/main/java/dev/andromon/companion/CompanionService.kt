@@ -151,7 +151,7 @@ class CompanionService : Service() {
         val notification = Notification.Builder(this, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.stat_notify_sync)
             .setContentTitle("Connected to Andromon")
-            .setContentText("Your PC can read messages, contacts and call log over USB")
+            .setContentText("Andromon on your computer can read messages, contacts and call log") // over USB or Wi‑Fi
             .setContentIntent(open)
             .setOngoing(true)
             .addAction(Notification.Action.Builder(null, "Stop", stop).build())
@@ -242,6 +242,7 @@ class CompanionService : Service() {
             val request = JSONObject(line)
             response.put("id", request.opt("id"))
             val method = request.getString("method")
+            LinkStats.call(this, method) // the PC link screen's activity list and Stats › PC link
             if (method == "events") {
                 val params = request.optJSONObject("params") ?: JSONObject()
                 keepOpen { streamEvents(sock, params) }
@@ -331,6 +332,7 @@ class CompanionService : Service() {
                 val ev = queue.poll(20, TimeUnit.SECONDS) ?: JSONObject().put("type", "ping")
                 lastActivity = System.currentTimeMillis()
                 send(ev)
+                LinkStats.touch(this) // written without an error: the computer is still there
             }
         } catch (_: IOException) {
         } catch (_: InterruptedException) {

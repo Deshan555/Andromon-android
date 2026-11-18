@@ -24,17 +24,25 @@ import android.window.OnBackInvokedDispatcher
 
 /**
  * The app's only activity. Opening it (or Andromon starting it with --ez autostart true)
- * starts the PC link service. A bottom bar docked to the screen edge switches between Home,
- * PC link, Receive and Settings; every other tool opens from its tile on Home.
+ * starts the PC link service. A bottom bar docked to the screen edge switches between PC link
+ * (where the app opens), Transfer, Tools, Stats and Settings; every other tool opens from its
+ * tile on Tools and highlights Tools in the bar.
  */
 class MainActivity : Activity() {
 
     companion object {
-        /** Intent extra: name of the screen to open (e.g. "Receive" from a notification). */
+        /**
+         * Intent extra: name of the screen to open (e.g. "Receive" from a notification). Older
+         * names still work: "Home" opens Tools, "Receive" and "Send" open Transfer on that side.
+         */
         const val EXTRA_SCREEN = "screen"
-        /** Bottom bar height above the system navigation bar, and how far the centre button rises above it. */
-        private const val NAV_H = 64
+        /** Bottom bar height above the system navigation bar. */
+        private const val NAV_H = 68
         private const val NAV_GAP = 0
+        /** Height of the dock above the bottom bar (a screen's sticky main button, e.g. Send). */
+        private const val DOCK_H = 104
+        /** Screen names from earlier versions, still used by notifications, tiles and automation. */
+        private val ALIASES = mapOf("Home" to "Tools", "Receive" to "Transfer", "Send" to "Transfer")
         /** Intent extra: a Wi‑Fi receive request to accept once the app is on screen. */
         const val EXTRA_ACCEPT = "accept"
     }
@@ -44,17 +52,22 @@ class MainActivity : Activity() {
     private lateinit var nav: FrameLayout
     private lateinit var navBar: LinearLayout
     private lateinit var root: FrameLayout
-    /** One bottom-bar button; [dot] marks the open screen (null for the round centre button). */
-    private class NavItem(val screen: Int, val icon: ImageView, val dot: View?)
+    /** One bottom-bar button: the icon on its pill and the label under it. */
+    private class NavItem(val screen: Int, val icon: ImageView, val label: TextView)
     private val navItems = mutableListOf<NavItem>()
     private val screens: List<Screen> by lazy {
-        listOf(HomeScreen(this), MemoryScreen(this), CleanerScreen(this), NetworkScreen(this), ReceiveScreen(this),
-            BatteryScreen(this), AppsScreen(this), SettingsScreen(this), PcLinkScreen(this),
+        listOf(PcLinkScreen(this), TransferScreen(this), ToolsScreen(this), StatsScreen(this), SettingsScreen(this),
+            MemoryScreen(this), CleanerScreen(this), NetworkScreen(this),
+            BatteryScreen(this), AppsScreen(this),
             StorageScreen(this), PermissionsScreen(this), HardwareScreen(this),
             FreezerScreen(this), SaverScreen(this), RecoverScreen(this), FdroidScreen(this))
     }
-    /** Screens in the bottom bar, left to right. */
-    private val navOrder = listOf("Home", "PC link", "Receive", "Settings")
+    /** Screens in the bottom bar, left to right. The first is where the app opens and where Back ends. */
+    private val navOrder = listOf("PC link", "Transfer", "Tools", "Stats", "Settings")
+    private val navLabels = mapOf("PC link" to "PC link", "Transfer" to "Transfer", "Tools" to "Tools", "Stats" to "Stats", "Settings" to "Settings")
+    /** Where Back goes: the screens opened on the way here (only tool screens are remembered). */
+    private val history = ArrayDeque<Int>()
+    private lateinit var dock: FrameLayout
     private var current = -1
     private var bars = listOf(0, 0, 0, 0)
     private var imeBottom = 0
@@ -77,8 +90,15 @@ class MainActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // The extras of the intent that opened the app are acted on once. Android hands the same
+        // intent to a recreated activity (theme or text size changed, Battery Saver's dark mode,
+        // rotation) and to one reopened from Recents: acting again jumped to the screen a
+        // notification had asked for, and Andromon's autostart hid the app the person opened.
+        val fresh = savedInstanceState == null &&
+            (intent?.flags ?: 0) and Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY == 0
+        val autostart = fresh && intent?.getBooleanExtra("autostart", false) == true
         // Allowed: the activity is in the foreground. Andromon's autostart always starts it.
-        if (Prefs.startLinkOnOpen(this) || intent?.getBooleanExtra("autostart", false) == true) CompanionService.start(this)
+        if (Prefs.startLinkOnOpen(this) || autostart) CompanionService.start(this)
         ui = Ui(this)
         BatteryLog.schedule(this) // battery history keeps sampling while the app is closed
         PowerWatch.sync(this) // the "Battery watch" service, only when an automatic freeze/saver option is on
@@ -90,6 +110,11 @@ class MainActivity : Activity() {
         nav = buildNav()
         root = FrameLayout(this).apply {
             addView(scroll, FrameLayout.LayoutParams(-1, -1))
+            dock = FrameLayout(this@MainActivity).apply {
+                visibility = View.GONE
+                setBackgroundColor(ui.color(R.color.bg))
+            }
+            addView(dock, FrameLayout.LayoutParams(-1, ui.dp(DOCK_H), Gravity.BOTTOM))
             addView(nav, FrameLayout.LayoutParams(-1, ui.dp(NAV_H + NAV_GAP), Gravity.BOTTOM))
         }
         // Draw behind the system bars and pad the content by their size instead.
@@ -100,11 +125,11 @@ class MainActivity : Activity() {
         }
         setContentView(root)
         setupSystemBars()
-        show(savedInstanceState?.getInt("screen") ?: 0)
-        openRequested(intent)
+        show(savedInstanceState?.getInt("screen")?.takeIf { it in screens.indices } ?: home)
+        if (fresh) openRequested(intent)
         CrashReports.offer(this) // once after a crash; nothing is sent unless the person shares it
 
-        if (intent?.getBooleanExtra("autostart", false) == true) {
+        if (autostart) {
             // Started by the PC as a fallback: get out of the user's way.
             moveTaskToBack(true)
         }
@@ -121,14 +146,57 @@ class MainActivity : Activity() {
     private fun openRequested(intent: Intent?) {
         intent?.getStringExtra(EXTRA_ACCEPT)?.let { acceptOnResume = it; intent.removeExtra(EXTRA_ACCEPT) }
         val name = intent?.getStringExtra(EXTRA_SCREEN) ?: return
-        screenIndex(name).takeIf { it >= 0 }?.let(::show)
+        // "Receive" / "Send" (notifications, tiles, Share): Transfer on that side.
+        if (name == "Receive" || name == "Send") TransferScreen.requestMode(send = name == "Send")
+        val i = screenIndex(name).takeIf { it >= 0 } ?: return
+        // Opened from outside (notification, tile, automation): Back leads to the screen's parent, not to where the app was.
+        history.clear()
+        if (i == current) screens[i].onShow() else show(i, remember = false)
     }
 
     internal fun scrollToTop() = if (Prefs.reduceMotion(this)) scroll.scrollTo(0, 0) else scroll.smoothScrollTo(0, 0)
 
+    /** Scrolls so [v] (a view inside the current screen) is near the top. */
+    internal fun scrollTo(v: View) {
+        var y = 0
+        var x: View? = v
+        while (x != null && x !== scroll) { y += x.top; x = x.parent as? View }
+        val target = (y - ui.dp(16)).coerceAtLeast(0)
+        if (Prefs.reduceMotion(this)) scroll.scrollTo(0, target) else scroll.smoothScrollTo(0, target)
+    }
+
     internal fun show(name: String) = screenIndex(name).takeIf { it >= 0 }?.let(::show)
 
-    internal fun goHome() = show(0)
+    /** The PC link screen, where the app opens. */
+    private val home get() = screenIndex("PC link")
+
+    internal fun goHome() = show(home)
+
+    /**
+     * A screen's sticky main button above the bottom bar (Transfer › Send), or null for none.
+     * Cleared whenever another screen opens.
+     */
+    internal fun setDock(v: View?) {
+        if (dock.childCount == 1 && dock.getChildAt(0) === v && dock.visibility == View.VISIBLE) return
+        dock.removeAllViews()
+        (v?.parent as? FrameLayout)?.removeView(v)
+        if (v != null) dock.addView(v, FrameLayout.LayoutParams(-1, ui.dp(56), Gravity.CENTER_VERTICAL))
+        dock.visibility = if (v != null) View.VISIBLE else View.GONE
+        applyInsets()
+    }
+
+    /** Opens an app's details (the Apps screen's sheet); Back returns to the screen it came from. */
+    internal fun showAppDetails(pkg: String) {
+        AppsScreen.pendingDetails = pkg
+        val i = screenIndex("Apps")
+        if (i == current) screens[i].onShow() else show(i)
+    }
+
+    /** The bottom-bar item a screen belongs to: itself, or Tools for every tool screen. */
+    private fun tabOf(index: Int): Int {
+        val name = screens[index].name
+        return if (name in navOrder) index else screenIndex("Tools")
+    }
 
     /** Opens Settings on one of its pages (a [SettingsScreen] page key such as "privileged"). */
     internal fun showSettings(page: String) {
@@ -137,7 +205,10 @@ class MainActivity : Activity() {
         if (i == current) screens[i].onShow() else show(i)
     }
 
-    internal fun screenIndex(name: String) = screens.indexOfFirst { it.name == name }
+    internal fun screenIndex(name: String): Int {
+        val n = ALIASES[name] ?: name
+        return screens.indexOfFirst { it.name == n }
+    }
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
@@ -169,14 +240,30 @@ class MainActivity : Activity() {
     /** Pre-Android 13 back handling; newer versions use [updateBackHandling]. */
     @Deprecated("Framework callback")
     override fun onBackPressed() {
-        if (current != 0) { if (!screens[current].onBack()) show(0) } else @Suppress("DEPRECATION") super.onBackPressed()
+        if (current != home || history.isNotEmpty()) goBack() else @Suppress("DEPRECATION") super.onBackPressed()
+    }
+
+    /**
+     * Back: the screen's own sub-page first, then the screen it was opened from (Stats › an app's
+     * details › Back returns to Stats), else Tools for a tool screen, else PC link.
+     */
+    private fun goBack() {
+        if (screens[current].onBack()) return
+        val to = history.removeLastOrNull() ?: if (screens[current].name !in navOrder) screenIndex("Tools") else home
+        show(to, remember = false)
     }
 
     // ---------- navigation ----------
 
-    internal fun show(index: Int) {
+    internal fun show(index: Int) = show(index, remember = true)
+
+    private fun show(index: Int, remember: Boolean) {
         if (index == current) return
+        // Opening a tool screen remembers where it was opened from; a bottom-bar screen starts afresh.
+        if (screens[index].name in navOrder) history.clear()
+        else if (remember && current >= 0 && history.lastOrNull() != current) { history.addLast(current); while (history.size > 8) history.removeFirst() }
         if (current >= 0) { screens[current].onHide(); screens[current].onLeave() }
+        if (::dock.isInitialized) setDock(null)
         current = index
         val screen = screens[index]
         scroll.removeAllViews()
@@ -186,14 +273,15 @@ class MainActivity : Activity() {
         applyInsets()
         // Colour-blocked screens: each one paints the whole window in its own colour.
         root.setBackgroundColor(ui.color(screen.navColor))
+        val tab = tabOf(index)
         for (item in navItems) {
-            val active = item.screen == index
+            val active = item.screen == tab
             val s = screens[item.screen]
-            // The open screen's icon sits on a white rounded square; the others are white on the dark pill.
+            // The open item's icon sits on a white pill; the others are white on the dark bar.
             item.icon.setImageDrawable(ui.icon(s.navIcon, ui.color(if (active) R.color.centre_icon else R.color.nav_icon)))
-            item.icon.background = if (active) ui.rounded(ui.color(R.color.nav_active), 16)
-                else null
-            item.icon.isSelected = active
+            item.icon.background = if (active) ui.rounded(ui.color(R.color.nav_active), 16) else null
+            item.label.typeface = if (active) ui.medium else ui.regular
+            (item.icon.parent as View).isSelected = active
         }
         updateBackHandling()
         screen.onShow()
@@ -201,8 +289,8 @@ class MainActivity : Activity() {
 
     /**
      * Dark bar docked to the bottom edge, full width with rounded top corners (it runs on behind the
-     * system navigation bar): one icon per main screen, evenly spaced, the open one on a white
-     * rounded square.
+     * system navigation bar): one icon and label per main screen, evenly spaced, the open one's icon
+     * on a white pill. Tapping the open item again scrolls its screen back to the top.
      */
     private fun buildNav(): FrameLayout {
         val bar = ui.row {
@@ -219,18 +307,35 @@ class MainActivity : Activity() {
         for (name in navOrder) {
             val i = screenIndex(name)
             val icon = ImageView(this).apply {
-                val p = ui.dp(13)
-                setPadding(p, p, p, p)
+                setPadding(ui.dp(17), ui.dp(5), ui.dp(17), ui.dp(5))
+                importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
             }
-            navItems += NavItem(i, icon, null)
-            // The whole cell is the touch target; the icon sits centred in it.
-            bar.addView(FrameLayout(this).apply {
-                contentDescription = screens[i].name
-                setOnClickListener { show(i) }
-                addView(icon, FrameLayout.LayoutParams(ui.dp(48), ui.dp(48), Gravity.CENTER))
-            }, LinearLayout.LayoutParams(0, ui.dp(NAV_H), 1f))
+            val label = ui.text(12f, ui.color(R.color.nav_icon)) {
+                text = navLabels[name] ?: name; gravity = Gravity.CENTER; maxLines = 1
+                // The bar has a fixed height: labels grow with the text size, but only so far.
+                setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, minOf(textSize, ui.dp(14).toFloat()))
+                importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+            }
+            navItems += NavItem(i, icon, label)
+            // The whole cell is the touch target: the icon's pill with the label under it.
+            bar.addView(ui.column {
+                gravity = Gravity.CENTER
+                contentDescription = navLabels[name] ?: name
+                background = ui.pressable(ui.rounded(Color.TRANSPARENT, 18))
+                setOnClickListener { onNavTap(i) }
+                addView(icon, LinearLayout.LayoutParams(ui.dp(56), ui.dp(32)))
+                addView(label, LinearLayout.LayoutParams(-2, -2).apply { topMargin = ui.dp(4) })
+            }, LinearLayout.LayoutParams(0, ui.dp(NAV_H - 8), 1f).apply { topMargin = ui.dp(4) })
         }
         return box
+    }
+
+    /** A bottom-bar tap: open that screen, or, when it is already open, back to its top. */
+    private fun onNavTap(i: Int) {
+        if (i == current) {
+            screens[i].onReselect()
+            scrollToTop()
+        } else show(i)
     }
 
     private fun updateBackHandling() {
@@ -238,8 +343,8 @@ class MainActivity : Activity() {
         val dispatcher = onBackInvokedDispatcher
         (backCallback as? OnBackInvokedCallback)?.let { dispatcher.unregisterOnBackInvokedCallback(it) }
         backCallback = null
-        if (current != 0) {
-            val cb = OnBackInvokedCallback { if (!screens[current].onBack()) show(0) }
+        if (current != home || history.isNotEmpty()) {
+            val cb = OnBackInvokedCallback { goBack() }
             dispatcher.registerOnBackInvokedCallback(OnBackInvokedDispatcher.PRIORITY_DEFAULT, cb)
             backCallback = cb
         }
@@ -269,7 +374,14 @@ class MainActivity : Activity() {
         nav.layoutParams.height = ui.dp(NAV_H + NAV_GAP) + b
         navBar.setPadding(ui.dp(8) + l, 0, ui.dp(8) + r, b)
         nav.requestLayout()
-        val bottom = if (keyboard) imeBottom + ui.dp(24) else b + ui.dp(NAV_H + NAV_GAP + 20)
+        val docked = ::dock.isInitialized && dock.visibility == View.VISIBLE && !keyboard
+        if (::dock.isInitialized) {
+            dock.visibility = if (dock.childCount > 0 && !keyboard) View.VISIBLE else View.GONE
+            (dock.layoutParams as FrameLayout.LayoutParams).bottomMargin = ui.dp(NAV_H + NAV_GAP) + b - ui.dp(24)
+            dock.setPadding(ui.dp(20) + l, 0, ui.dp(20) + r, ui.dp(34))
+            dock.requestLayout()
+        }
+        val bottom = if (keyboard) imeBottom + ui.dp(24) else b + ui.dp(NAV_H + NAV_GAP + 20) + if (docked) ui.dp(DOCK_H - 24) else 0
         // 20dp sides leave room for the cards' soft shadows.
         if (current >= 0) screens[current].view.setPadding(ui.dp(20) + l, ui.dp(16) + t, ui.dp(20) + r, bottom)
     }

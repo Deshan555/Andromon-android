@@ -15,7 +15,6 @@ import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.text.TextUtils
-import android.text.format.DateUtils
 import android.view.Gravity
 import android.view.View
 import android.widget.LinearLayout
@@ -23,14 +22,23 @@ import android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
 import android.widget.TextView
 
 /**
- * Wi‑Fi receive: makes this phone visible to computers on the same Wi‑Fi (Andromon's Wi‑Fi
- * transfer, or another app that speaks the same open protocol) and saves what they send, after
- * the person accepts, to Download/Andromon. The work happens in [ReceiveService].
+ * Transfer ("Receive" in earlier versions): files between this phone and a computer over Wi‑Fi,
+ * with a Receive | Send switch that remembers the side used last.
+ *
+ * Receive makes this phone visible to computers on the same Wi‑Fi (Andromon's Wi‑Fi transfer, or
+ * another app that speaks the same open protocol) and saves what they send, after the person
+ * accepts, to Download/Andromon. The work happens in [ReceiveService]. Send is [SendPanel].
  */
-internal class ReceiveScreen(host: MainActivity) : Screen(host) {
+internal class TransferScreen(host: MainActivity) : Screen(host) {
 
-    override val name = "Receive"
-    override val navIcon = R.drawable.ic_down
+    companion object {
+        /** Side to show next time Transfer opens ("Receive" / "Send" from a notification, tile or another screen). */
+        private var wanted: Boolean? = null
+        fun requestMode(send: Boolean) { wanted = send }
+    }
+
+    override val name = "Transfer"
+    override val navIcon = R.drawable.ic_transfer
     override val navColor = R.color.bg
 
     private lateinit var statusPill: TextView
@@ -75,30 +83,31 @@ internal class ReceiveScreen(host: MainActivity) : Screen(host) {
     private val listener: () -> Unit = { refresh() }
     private var startAfterPermission = false
 
-    private lateinit var pageTitle: TextView
+    private lateinit var pageSub: TextView
     private lateinit var receiveBody: LinearLayout
     private var selectMode: (Int) -> Unit = {}
     private var sendMode = false
     private val sendPanel by lazy { SendPanel(host) }
 
     override fun build(): View = ui.column {
-        addView(ui.row {
-            pageTitle = ui.pageTitle("Receive")
-            addView(pageTitle, ui.lp(w = 0, weight = 1f))
-            statusPill = ui.pill("", 0, 0).apply { textSize = 14f; minHeight = ui.dp(34); typeface = ui.regular }
-            addView(statusPill, ui.lp(w = WRAP_CONTENT))
-        }, ui.lp(top = 40))
+        val (bar, _) = ui.topBar("Transfer", host::goHome)
+        statusPill = ui.smallPill("")
+        bar.removeViewAt(bar.childCount - 1) // the empty action slot: the status pill takes its place
+        bar.addView(statusPill, ui.lp(w = WRAP_CONTENT, start = 8))
+        addView(bar)
+        pageSub = ui.subtitle("Files between this phone and your computer over Wi‑Fi")
+        addView(pageSub, ui.lp(top = 6))
         // Receive | Send: the Send side lives in SendPanel (SendScreen.kt).
-        val (modeSwitch, select) = segmented(ui, listOf("Receive", "Send")) { setMode(it == 1) }
+        val (modeSwitch, select) = segmented(ui, listOf("Receive", "Send")) { setMode(it == 1, remember = true) }
         selectMode = select
-        addView(modeSwitch, ui.lp(top = 18))
+        addView(modeSwitch, ui.lp(top = 20))
         receiveBody = ui.column {
             // Requests and progress go first, so Accept is on screen without scrolling.
             addView(askCard(), ui.lp(top = 12))
             addView(progressCard(), ui.lp(top = 12))
             addView(heroCard(), ui.lp(top = 12))
             addView(recentCard(), ui.lp(top = 12))
-            val (row, label) = ui.insight(R.drawable.ic_lock, color(R.color.peach))
+            val (row, label) = ui.insight(R.drawable.ic_lock, color(R.color.green_tile))
             label.text = "Nothing is saved until you tap Accept. Transfers are encrypted, and only " +
                 "devices on the same Wi‑Fi can see this phone while receiving is on."
             addView(row, ui.lp(top = 12))
@@ -107,18 +116,24 @@ internal class ReceiveScreen(host: MainActivity) : Screen(host) {
         addView(sendPanel.view.apply { visibility = View.GONE })
     }
 
-    /** Switches between the Receive side (this class) and the Send side ([SendPanel]). */
-    private fun setMode(send: Boolean) {
+    private var modeSet = false
+
+    /** Switches between the Receive side (this class) and the Send side ([SendPanel]); [remember] keeps it for next time. */
+    private fun setMode(send: Boolean, remember: Boolean = false) {
         view // make sure the screen is built
-        if (send == sendMode) return
+        if (remember) Prefs.setTransferSend(host, send)
+        if (send == sendMode && modeSet) { host.setDock(if (send) sendPanel.dockButton else null); return }
+        val first = !modeSet
+        modeSet = true
         sendMode = send
         selectMode(if (send) 1 else 0)
-        pageTitle.text = if (send) "Send" else "Receive"
         statusPill.visibility = if (send) View.INVISIBLE else View.VISIBLE
         receiveBody.visibility = if (send) View.GONE else View.VISIBLE
         sendPanel.view.visibility = if (send) View.VISIBLE else View.GONE
         if (send) sendPanel.onShow() else sendPanel.onHide()
-        host.scrollToTop()
+        // Send's main button stays above the bottom bar, so it is never hidden under it.
+        host.setDock(if (send) sendPanel.dockButton else null)
+        if (!first) host.scrollToTop()
     }
 
     override fun onShow() {
@@ -127,8 +142,17 @@ internal class ReceiveScreen(host: MainActivity) : Screen(host) {
         WifiReceive.server?.announce()
         handler.removeCallbacks(tick)
         handler.post(tick)
-        // Opened from Share › Andromon, a picker or a send notification: show the Send side.
-        if (WifiSend.takeOpenRequest()) setMode(true)
+        // Opened from Share › Andromon, a picker or a send notification: the Send side. Else the side
+        // a link asked for, else the one used last.
+        val send = when {
+            WifiSend.takeOpenRequest() -> true
+            wanted != null -> wanted!!
+            !modeSet -> Prefs.transferSend(host)
+            else -> sendMode
+        }
+        wanted = null
+        modeSet = modeSet && send == sendMode
+        setMode(send)
         if (sendMode) sendPanel.onShow()
         refresh()
     }
@@ -155,19 +179,19 @@ internal class ReceiveScreen(host: MainActivity) : Screen(host) {
     // ---------- sections ----------
 
     private fun heroCard(): View {
-        hero = ui.column { setPadding(ui.dp(22), ui.dp(20), ui.dp(16), ui.dp(16)) }
+        hero = ui.column { setPadding(ui.dp(18), ui.dp(18), ui.dp(18), ui.dp(18)) }
         hero.addView(ui.row {
             heroDot = View(context)
             addView(heroDot, ui.lp(w = ui.dp(8), h = ui.dp(8)))
-            heroLabel = ui.text(15f, color(R.color.ink_soft))
+            heroLabel = ui.text(15f, color(R.color.ink), ui.medium)
             addView(heroLabel, ui.lp(w = 0, weight = 1f, start = 10))
-            addView(ui.roundIcon(48, color(R.color.badge), R.drawable.ic_wifi, color(R.color.ink)))
+            addView(ui.chipIcon(R.drawable.ic_wifi, 40))
         })
-        heroTitle = ui.text(40f, color(R.color.ink), ui.light) {
+        heroTitle = ui.text(34f, color(R.color.ink), ui.light) {
             letterSpacing = -0.02f; maxLines = 2; ellipsize = TextUtils.TruncateAt.END
         }
         hero.addView(heroTitle, ui.lp(top = 4))
-        heroSub = ui.text(16f, color(R.color.ink)) { setLineSpacing(ui.dp(2).toFloat(), 1f) }
+        heroSub = ui.text(14f, color(R.color.ink)) { setLineSpacing(ui.dp(2).toFloat(), 1f) }
         hero.addView(heroSub, ui.lp(top = 10))
 
         val details = ui.column { setPadding(0, ui.dp(6), ui.dp(6), 0) }
@@ -186,7 +210,7 @@ internal class ReceiveScreen(host: MainActivity) : Screen(host) {
         hero.addView(ui.row {
             addView(ui.column {
                 addView(ui.text(16f, color(R.color.ink), ui.medium) { text = "Direct link" })
-                directNote = ui.text(13f, color(R.color.ink_soft)) { setLineSpacing(ui.dp(2).toFloat(), 1f) }
+                directNote = ui.text(13f, color(R.color.ink)) { setLineSpacing(ui.dp(2).toFloat(), 1f) }
                 addView(directNote, ui.lp(top = 4))
             }, ui.lp(w = 0, weight = 1f))
             directPill = ui.pill("", 0, 0).apply { textSize = 14f; minHeight = ui.dp(36) }
@@ -195,15 +219,15 @@ internal class ReceiveScreen(host: MainActivity) : Screen(host) {
 
         toggle = ui.action("", R.drawable.ic_power) { toggle() }
         hero.addView(toggle, ui.lp(top = 18))
-        messageText = ui.text(14f, color(R.color.ink_soft)) { setLineSpacing(ui.dp(2).toFloat(), 1f) }
+        messageText = ui.text(14f, color(R.color.ink)) { setLineSpacing(ui.dp(2).toFloat(), 1f) }
         hero.addView(messageText, ui.lp(top = 12))
         return hero
     }
 
-    private fun askCard() = ui.card(color(R.color.yellow), 20) {
+    private fun askCard() = ui.card(color(R.color.good_bg), 18) {
         askCard = this
         addView(ui.row {
-            addView(ui.roundIcon(48, color(R.color.badge), R.drawable.ic_down, color(R.color.ink)))
+            addView(ui.chipIcon(R.drawable.ic_down, 40))
             addView(ui.column {
                 askTitle = ui.text(18f, color(R.color.ink), ui.medium) { setLineSpacing(ui.dp(2).toFloat(), 1f) }
                 addView(askTitle)
@@ -224,7 +248,7 @@ internal class ReceiveScreen(host: MainActivity) : Screen(host) {
         }, ui.lp(top = 12))
     }
 
-    private fun progressCard() = ui.card(color(R.color.blue), 20) {
+    private fun progressCard() = ui.glassCard(18) {
         progCard = this
         addView(ui.row {
             progTitle = ui.text(16f, color(R.color.ink_soft)) { maxLines = 1; ellipsize = TextUtils.TruncateAt.END }
@@ -235,7 +259,7 @@ internal class ReceiveScreen(host: MainActivity) : Screen(host) {
         })
         progBig = ui.text(48f, color(R.color.ink), ui.light) { letterSpacing = -0.03f }
         addView(progBig, ui.lp(top = 6))
-        progMeter = Meter(context).apply { colors(color(R.color.blue_tile), color(R.color.blue_line)) }
+        progMeter = Meter(context).apply { colors(color(R.color.chip), color(R.color.green_dot)) }
         addView(progMeter, ui.lp(h = ui.dp(10), top = 12))
         progText = ui.text(14f, color(R.color.ink_soft))
         addView(progText, ui.lp(top = 10))
@@ -243,18 +267,15 @@ internal class ReceiveScreen(host: MainActivity) : Screen(host) {
         addView(progVia, ui.lp(top = 6))
     }
 
-    private fun recentCard() = ui.card(color(R.color.surface), 20) {
-        addView(ui.row {
-            addView(ui.text(17f, color(R.color.ink), ui.medium) { text = "Received" }, ui.lp(w = 0, weight = 1f))
-            clearPill = ui.pill("Clear", color(R.color.bg), color(R.color.ink)) {
-                WifiReceive.recent.clear(); WifiReceive.saveRecent(host); refresh()
-            }.apply { textSize = 14f; minHeight = ui.dp(34) }
-            addView(clearPill, ui.lp(w = WRAP_CONTENT))
-            addView(ui.pill("Downloads", color(R.color.bg), color(R.color.ink), R.drawable.ic_folder) { openDownloads() }.apply {
-                textSize = 14f; minHeight = ui.dp(34)
-            }, ui.lp(w = WRAP_CONTENT, start = 8))
-        })
-        recentEmpty = ui.text(14f, color(R.color.ink_soft)) { text = "Files you receive appear here." }
+    private fun recentCard() = ui.glassCard(16) {
+        val (head, headSub) = ui.cardHeader(R.drawable.ic_folder, "Received") {
+            clearPill = ui.smallPill("Clear") { WifiReceive.recent.clear(); WifiReceive.saveRecent(host); refresh() }
+            addView(clearPill, ui.lp(w = WRAP_CONTENT, start = 8))
+            addView(ui.smallPill("Downloads") { openDownloads() }, ui.lp(w = WRAP_CONTENT, start = 8))
+        }
+        headSub.text = "In Download/${WifiServer.FOLDER}"
+        addView(head)
+        recentEmpty = ui.text(14f, color(R.color.ink_soft)) { text = "Files you receive appear here."; setLineSpacing(ui.dp(2).toFloat(), 1f) }
         addView(recentEmpty, ui.lp(top = 12))
         recentList = ui.column()
         addView(recentList, ui.lp(top = 4))
@@ -319,7 +340,8 @@ internal class ReceiveScreen(host: MainActivity) : Screen(host) {
         val starting = WifiReceive.starting && !on
         val lan = onLan()
 
-        hero.background = ui.rounded(color(if (on) R.color.green else R.color.peach), 32)
+        // The hero gradient while receiving; a plain card while off.
+        hero.background = if (on) ui.hero() else ui.rounded(color(R.color.surface), 26)
         heroDot.background = ui.circle(color(if (on) R.color.green_dot else R.color.peach_dot))
         heroLabel.text = when {
             on -> "Visible on Wi‑Fi as"
@@ -413,22 +435,20 @@ internal class ReceiveScreen(host: MainActivity) : Screen(host) {
     }
 
     private fun recentRow(item: WifiReceive.Saved) = ui.row {
-        background = ui.pressable(ui.rounded(color(R.color.surface), 20))
+        background = ui.pressable(ui.rounded(android.graphics.Color.TRANSPARENT, 20))
         setPadding(ui.dp(4), ui.dp(8), ui.dp(4), ui.dp(8))
         val icon = when {
             item.mime.startsWith("image/") || item.mime.startsWith("video/") -> R.drawable.ic_image
             item.mime == "application/vnd.android.package-archive" -> R.drawable.ic_apk
             else -> R.drawable.ic_file
         }
-        addView(ui.roundIcon(44, color(R.color.bg), icon, color(R.color.ink), 20))
+        addView(ui.roundIcon(40, color(R.color.glass_strong), icon, color(R.color.ink), 19))
         addView(ui.column {
             addView(ui.text(15f, color(R.color.ink)) {
                 text = item.name; maxLines = 1; ellipsize = TextUtils.TruncateAt.MIDDLE
             })
             addView(ui.text(13f, color(R.color.ink_soft)) {
-                text = listOf(fmtSize(item.size), item.from,
-                    DateUtils.getRelativeTimeSpanString(item.time, System.currentTimeMillis(), DateUtils.MINUTE_IN_MILLIS))
-                    .joinToString(" · ")
+                text = listOf(fmtSize(item.size), item.from, ago(item.time)).joinToString(" · ")
                 maxLines = 1; ellipsize = TextUtils.TruncateAt.END
             }, ui.lp(top = 4))
         }, ui.lp(w = 0, weight = 1f, start = 12))
