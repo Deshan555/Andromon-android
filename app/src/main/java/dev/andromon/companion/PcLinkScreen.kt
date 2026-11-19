@@ -515,8 +515,10 @@ internal class PcLinkScreen(host: MainActivity) : Screen(host) {
         val notifAccess = Perms.granted(host, Perms.NOTIFICATION_ACCESS)
         val total = wanted.size + 1
         permSub.text = "${total - missing.size - (if (notifAccess) 0 else 1)} of $total allowed"
+        // Everything allowed: "N of N allowed" says it, so no badge; the pill is only there to act.
+        permPill.visibility = if (missing.isEmpty() && notifAccess) View.GONE else View.VISIBLE
         when {
-            missing.isEmpty() && notifAccess -> ui.stylePill(permPill, "All set", color(R.color.good_bg), color(R.color.ink), R.drawable.ic_check)
+            missing.isEmpty() && notifAccess -> Unit
             askable.isNotEmpty() -> ui.stylePill(permPill, "Allow", color(R.color.fab), color(R.color.on_fab)) { ask(askable) }
             missing.isEmpty() -> ui.stylePill(permPill, "Allow", color(R.color.fab), color(R.color.on_fab)) {
                 Perms.ensure(host, Perms.NOTIFICATION_ACCESS)
