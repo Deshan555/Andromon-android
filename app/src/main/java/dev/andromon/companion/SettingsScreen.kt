@@ -200,7 +200,7 @@ internal class SettingsScreen(host: MainActivity) : Screen(host) {
             addView(ui.glassCard(6) {
                 val version = runCatching { host.packageManager.getPackageInfo(host.packageName, 0).versionName }.getOrNull()
                 valueRow(R.drawable.ic_desktop, "Andromon Companion", "Helper app for Andromon on your computer", null).text =
-                    version?.let { "v$it" } ?: ""
+                    version?.let { "v$it (build ${BuildConfig.BUILD_NUMBER})" } ?: ""
                 valueRow(R.drawable.ic_info, "Welcome tour", "What the app does, in eight pages") { OnboardingActivity.open(host) }.text = ""
                 valueRow(R.drawable.ic_shield, "Your data", "What the app reads and where it goes") { showPrivacy() }.text = ""
                 valueRow(R.drawable.ic_warning, "Crash reports", "Kept on this phone; you decide whether to share one") { CrashReports.show(host) }.text = ""

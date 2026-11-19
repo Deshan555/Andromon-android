@@ -17,8 +17,11 @@ android {
         minSdk = 26          // Android 8.0: foreground-service start API used by the PC
         targetSdk = 36
         // Keep in sync with COMPANION_VERSION in pc/src/app.js
-        versionCode = 35
-        versionName = "0.35.0"
+        versionCode = 36
+        versionName = "1.0.4"
+        // The release's build number, shown next to the version (Settings › About, Tools). Separate from
+        // versionCode, which only goes up and is what Android and the PC compare.
+        buildConfigField("int", "BUILD_NUMBER", "10")
     }
 
     // Release signing. The release workflow (.github/workflows/android.yml), or anyone building by
@@ -51,7 +54,7 @@ android {
     }
 
     // Privileged access › Shizuku: the UserService interface (IPrivilegedService.aidl).
-    buildFeatures { aidl = true }
+    buildFeatures { aidl = true; buildConfig = true }
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17

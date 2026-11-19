@@ -238,7 +238,7 @@ internal class ToolsScreen(host: MainActivity) : Screen(host) {
     private fun footer() = ui.text(12f, color(R.color.ink_faint)) {
         gravity = Gravity.CENTER
         val version = try { host.packageManager.getPackageInfo(host.packageName, 0).versionName } catch (_: Exception) { null }
-        text = "Andromon Companion" + (version?.let { " · v$it" } ?: "")
+        text = "Andromon Companion" + (version?.let { " · v$it (build ${BuildConfig.BUILD_NUMBER})" } ?: "")
     }
 
 

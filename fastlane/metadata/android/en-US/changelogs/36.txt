@@ -1,0 +1,1 @@
+Version 1.0.4 (build 10). The fingerprint offer's Not now button is the same size as Use fingerprint.
