@@ -42,8 +42,15 @@ internal class CleanerScreen(host: MainActivity) : Screen(host) {
     private var scanning = false
     private var autoScanned = false
 
-    private lateinit var ringValue: TextView
-    private lateinit var ringLabel: TextView
+    private lateinit var junkFigure: TextView
+    private lateinit var junkSub: TextView
+    private lateinit var junkRing: Ring
+    private lateinit var junkLegend: LinearLayout
+    private lateinit var selectedCard: View
+    private lateinit var selectedRing: Ring
+    private lateinit var selectedPct: TextView
+    private lateinit var selectedValue: TextView
+    private lateinit var selectedSub: TextView
     private lateinit var accessCard: View
     private lateinit var resultsCard: LinearLayout
     private lateinit var resultsTitle: TextView
@@ -66,7 +73,9 @@ internal class CleanerScreen(host: MainActivity) : Screen(host) {
 
     override fun build(): View = ui.column {
         addView(ui.topBar("Cleaner", host::goHome, R.drawable.ic_refresh, "Scan again") { scan() }.first)
-        addView(summaryRow(), ui.lp(top = 24))
+        addView(junkCard(), ui.lp(top = 20))
+        selectedCard = selectedCard()
+        addView(selectedCard, ui.lp(top = 12))
         scanButton = ui.action("Scan now", R.drawable.ic_search) { scan() }
         addView(scanButton, ui.lp(top = 24))
         cleanButton = ui.action("Clean now", R.drawable.ic_broom) { confirmClean() }.apply { visibility = View.GONE }
@@ -88,7 +97,7 @@ internal class CleanerScreen(host: MainActivity) : Screen(host) {
         val access = Cleaner.hasFileAccess(host)
         accessCard.visibility = if (access) View.GONE else View.VISIBLE
         ui.setEnabled(scanButton, access && !scanning)
-        if (!access) { ringValue.text = "Needs file\naccess"; ringLabel.text = "–" }
+        if (!access) { junkFigure.text = "–"; junkSub.text = "Allow access to files to look for junk" }
         updateInsight()
         if (access && !autoScanned && !scanning) { autoScanned = true; scan() }
     }
@@ -102,40 +111,101 @@ internal class CleanerScreen(host: MainActivity) : Screen(host) {
         }
     }
 
-    // ---------- big ring ----------
+    // ---------- charts ----------
 
-    /** "Date / Time" style pair: what was found and what is ticked, each on a scalloped badge. */
-    private fun summaryRow() = ui.row {
-        gravity = Gravity.TOP
-        fun block(title: String, icon: Int, bg: Int, fg: Int): TextView {
-            val value = ui.text(14f, color(R.color.ink)) { setLineSpacing(ui.dp(2).toFloat(), 1f); text = "–" }
+    /**
+     * The hero: how much junk the scan found, with a donut of it by group (the four biggest, then
+     * "Other") and a legend. While scanning the donut turns and the line under the figure says where.
+     */
+    private fun junkCard() = ui.heroCard(16) {
+        addView(ui.row {
+            addView(ui.chipIcon(R.drawable.ic_broom))
+            addView(ui.text(15f, color(R.color.ink), ui.medium) { text = "Junk found" }, ui.lp(w = 0, weight = 1f, start = 10))
+        })
+        addView(ui.row {
             addView(ui.column {
-                addView(ui.text(24f, color(R.color.ink), ui.light) { text = title; letterSpacing = -0.02f })
-                addView(ui.row {
-                    addView(ui.badge(icon, color(bg), fg))
-                    addView(value, ui.lp(w = 0, weight = 1f, start = 10))
-                }, ui.lp(top = 12))
-            }, ui.lp(w = 0, weight = 1f, start = if (childCount == 0) 0 else 12))
-            return value
-        }
-        ringValue = block("Junk found", R.drawable.ic_broom, R.color.magenta, android.graphics.Color.WHITE)
-        ringLabel = block("Selected", R.drawable.ic_check, R.color.yellow, color(R.color.ink))
+                junkFigure = ui.text(44f, color(R.color.ink), ui.regular) { text = "–"; letterSpacing = -0.03f; maxLines = 1 }
+                addView(junkFigure)
+                junkSub = ui.text(13f, color(R.color.ink), ui.medium) { maxLines = 2; ellipsize = TextUtils.TruncateAt.END }
+                addView(junkSub, ui.lp(top = 6))
+            }, ui.lp(w = 0, weight = 1f))
+            addView(FrameLayout(context).apply {
+                junkRing = Ring(context).apply { strokeDp = 18f; colors(color(R.color.glass_strong), color(R.color.ink), color(R.color.ink)) }
+                addView(junkRing, FrameLayout.LayoutParams(-1, -1))
+                addView(ui.iconView(R.drawable.ic_broom, color(R.color.ink)), FrameLayout.LayoutParams(ui.dp(28), ui.dp(28), Gravity.CENTER))
+            }, ui.lp(w = ui.dp(128), h = ui.dp(128), start = 8))
+        }, ui.lp(top = 10))
+        junkLegend = ui.column()
+        addView(junkLegend, ui.lp(top = 4))
     }
 
-    private fun showRing() {
+    /** How much of the junk is ticked: a small ring for the share, the size and the number of items. */
+    private fun selectedCard() = ui.glassCard(16) {
+        visibility = View.GONE
+        addView(ui.row {
+            addView(FrameLayout(context).apply {
+                selectedRing = Ring(context).apply {
+                    strokeDp = 10f; colors(color(R.color.chip), color(R.color.ink), color(R.color.ink))
+                    importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+                }
+                addView(selectedRing, FrameLayout.LayoutParams(-1, -1))
+                selectedPct = ui.text(15f, color(R.color.ink), ui.medium) { gravity = Gravity.CENTER }
+                addView(selectedPct, FrameLayout.LayoutParams(-2, -2, Gravity.CENTER))
+            }, ui.lp(w = ui.dp(76), h = ui.dp(76)))
+            addView(ui.column {
+                addView(ui.text(13f, color(R.color.ink_soft)) { text = "Selected to clean" })
+                selectedValue = ui.text(26f, color(R.color.ink), ui.regular) { maxLines = 1 }
+                addView(selectedValue, ui.lp(top = 2))
+                selectedSub = ui.text(12f, color(R.color.ink_soft)) { maxLines = 2; setLineSpacing(ui.dp(2).toFloat(), 1f) }
+                addView(selectedSub, ui.lp(top = 2))
+            }, ui.lp(w = 0, weight = 1f, start = 16))
+        })
+    }
+
+    /** Shades of ink for the donut's slices, biggest first: they read on the lime gradient in both themes. */
+    private fun shade(i: Int): Int {
+        val alpha = intArrayOf(255, 175, 110, 60)[i]
+        return (color(R.color.ink) and 0xFFFFFF) or (alpha shl 24)
+    }
+
+    private fun showCharts() {
         val total = groups.sumOf { it.size }
         val (files, cache, selected) = selection()
-        val n = files.size + (if (cache) 1 else 0)
-        ringValue.text = if (groups.isEmpty()) "0 B\nAll tidy" else "${fmtSize(total)}\n${plural(groups.size, "group")}"
-        ringLabel.text = if (groups.isEmpty()) "–" else "${fmtSize(selected)}\n${plural(n, "item")}"
+        val picked = files.size + (if (cache) 1 else 0)
+        val items = groups.sumOf { it.items.size }
+        junkRing.busy = false
+        junkFigure.text = sizeParts(total).let { (n, u) -> ui.withUnit(n, u) }
+        junkSub.text = if (groups.isEmpty()) "All tidy · nothing to clean" else "${plural(groups.size, "group")} · ${plural(items, "item")}"
+
+        val parts = groups.filter { it.size > 0 }.sortedByDescending { it.size }
+        val slices = parts.take(4).mapIndexed { i, g -> Triple(g.name, g.size, shade(i)) } +
+            (if (parts.size > 4) listOf(Triple("Other", parts.drop(4).sumOf { it.size }, color(R.color.glass_strong))) else emptyList())
+        junkRing.segments = if (total > 0) slices.map { it.second.toFloat() / total to it.third } else emptyList()
+        junkRing.contentDescription = if (slices.isEmpty()) "No junk found"
+            else "Junk by group: " + slices.joinToString(", ") { "${it.first} ${fmtSize(it.second)}" }
+        junkLegend.removeAllViews()
+        for ((name, bytes, c) in slices) junkLegend.addView(ui.row {
+            addView(View(context).apply { background = ui.rounded(c, 3) }, ui.lp(w = ui.dp(10), h = ui.dp(10)))
+            addView(ui.text(14f, color(R.color.ink)) { text = name; maxLines = 1; ellipsize = TextUtils.TruncateAt.END },
+                ui.lp(w = 0, weight = 1f, start = 10))
+            addView(ui.text(14f, color(R.color.ink), ui.medium) { text = fmtSize(bytes) }, ui.lp(w = WRAP_CONTENT, start = 8))
+        }, ui.lp(top = 10))
+
+        selectedCard.visibility = if (groups.isEmpty()) View.GONE else View.VISIBLE
+        val share = if (total > 0) selected.toFloat() / total else 0f
+        selectedRing.fraction = share
+        selectedPct.text = ui.percent(Math.round(share * 100))
+        selectedValue.text = sizeParts(selected).let { (n, u) -> ui.withUnit(n, u) }
+        selectedSub.text = "${plural(picked, "item")} of $items · ${fmtSize(total)} found"
+        selectedCard.contentDescription = "Selected to clean: ${fmtSize(selected)}, ${plural(picked, "item")} of $items"
     }
 
     // ---------- storage ----------
 
-    private fun storageCard() = ui.heroCard(18) {
+    private fun storageCard() = ui.card(color(R.color.surface), 18) {
         addView(ui.row {
             addView(FrameLayout(context).apply {
-                donut = Ring(context).apply { strokeDp = 20f; colors(color(R.color.glass_strong), 0, 0) }
+                donut = Ring(context).apply { strokeDp = 20f; colors(color(R.color.chip), 0, 0) }
                 addView(donut, FrameLayout.LayoutParams(-1, -1))
                 addView(ui.column {
                     gravity = Gravity.CENTER
@@ -254,10 +324,10 @@ internal class CleanerScreen(host: MainActivity) : Screen(host) {
     }
 
     private fun freedCard(): View {
-        val card = ui.card(color(R.color.yellow), 16) {
+        val card = ui.glassCard(16) {
             visibility = View.GONE
             addView(ui.row {
-                addView(ui.badge(R.drawable.ic_bolt, color(R.color.magenta), android.graphics.Color.WHITE))
+                addView(ui.roundIcon(46, color(R.color.good_bg), R.drawable.ic_check, color(R.color.ink), 22))
                 addView(ui.column {
                     addView(ui.text(13f, color(R.color.ink_soft)) { text = "Freed up space" })
                     freedValue = ui.text(28f, color(R.color.ink), ui.regular)
@@ -276,8 +346,13 @@ internal class CleanerScreen(host: MainActivity) : Screen(host) {
         ui.setLabel(scanButton, "Scanning…")
         scanButton.visibility = View.VISIBLE
         cleanButton.visibility = View.GONE
-        ringValue.text = "Scanning…"
-        ringLabel.text = "–"
+        groups = emptyList(); cacheGroup = null
+        selectedCard.visibility = View.GONE
+        junkFigure.text = "Scanning"
+        junkSub.text = "Looking through your storage…"
+        junkLegend.removeAllViews()
+        junkRing.segments = emptyList()
+        junkRing.busy = true
         resultsCard.visibility = View.VISIBLE
         groupList.removeAllViews()
         groupList.addView(ui.skeletonList(5, 40, bg = color(R.color.glass_strong), gapDp = 8), ui.lp(top = 8))
@@ -285,7 +360,7 @@ internal class CleanerScreen(host: MainActivity) : Screen(host) {
         resultsSub.text = ""
         background({
             val found = Cleaner.scan(host) { where ->
-                host.runOnUiThread { if (scanning) resultsSub.text = where }
+                host.runOnUiThread { if (scanning) { resultsSub.text = where; junkSub.text = where } }
             }
             // Only the part Android's clear-cache screen can free; hidden when that's nothing.
             val cacheBytes = Cleaner.clearableCacheBytes(host)
@@ -309,15 +384,15 @@ internal class CleanerScreen(host: MainActivity) : Screen(host) {
                 groupList.removeAllViews()
                 resultsTitle.text = "Scan failed"
                 resultsSub.text = it.message ?: it.javaClass.simpleName
-                ringValue.text = "Scan failed"; ringLabel.text = "–"
+                junkRing.busy = false
+                junkFigure.text = "–"; junkSub.text = "Scan failed"
             }
             updateInsight()
         }
     }
 
     private fun showResults() {
-        val total = groups.sumOf { it.size }
-        resultsTitle.text = if (groups.isEmpty()) "No junk found" else "Found ${fmtSize(total)}"
+        resultsTitle.text = if (groups.isEmpty()) "No junk found" else "What to clean"
         resultsSub.text = if (groups.isEmpty()) "Your storage is already tidy."
             else "Cleaning rules from SD Maid SE. Tap a group to see its files; leftovers, duplicates, large " +
                 "files and the groups SD Maid SE leaves off by default start unticked."
@@ -463,7 +538,7 @@ internal class CleanerScreen(host: MainActivity) : Screen(host) {
         scanButton.visibility = if (groups.isEmpty()) View.VISIBLE else View.GONE
         ui.setLabel(cleanButton, if (bytes > 0) "Clean now · ${fmtSize(bytes)}" else "Clean now")
         ui.setEnabled(cleanButton, files.isNotEmpty() || cache)
-        showRing()
+        showCharts()
     }
 
     private fun confirmClean() {
