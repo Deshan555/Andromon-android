@@ -305,6 +305,8 @@
         <receiver android:name=".LinkReceiver" android:exported="false" />
         <!-- F-Droid: Android's answer to an install the person started (Fdroid.kt). -->
         <receiver android:name=".FdroidInstallReceiver" android:exported="false" />
+        <!-- Updating the companion itself from Andromon_Releases: Android's answer to the install (Updates.kt). -->
+        <receiver android:name=".UpdateInstallReceiver" android:exported="false" />
         <!-- Quick-settings tiles. Only the system may bind them. -->
         <service
             android:name=".LinkTile"

@@ -47,6 +47,8 @@ internal class SettingsScreen(host: MainActivity) : Screen(host) {
     private lateinit var notifyValue: TextView
     /** Debug builds only: shows or hides LeakCanary's "Leaks" icon on the home screen. */
     private var leaksSwitch: Switch? = null
+    private lateinit var updateValue: TextView
+    private lateinit var updateSwitch: Switch
     private val privileged by lazy { PrivilegedPanel(host) }
     /** A larger text size is chosen: rows show their whole subtitle instead of cutting it at two lines. */
     private val bigText = Prefs.textSize(host) != Prefs.TextSize.SYSTEM
@@ -201,6 +203,10 @@ internal class SettingsScreen(host: MainActivity) : Screen(host) {
                 val version = runCatching { host.packageManager.getPackageInfo(host.packageName, 0).versionName }.getOrNull()
                 valueRow(R.drawable.ic_desktop, "Andromon Companion", "Helper app for Andromon on your computer", null).text =
                     version?.let { "v$it (build ${BuildConfig.BUILD_NUMBER})" } ?: ""
+                // Updates.kt: the newest release in Andromon_Releases (latest.json), installed only when the person agrees.
+                updateValue = valueRow(R.drawable.ic_refresh, "Check for updates", "Looks for a newer version on GitHub") { checkUpdates() }
+                updateSwitch = switchRow(R.drawable.ic_clock, "Check automatically",
+                    "Once a day when the app opens. Nothing is installed without asking") { on -> Updates.setAuto(host, on) }
                 valueRow(R.drawable.ic_info, "Welcome tour", "What the app does, in eight pages") { OnboardingActivity.open(host) }.text = ""
                 valueRow(R.drawable.ic_shield, "Your data", "What the app reads and where it goes") { showPrivacy() }.text = ""
                 valueRow(R.drawable.ic_warning, "Crash reports", "Kept on this phone; you decide whether to share one") { CrashReports.show(host) }.text = ""
@@ -289,6 +295,8 @@ internal class SettingsScreen(host: MainActivity) : Screen(host) {
         dataSwitch.isChecked = Prefs.saveData(host)
         autoSwitch.isChecked = Prefs.automation(host)
         leaksSwitch?.isChecked = leaksIconShown()
+        updateSwitch.isChecked = Updates.auto(host)
+        showUpdate(Updates.last)
         state(filesValue, Cleaner.hasFileAccess(host))
         state(usageValue, Cleaner.hasUsageAccess(host))
         state(notifyValue, Build.VERSION.SDK_INT < 33 ||
@@ -318,6 +326,33 @@ internal class SettingsScreen(host: MainActivity) : Screen(host) {
     override fun onActivityResult(requestCode: Int, resultCode: Int) {
         if (requestCode == REQ_LOCK_OFF && resultCode == android.app.Activity.RESULT_OK) LinkLock.turnOff(host)
         if (requestCode in REQ_LOCK_ON..REQ_CHANGE_PIN) refreshLock()
+    }
+
+    // ---------- updates (Updates.kt) ----------
+
+    private fun showUpdate(r: Updates.Result?) {
+        val (text, colour) = when {
+            r == null -> "" to R.color.ink_soft
+            r.latest != null -> "${r.latest.version} available" to R.color.good
+            r.error != null -> "Couldn't check" to R.color.danger
+            else -> "Up to date" to R.color.ink_soft
+        }
+        updateValue.text = text
+        updateValue.setTextColor(color(colour))
+    }
+
+    private fun checkUpdates() {
+        updateValue.text = "Checking…"
+        updateValue.setTextColor(color(R.color.ink_soft))
+        Updates.check(host) { r ->
+            showUpdate(r)
+            when {
+                r.latest != null -> Updates.offer(host, r.latest)
+                r.error != null -> AlertDialog.Builder(host).setTitle("Couldn't check for updates").setMessage(r.error)
+                    .setPositiveButton("OK", null).show()
+                else -> android.widget.Toast.makeText(host, "You have the newest Andromon Companion.", android.widget.Toast.LENGTH_SHORT).show()
+            }
+        }
     }
 
     // ---------- LeakCanary's "Leaks" icon (debug builds) ----------

@@ -160,6 +160,7 @@ class MainActivity : Activity() {
     private fun splashDone() {
         setContentHidden(false)
         setupSystemBars()
+        val firstStart = tourPending
         if (tourPending) {
             // The tour opens over the splash; the splash goes once it is covered (onStop).
             if (resumed) openTour()
@@ -167,6 +168,8 @@ class MainActivity : Activity() {
             splash?.remove(); splash = null
         }
         CrashReports.offer(this) // once after a crash; nothing is sent unless the person shares it
+        // Once a day, when the person opens the app (not on the first start, which shows the tour).
+        if (!firstStart) Updates.autoCheck(this)
     }
 
     private fun openTour() {
