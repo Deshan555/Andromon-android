@@ -59,6 +59,10 @@ internal object Prefs {
     fun transferSend(ctx: Context) = sp(ctx).getBoolean("transfer_send", false)
     fun setTransferSend(ctx: Context, send: Boolean) = sp(ctx).edit().putBoolean("transfer_send", send).apply()
 
+    /** Tools opens on the tab used last: 0 Dashboard, 1 All tools. */
+    fun toolsTab(ctx: Context) = sp(ctx).getInt("tools_tab", 0).coerceIn(0, 1)
+    fun setToolsTab(ctx: Context, tab: Int) = sp(ctx).edit().putInt("tools_tab", tab).apply()
+
     /** Stats: the segment and range shown last. */
     fun statsSegment(ctx: Context) = sp(ctx).getInt("stats_segment", 0)
     fun setStatsSegment(ctx: Context, i: Int) = sp(ctx).edit().putInt("stats_segment", i).apply()

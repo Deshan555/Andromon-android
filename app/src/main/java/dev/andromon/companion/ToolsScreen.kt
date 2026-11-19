@@ -62,20 +62,64 @@ internal class ToolsScreen(host: MainActivity) : Screen(host) {
     private lateinit var storageSub: TextView
     private lateinit var storageValues: List<TextView>
 
+    private lateinit var dashboard: LinearLayout
+    private lateinit var allTools: LinearLayout
+    private var selectTab: (Int) -> Unit = {}
+    private var tab = 0
+    private lateinit var quickMem: Ui.Stat
+    private lateinit var quickBattery: Ui.Stat
+    private lateinit var quickNet: Ui.Stat
+
     private lateinit var memTile: Ui.Tile
     private lateinit var batteryTile: Ui.Tile
     private lateinit var netTile: Ui.Tile
 
+    /** Two tabs: Dashboard (how the phone is doing) and All tools (every tool as a tile). */
     override fun build(): View = ui.column {
         addView(ui.topBar("Tools", host::goHome).first)
         greetSub = ui.subtitle()
         addView(greetSub, ui.lp(top = 6))
-        heroCard = healthCard()
-        addView(heroCard, ui.lp(top = 20))
-        addView(storageCard(), ui.lp(top = 12))
-        addView(ui.section("All tools"), ui.lp(top = 26))
-        addView(tiles(), ui.lp(top = 12))
+        val (tabs, select) = segmented(ui, listOf("Dashboard", "All tools")) { showTab(it, remember = true) }
+        selectTab = select
+        tabs.contentDescription = "Dashboard or all tools"
+        addView(tabs, ui.lp(top = 20))
+        dashboard = ui.column {
+            heroCard = healthCard()
+            addView(heroCard)
+            addView(storageCard(), ui.lp(top = 12))
+            addView(quickStats(), ui.lp(top = 12))
+        }
+        addView(dashboard, ui.lp(top = 16))
+        allTools = ui.column { addView(tiles()) }
+        addView(allTools, ui.lp(top = 16))
         addView(footer(), ui.lp(top = 24))
+        showTab(Prefs.toolsTab(host), remember = false)
+    }
+
+    private fun showTab(i: Int, remember: Boolean) {
+        val changed = i != tab
+        tab = i
+        selectTab(i)
+        dashboard.visibility = if (i == 0) View.VISIBLE else View.GONE
+        allTools.visibility = if (i == 1) View.VISIBLE else View.GONE
+        if (remember) Prefs.setToolsTab(host, i)
+        if (changed && remember) host.scrollToTop()
+        scheduleHero() // the carousel only moves while the Dashboard is showing
+    }
+
+    /** Memory, battery and network at a glance; each opens its screen. */
+    private fun quickStats(): View {
+        quickMem = ui.stat(color(R.color.surface), R.drawable.ic_memory, "Memory")
+        quickBattery = ui.stat(color(R.color.surface), R.drawable.ic_battery, "Battery")
+        quickNet = ui.stat(color(R.color.surface), R.drawable.ic_wifi, "Network")
+        return ui.row {
+            listOf(quickMem to "Memory", quickBattery to "Battery", quickNet to "Network").forEachIndexed { i, (st, screen) ->
+                st.box.background = ui.pressable(ui.rounded(color(R.color.surface), 22))
+                st.box.setOnClickListener { host.show(screen) }
+                st.box.contentDescription = null
+                addView(st.box, ui.lp(w = 0, weight = 1f, start = if (i == 0) 0 else 10))
+            }
+        }
     }
 
     override fun onShow() {
@@ -166,7 +210,7 @@ internal class ToolsScreen(host: MainActivity) : Screen(host) {
     private fun scheduleHero() {
         heroHandler.removeCallbacks(heroTick)
         val exploring = host.getSystemService(AccessibilityManager::class.java)?.isTouchExplorationEnabled == true
-        if (heroVisible && !heroTouched && !exploring) heroHandler.postDelayed(heroTick, HERO_STEP_MS)
+        if (heroVisible && tab == 0 && !heroTouched && !exploring) heroHandler.postDelayed(heroTick, HERO_STEP_MS)
     }
 
     override fun onHide() {
@@ -404,6 +448,10 @@ internal class ToolsScreen(host: MainActivity) : Screen(host) {
         batteryTile.sub.text = "${b.level}% · " + if (b.charging) "charging" else b.healthText.lowercase()
         val net = NetTools.info(host)
         netTile.sub.text = if (net.connected) "${net.kind} · connected" else "Not connected"
+        quickMem.value.text = "${(Phone.memoryUsed(host) * 100).toInt()}%"
+        quickBattery.value.text = "${b.level}%"
+        quickNet.value.text = if (net.connected) net.kind else "Off"
+        quickNet.value.textSize = if (quickNet.value.text.length > 6) 18f else 24f
     }
 
     /** Apps / media / docs / free, worked out off the main thread. */
