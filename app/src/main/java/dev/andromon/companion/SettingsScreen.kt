@@ -45,6 +45,8 @@ internal class SettingsScreen(host: MainActivity) : Screen(host) {
     private lateinit var filesValue: TextView
     private lateinit var usageValue: TextView
     private lateinit var notifyValue: TextView
+    /** Debug builds only: shows or hides LeakCanary's "Leaks" icon on the home screen. */
+    private var leaksSwitch: Switch? = null
     private val privileged by lazy { PrivilegedPanel(host) }
     /** A larger text size is chosen: rows show their whole subtitle instead of cutting it at two lines. */
     private val bigText = Prefs.textSize(host) != Prefs.TextSize.SYSTEM
@@ -59,6 +61,8 @@ internal class SettingsScreen(host: MainActivity) : Screen(host) {
         private const val REQ_LOCK_ON = 7311
         private const val REQ_LOCK_OFF = 7312
         private const val REQ_CHANGE_PIN = 7313
+        /** LeakCanary's launcher entry (the "Leaks" icon); only debug builds have it. */
+        private const val LEAKS_LAUNCHER = "leakcanary.internal.activity.LeakLauncherActivity"
     }
 
     private val pages = mutableListOf<Page>()
@@ -203,6 +207,16 @@ internal class SettingsScreen(host: MainActivity) : Screen(host) {
                 valueRow(R.drawable.ic_lock, "Licence", "Free software under the GNU GPL version 3") { showLicence() }.text = "GPL-3.0"
                 valueRow(R.drawable.ic_file, "Third-party notices", "SD Maid SE, SuperFreezZ, Exodus Privacy, the libraries, Poppins and Lucide icons") { showThirdParty() }.text = ""
             }, ui.lp(top = 20))
+            // Only in debug builds, which include LeakCanary; release builds have no such icon.
+            if (hasLeaksIcon()) {
+                addView(ui.section("Developer"), ui.lp(top = 26))
+                addView(ui.glassCard(6) {
+                    leaksSwitch = switchRow(R.drawable.ic_apps, "Show Leaks icon on home screen",
+                        "LeakCanary's memory-leak reports. Leaks are still reported in a notification when it's hidden.") { on ->
+                        setLeaksIcon(on)
+                    }
+                }, ui.lp(top = 12))
+            }
         }
 
         menu = ui.glassCard(6) {
@@ -274,6 +288,7 @@ internal class SettingsScreen(host: MainActivity) : Screen(host) {
         rulesValue.text = "${rules.count { Prefs.ruleOn(host, it.first) }} of ${rules.size} on"
         dataSwitch.isChecked = Prefs.saveData(host)
         autoSwitch.isChecked = Prefs.automation(host)
+        leaksSwitch?.isChecked = leaksIconShown()
         state(filesValue, Cleaner.hasFileAccess(host))
         state(usageValue, Cleaner.hasUsageAccess(host))
         state(notifyValue, Build.VERSION.SDK_INT < 33 ||
@@ -303,6 +318,27 @@ internal class SettingsScreen(host: MainActivity) : Screen(host) {
     override fun onActivityResult(requestCode: Int, resultCode: Int) {
         if (requestCode == REQ_LOCK_OFF && resultCode == android.app.Activity.RESULT_OK) LinkLock.turnOff(host)
         if (requestCode in REQ_LOCK_ON..REQ_CHANGE_PIN) refreshLock()
+    }
+
+    // ---------- LeakCanary's "Leaks" icon (debug builds) ----------
+
+    private val leaksComponent get() = android.content.ComponentName(host, LEAKS_LAUNCHER)
+
+    private fun hasLeaksIcon() = runCatching {
+        host.packageManager.getActivityInfo(leaksComponent, PackageManager.MATCH_DISABLED_COMPONENTS)
+    }.isSuccess
+
+    /** Shown unless turned off here; LeakCanary's manifest enables it by default. */
+    private fun leaksIconShown() =
+        host.packageManager.getComponentEnabledSetting(leaksComponent) != PackageManager.COMPONENT_ENABLED_STATE_DISABLED
+
+    private fun setLeaksIcon(show: Boolean) {
+        if (show == leaksIconShown()) return
+        runCatching {
+            host.packageManager.setComponentEnabledSetting(leaksComponent,
+                if (show) PackageManager.COMPONENT_ENABLED_STATE_ENABLED else PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
+                PackageManager.DONT_KILL_APP)
+        }
     }
 
     private fun state(v: TextView, on: Boolean) {
