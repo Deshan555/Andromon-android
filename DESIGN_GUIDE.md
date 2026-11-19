@@ -273,6 +273,7 @@ Motion is sparse and only explains a change in a value.
 | Measuring in progress (`Ring.busy`) | A 90° arc turning once every 1.2s |
 | Touch | System ripple |
 | Switching screens | Instant swap, no transition |
+| Start-up splash (`Splash.kt`) | The logo fades in (450ms), a lime-to-green bar fills over 5s, then the splash fades out (250ms). Timed by the clock, so it stays 5s with animations off; with reduce motion only the bar moves |
 
 Rules for anything new: 150 to 300ms for small state changes, up to 700ms for a headline gauge, always decelerating. Animate from the value currently shown, not from zero, so a refresh doesn't replay the whole sweep. No looping or decorative animation except a busy indicator, and stop it as soon as the work ends. Check `Settings.Global.ANIMATOR_DURATION_SCALE`: when it is 0, set values directly.
 

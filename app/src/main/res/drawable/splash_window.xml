@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Start-up splash before Android 12: the window background while the app starts (LaunchTheme),
-     laid out like the system one on newer phones: the robot in the middle, the name at the bottom. -->
+<!-- The window background while the app starts (LaunchTheme): the plain dark backdrop, the same as
+     Android 12+'s own splash. MainActivity's splash (Splash.kt) draws the logo and the bar on it. -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:drawable="@color/splash_bg" />
-    <item android:width="150dp" android:height="150dp" android:gravity="center" android:drawable="@drawable/brand_robot" />
-    <item android:width="180dp" android:height="61dp" android:gravity="bottom|center_horizontal" android:bottom="56dp" android:drawable="@drawable/brand_wordmark" />
 </layer-list>

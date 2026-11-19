@@ -127,17 +127,76 @@ class MainActivity : Activity() {
         setContentView(root)
         setupSystemBars()
         show(savedInstanceState?.getInt("screen")?.takeIf { it in screens.indices } ?: home)
+        // Opened by the person from the launcher: not Andromon's autostart, and not a notification,
+        // tile, Share or automation asking for a screen.
+        val byPerson = fresh && !autostart && intent?.action == Intent.ACTION_MAIN &&
+            intent?.getStringExtra(EXTRA_SCREEN) == null && intent?.hasExtra(EXTRA_ACCEPT) != true
         if (fresh) openRequested(intent)
-        // The welcome tour, once: when the person opens the app themselves (not Andromon's autostart,
-        // a notification, a tile or Share asking for a screen).
-        if (fresh && !autostart && !Prefs.onboarded(this) && intent?.action == Intent.ACTION_MAIN &&
-            intent?.getStringExtra(EXTRA_SCREEN) == null) OnboardingActivity.open(this)
-        CrashReports.offer(this) // once after a crash; nothing is sent unless the person shares it
+        // The welcome tour, once, on the first start the person opens themselves; after the splash.
+        tourPending = (byPerson && !Prefs.onboarded(this)) || savedInstanceState?.getBoolean("tour_pending") == true
+        if (byPerson) {
+            splash = Splash(this, ui, ::splashDone).also { it.show(root) }
+            setContentHidden(true)
+            splashBars()
+        } else {
+            if (tourPending) openTour()
+            CrashReports.offer(this) // once after a crash; nothing is sent unless the person shares it
+        }
 
         if (autostart) {
             // Started by the PC as a fallback: get out of the user's way.
             moveTaskToBack(true)
         }
+    }
+
+    // ---------- start-up splash and welcome tour ----------
+
+    private var splash: Splash? = null
+    /** The welcome tour opens once the splash is over and the app is in the foreground. */
+    private var tourPending = false
+    private var resumed = false
+
+    /** The splash's five seconds are up: the tour comes next on the first start, else the app. */
+    private fun splashDone() {
+        setContentHidden(false)
+        setupSystemBars()
+        if (tourPending) {
+            // The tour opens over the splash; the splash goes once it is covered (onStop).
+            if (resumed) openTour()
+        } else {
+            splash?.remove(); splash = null
+        }
+        CrashReports.offer(this) // once after a crash; nothing is sent unless the person shares it
+    }
+
+    private fun openTour() {
+        tourPending = false
+        OnboardingActivity.open(this)
+        if (!Prefs.reduceMotion(this)) @Suppress("DEPRECATION") overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
+    }
+
+    /** While the splash is up, the screen under it is hidden from screen readers. */
+    private fun setContentHidden(hidden: Boolean) {
+        val mode = if (hidden) View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS else View.IMPORTANT_FOR_ACCESSIBILITY_AUTO
+        for (v in listOf(scroll, nav, dock)) v.importantForAccessibility = mode
+    }
+
+    /** Light status- and navigation-bar icons on the splash's dark backdrop, also in light mode. */
+    @Suppress("DEPRECATION")
+    private fun splashBars() {
+        if (Build.VERSION.SDK_INT >= 30) {
+            window.insetsController?.setSystemBarsAppearance(0,
+                WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS or WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS)
+        } else {
+            window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_LAYOUT_STABLE or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN or
+                View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+        }
+    }
+
+    override fun onStop() {
+        super.onStop()
+        // Covered by the tour: the finished splash can go without anyone seeing the app flash under it.
+        splash?.let { if (!it.showing) { it.removeNow(); splash = null } }
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -218,10 +277,13 @@ class MainActivity : Activity() {
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         outState.putInt("screen", current)
+        outState.putBoolean("tour_pending", tourPending)
     }
 
     override fun onResume() {
         super.onResume()
+        resumed = true
+        if (tourPending && splash?.showing == false) openTour()
         // Accepted from the notification: answer now that we're in the foreground (Direct link needs it).
         acceptOnResume?.let { WifiReceive.respond(it, true) }
         acceptOnResume = null
@@ -229,6 +291,7 @@ class MainActivity : Activity() {
     }
 
     override fun onPause() {
+        resumed = false
         screens[current].onHide()
         super.onPause()
     }

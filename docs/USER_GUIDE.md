@@ -57,6 +57,7 @@ You don't install it yourself. Connect the phone to Andromon with the USB cable 
 
 ## 3. Finding your way around
 
+- When you open the app, the **Andromon logo** shows for five seconds with a bar that fills while it starts. It isn't shown when a notification, a quick-settings tile or Share opens the app, or when Andromon starts it from the computer. With **Settings › Accessibility › Reduce motion** on, the logo and the bar still show, without the fades.
 - The first time you open the app, a short **welcome tour** explains what it does. **Skip** ends it; **Settings › About › Welcome tour** shows it again.
 
 - The **dark bar at the bottom** has five buttons, each with its name: **PC link, Transfer, Tools, Stats, Settings**. The open one's icon sits on a white pill. The app opens on **PC link**.
