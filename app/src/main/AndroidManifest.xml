@@ -34,6 +34,9 @@
          screen over the lock screen -->
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+    <!-- PC link lock (LinkLock.kt, UnlockActivity.kt): unlock with a fingerprint or face through
+         Android's own BiometricPrompt, when the person chose to. The app never sees the biometric. -->
+    <uses-permission android:name="android.permission.USE_BIOMETRIC" />
 
     <!--
       Phone-care tools, used only when the person opens them on the phone. The PC link above
@@ -136,6 +139,7 @@
     <application
         android:name=".App"
         android:allowBackup="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
         android:enableOnBackInvokedCallback="true"
         android:requestLegacyExternalStorage="true"
         android:icon="@mipmap/ic_launcher"
@@ -155,6 +159,16 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- The PC link lock's PIN pad (UnlockActivity.kt). Opened only by this app: its
+             "Andromon wants to connect" notification, the PC link screen and Settings. -->
+        <activity
+            android:name=".UnlockActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:taskAffinity="dev.andromon.companion.unlock"
+            android:theme="@style/AppTheme"
+            android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|keyboard|keyboardHidden|navigation" />
 
         <!-- The welcome tour on first start (MainActivity opens it). -->
         <activity

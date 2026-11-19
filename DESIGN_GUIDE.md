@@ -319,7 +319,7 @@ All built by `Ui` (`host.ui`) unless noted. Use these before writing a new view.
 | Pill button | `ui.pill("Stop", color(R.color.fab), color(R.color.on_fab)) { … }` | Secondary actions and per-row actions. 42dp. |
 | Small pill | `ui.smallPill("Clear", filled = false, icon) { … }` | 36dp, 13sp. Actions in a card header or a section heading ("See all", "Refresh", "How"). Quiet (`glass_strong`) by default; `filled` for the one action that matters in that card. Also the Stats segment chips. |
 | Quiet pill | `ui.pill("Details", color(R.color.glass_strong), color(R.color.ink)) { … }` | Lower-priority action next to a filled one. |
-| Badge | `ui.pill("Estimate", color(R.color.chip), color(R.color.ink))` | No `onClick`: a non-interactive label. Use rarely: only for a state the person needs that nothing else on the screen says (the PC link's Linked / Ready / Off, a test's Passed / Failed). If the hero, a heading or the row's own text already says it, leave the badge out; a setting or a status that must stay is plain text (13 to 14sp, Medium on the hero, `ink_soft` in a row). |
+| Badge | `ui.pill("Estimate", color(R.color.chip), color(R.color.ink))` | No `onClick`: a non-interactive label. Use rarely: only for a state the person needs that nothing else on the screen says (the PC link's Linked / Ready / Locked / Off, a test's Passed / Failed). If the hero, a heading or the row's own text already says it, leave the badge out; a setting or a status that must stay is plain text (13 to 14sp, Medium on the hero, `ink_soft` in a row). |
 | Header button | `ui.circleButton(icon, description) { … }` | Icon-only action. The description is required. |
 | Switch | `ui.toggle { on -> … }` | Ink track when on, `ink_faint` when off. |
 | Checkbox | `ui.setCheck(imageView, checked)` | Round: filled check or empty ring. For multi-select lists. |
@@ -414,7 +414,7 @@ Order of content: the answer, then what it means, then the details, then things 
 
 ### PC link (where the app opens)
 
-Top bar and subtitle; a hero card with the link's state (status pill, the computer's name or "Ready", how and how long, one primary Start/Stop button); a card of quick actions; then sections: Today (number row and a link to Stats), Recent activity (rows with a time), What the computer can read, Connect (USB and Wi‑Fi cards with numbered steps).
+Top bar and subtitle; a hero card with the link's state (status pill, the computer's name or "Ready", how and how long, one primary Start/Stop button; while the PC link lock waits: "Locked", with **Unlock** as the primary button and a quiet **Stop the link** pill under it); a card of quick actions; then sections: Today (number row and a link to Stats), Recent activity (rows with a time), What the computer can read, Connect (USB and Wi‑Fi cards with numbered steps).
 
 ### Tools
 
@@ -435,6 +435,10 @@ Top bar and subtitle, a scrolling row of segment chips, the range switch where i
 ### Guided steps (PC link, Hardware test)
 
 Numbered steps in a card, one instruction per step in plain words, the current step emphasised. Where the phone can tell the result itself, show it; otherwise offer "Passed" and "Failed" pills.
+
+### PIN pad (`UnlockActivity`)
+
+The PC link lock's own full-screen page, opened over whatever is on screen (its notification, the PC link screen, Settings): a close button, the round Andromon logo, a 28sp Light title ("Unlock the PC link", "Choose a PIN", "Enter it again"), one or two lines of 16sp `ink_soft` saying who asks or why, four 16dp dots (filled `ink` per digit, a 2dp `ink_soft` ring when empty), a 14sp Medium message line (`danger` for "Wrong PIN", `ink` for the wait countdown), and a 3 × 4 keypad of 72dp `glass` circles with 28sp digits; the bottom row is the fingerprint key (only when it is on), 0 and delete (long press clears). Each key gives a keyboard-tap haptic; a wrong PIN shakes the dots (skipped with reduce motion) with a reject haptic. A physical keyboard's digits work too. When the fingerprint is on, Android's `BiometricPrompt` opens by itself, with "Use PIN" to close it. The window is `FLAG_SECURE`. Keep any new PIN entry on this page rather than a dialog.
 
 ### Permission request
 

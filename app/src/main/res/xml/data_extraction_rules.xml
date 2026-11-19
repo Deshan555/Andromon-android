@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android 12 and newer. allowBackup="false" turns off cloud backup, but Android still copies app
+     data when the person moves to a new phone. The PC link lock's PIN hash and wrong-PIN count
+     (LinkLock.kt, link_lock.xml) never leave this phone: on a new phone the lock is set up again. -->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="sharedpref" path="link_lock.xml" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="sharedpref" path="link_lock.xml" />
+    </device-transfer>
+</data-extraction-rules>

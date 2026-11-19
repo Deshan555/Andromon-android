@@ -48,6 +48,7 @@ The screenshots were taken on a real phone (Samsung Galaxy S20, Android 13) with
 
 - Android only lets **apps on the phone** read SMS, contacts, the call log, the calendar and notifications. The companion is that app: Andromon asks, the companion reads and answers.
 - Requests arrive through **adb**, Android's debugging link (USB cable, or Wireless debugging on Android 11+). The companion checks that each request comes from adb. Other apps on the phone, and other devices on the network, can't talk to it.
+- **Lock the PC link** (optional, **Settings › PC link**): each time the link starts, it starts locked. Andromon on the computer can see that the app is there, but it can't read anything until you unlock the link on the phone with your 4-digit PIN, or your fingerprint or face. When Andromon connects, a notification, **Andromon wants to connect**, asks you to; tap it to unlock. Once unlocked, the link stays open until it stops (**Stop**, 15 idle minutes or a phone restart).
 - While the link is on, a **"Connected to Andromon"** notification is shown. The link stops when you press **Stop** on it or on the PC link screen, or after 15 idle minutes. After you press **Stop**, Andromon on the computer doesn't start it again by itself: it says the link is stopped on the phone until you press **Start**.
 - The phone-care tools work on their own, without a computer. A few of them can do more with **privileged access** (see [section 18](#18-privileged-access-shizuku-helper-root)).
 
@@ -75,13 +76,17 @@ The screen the app opens on: the link to Andromon on your computer.
 
 | Part | What it does |
 |---|---|
-| **Green card** | **Linked** (a computer is talking to the phone), **Ready** (the link is on and waiting) or **Off**. When linked, it shows the computer's name, whether it is connected over USB or Wi‑Fi, and for how long. Until Andromon has said its name, it says "Your computer". **Start / Stop** switches the link on or off. Andromon can also start it itself over USB. |
+| **Green card** | **Linked** (a computer is talking to the phone), **Ready** (the link is on and waiting), **Locked** (the link is on, but locked: see below) or **Off**. When linked, it shows the computer's name, whether it is connected over USB or Wi‑Fi, and for how long. Until Andromon has said its name, it says "Your computer". **Start / Stop** switches the link on or off. Andromon can also start it itself over USB. |
 | **Quick actions** | **Send files** picks files and opens Transfer › Send. **Send clipboard** sends what is copied on the phone to the computer (or, when no computer is listening on the link, puts it in Transfer › Send to go over Wi‑Fi). **Receive files** opens Transfer › Receive. **Scan code** scans the code Andromon's Wi‑Fi transfer page shows. **Connect over Wi‑Fi** jumps to the Wi‑Fi card below. |
 | **Today** | Time linked, requests from the computer and files moved today. **PC link stats** opens Stats › PC link. |
 | **Recent activity** | What the computer did lately ("Read your messages", "Sent 3 files to Studio Mac"), newest first; repeats are counted instead of listed again. **See all** shows the last 40. |
 | **What the computer can read** | How many messages, contacts and calls Andromon can see, and each data permission: messages, contacts, call log, calendar, incoming calls (call alerts), photos, videos and music, and **Phone notifications** (Android's Notification access, which opens its own Android page). **Allow** asks for the missing ones. If you refused one with "Don't ask again", Android won't ask any more: the row and the button then say **App info**, which opens the page where you can allow it. |
 | **USB cable** | **How** unfolds the four steps: a cable that carries data, USB debugging on, click Connect in Andromon, tap Allow. |
 | **Wi‑Fi** | After the one-time setup in Andromon (**Use this phone without the cable**), a single button turns the Wi‑Fi connection on and off. Before the setup it lists the steps (also for pairing by hand in Wireless debugging). If Developer options are off, it says how to turn them on (Settings › About phone › tap Build number seven times), with a button to About phone. Needs Android 11 or newer. |
+
+**Locked:** with **Settings › PC link › Lock the PC link** on, the link starts locked every time. The green card then says **Locked**, and "A computer is waiting. Unlock to let it read your data." once Andromon has asked for something. **Unlock** opens the PIN pad; **Stop the link** turns it off. When you press **Start** yourself, the app asks for your PIN (or fingerprint) first and the link starts already unlocked. Started from the quick-settings tile or an automation app, it starts locked and the notification asks when Andromon connects.
+
+The PIN pad shows four dots and large keys, with a fingerprint key if you turned on **Use fingerprint or face** (the fingerprint prompt then also opens by itself; **Use PIN** closes it). A wrong PIN shakes the dots. After five wrong PINs in a row, the pad waits 30 seconds before the next try, then 60, 120 and so on, up to 15 minutes; restarting the phone doesn't skip the wait. The screen can't be captured in screenshots.
 
 Turn the Wi‑Fi connection off when you are done; it also switches itself off when the phone leaves the Wi‑Fi network or restarts. The activity list and the figures stay on the phone for 30 days; **Settings › PC link › Clear link history** removes them.
 
@@ -282,6 +287,9 @@ Where the phone can tell the result, it fills it in; otherwise you tap **Passed*
 | | Blur personal data | Off by default. On: names (computers, Wi‑Fi devices, this phone's name), IP addresses and text you send are blurred on every screen, so screenshots of the app are safe to share. Lines that mix normal text with personal data (ping output, transfer status) blur only when they contain some. Tap a blurred value to see it for a few seconds. Android 11 and older cover it with a grey bar instead of a blur. |
 | **PC link** | Start when the app opens | On: opening the app also starts the link to Andromon. Andromon can always start the link over USB, even when this is off. |
 | | Clear link history | Removes the PC link screen's recent activity, the PC link figures in Stats and the names of the computers that connected. |
+| | Lock the PC link | Off by default. Turning it on asks you to choose a 4-digit PIN and enter it again. From then on, every time the link starts, a computer can read nothing until you unlock it on the phone. Turning it off asks for the PIN (or fingerprint) first. |
+| | Change PIN | Asks for the current PIN or fingerprint, then the new PIN twice. |
+| | Use fingerprint or face | Unlock with the fingerprint or face set up in Android's settings instead of typing the PIN; the PIN always works too. Shown on phones with a fingerprint reader or face unlock, and greyed until one is set up in Android. |
 | **Tools** | Cleaning rules | Which of the Cleaner's rules run (17 in all). |
 | | Large files | The size from which the Cleaner lists a file as large (50 MB to 1 GB). |
 | | Save data on speed tests | Always runs the shorter speed test, also on Wi‑Fi. |
@@ -310,16 +318,18 @@ Whichever way is used, the app can only run a fixed list of commands (list proce
 
 ## 19. Notification buttons and quick-settings tiles
 
-- **"Connected to Andromon" notification:** **Stop** ends the link; **Send clipboard to PC** copies the phone's clipboard to the computer.
+- **"Connected to Andromon" notification:** **Stop** ends the link; **Send clipboard to PC** copies the phone's clipboard to the computer. While the link is locked, it says **PC link is locked**, with **Unlock** and **Stop**.
+- **"Andromon wants to connect" notification:** pops up when Andromon asks for something while the link is locked. Tap it to unlock with your PIN or fingerprint. It goes away once the link is unlocked or stops.
 - **"From your computer" notification:** appears when you send a link or text from Andromon. Tapping it opens the link or copies the text.
 - **Find my phone:** when started from Andromon, the phone rings at full volume and shows **Found it**.
 - **Receive notification:** shows progress and **Accept / Decline** for incoming transfers.
-- **Quick-settings tiles** (add them by editing the quick-settings panel): **PC link**, **Receive files**, **Send clipboard to PC** and **Freeze now**.
+- **Quick-settings tiles** (add them by editing the quick-settings panel): **PC link** (it says **Locked** while the link waits to be unlocked), **Receive files**, **Send clipboard to PC** and **Freeze now**.
 
 ## 20. Privacy
 
 - Messages, contacts, the call log, calendar and notifications go **only to Andromon** on computers you connected or paired, through the adb link.
 - The app uses the network only for the Network screen's tests and for Wi‑Fi receive and send while you have them on.
+- With **Lock the PC link** on, a computer can read nothing until you unlock the link on the phone. Your PIN itself is never saved: the phone keeps only a salted hash of it, which isn't included in backups or copied to a new phone. Your fingerprint or face is checked by Android; the app never sees it.
 - There are no accounts, no ads and no analytics. The app is free software (GPL-3.0); the licences are under **Settings › About**.
 
 ## 21. Stats

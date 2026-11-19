@@ -82,6 +82,7 @@ class LinkTile : DeskTile() {
     override fun state() = if (CompanionService.running) Tile.STATE_ACTIVE else Tile.STATE_INACTIVE
     override fun subtitle(state: Int) = when {
         state != Tile.STATE_ACTIVE -> "Off"
+        CompanionService.locked -> "Locked"
         LinkEvents.listening -> "Connected"
         else -> "On"
     }

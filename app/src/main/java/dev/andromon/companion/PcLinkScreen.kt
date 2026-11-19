@@ -34,7 +34,12 @@ import java.text.NumberFormat
  */
 internal class PcLinkScreen(host: MainActivity) : Screen(host) {
 
-    private companion object { const val ADB_WIFI = "adb_wifi_enabled" } // Settings.Global, hidden constant
+    private companion object {
+        const val ADB_WIFI = "adb_wifi_enabled" // Settings.Global, hidden constant
+        /** The PC link lock's PIN pad: before Start ([REQ_START]) and to open a locked session ([REQ_UNLOCK]). */
+        const val REQ_START = 7301
+        const val REQ_UNLOCK = 7302
+    }
 
     override val name = "PC link"
     override val navIcon = R.drawable.ic_desktop
@@ -65,6 +70,8 @@ internal class PcLinkScreen(host: MainActivity) : Screen(host) {
     private lateinit var heroSub: TextView
     private lateinit var heroDetail: TextView
     private lateinit var startStop: TextView
+    /** Stop, under Unlock while the link is locked. */
+    private lateinit var lockedStop: TextView
     private lateinit var actionNote: TextView
     private lateinit var permSub: TextView
     private lateinit var permPill: TextView
@@ -152,6 +159,9 @@ internal class PcLinkScreen(host: MainActivity) : Screen(host) {
         addView(heroDetail, ui.lp(top = 4))
         startStop = ui.action("Start", R.drawable.ic_power) { togglePcLink() }
         addView(startStop, ui.lp(top = 18))
+        lockedStop = ui.pill("Stop the link", color(R.color.glass), color(R.color.ink)) { CompanionService.stopByUser(host) }
+        lockedStop.visibility = View.GONE
+        addView(lockedStop, ui.lp(top = 10))
     }
 
     /** Five things people come here to do, as a grid of labelled icons. */
@@ -319,9 +329,24 @@ internal class PcLinkScreen(host: MainActivity) : Screen(host) {
     // ---------- state ----------
 
     private fun togglePcLink() {
-        if (CompanionService.running) CompanionService.stopByUser(host)
-        else CompanionService.start(host, byUser = true)
+        when {
+            // Locked (Settings › PC link › Lock the PC link): the PIN pad opens the session.
+            CompanionService.running && CompanionService.locked ->
+                host.startActivityForResult(UnlockActivity.intent(host, UnlockActivity.Mode.UNLOCK), REQ_UNLOCK)
+            CompanionService.running -> CompanionService.stopByUser(host)
+            // The person is here: ask for the PIN first, then start the link already unlocked.
+            LinkLock.enabled(host) -> host.startActivityForResult(UnlockActivity.intent(host, UnlockActivity.Mode.VERIFY,
+                "Start the PC link", "Enter your PIN. The link then starts unlocked."), REQ_START)
+            else -> CompanionService.start(host, byUser = true)
+        }
         // refresh() runs via CompanionService.stateListener once the service has started/stopped.
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int) {
+        if (requestCode == REQ_START && resultCode == android.app.Activity.RESULT_OK) {
+            LinkLock.allowUnlockedStart()
+            CompanionService.start(host, byUser = true)
+        }
     }
 
     private fun refresh() {
@@ -334,13 +359,25 @@ internal class PcLinkScreen(host: MainActivity) : Screen(host) {
 
     private fun refreshLink() {
         val on = CompanionService.running
+        val locked = on && CompanionService.locked
         val linked = LinkStats.linkedNow()
         val name = LinkStats.computerName(host)
         val hello = LinkStats.hello(host)
         if (hello != null) Pii.addKnown(hello.computer) // not the "Your computer" stand-in
-        statusDot.background = ui.circle(color(when { linked -> R.color.good; on -> R.color.green_dot; else -> R.color.ink_faint }))
-        statusText.text = when { linked -> "Linked"; on -> "Ready"; else -> "Off" }
+        statusDot.background = ui.circle(color(when { locked -> R.color.ink; linked -> R.color.good; on -> R.color.green_dot; else -> R.color.ink_faint }))
+        statusText.text = when { locked -> "Locked"; linked -> "Linked"; on -> "Ready"; else -> "Off" }
         when {
+            locked -> {
+                // Settings › PC link › Lock the PC link: nothing is read until the person unlocks.
+                heroTitle.text = "Locked"
+                if (CompanionService.waiting) {
+                    heroSub.text = "A computer is waiting. Unlock to let it read your data."
+                    heroDetail.text = if (hello != null && name != "Your computer") "$name wants to connect." else ""
+                } else {
+                    heroSub.text = "Andromon can't read anything until you unlock the link"
+                    heroDetail.text = "When Andromon on your computer connects, a notification asks for your PIN."
+                }
+            }
             linked -> {
                 heroTitle.text = name
                 val how = when (LinkStats.transport(host)) { "usb" -> "Over USB"; "wifi" -> "Over Wi‑Fi"; else -> "Through adb" }
@@ -362,8 +399,10 @@ internal class PcLinkScreen(host: MainActivity) : Screen(host) {
             }
         }
         heroDetail.visibility = if (heroDetail.text.isNullOrEmpty()) View.GONE else View.VISIBLE
-        ui.setLabel(startStop, if (on) "Stop" else "Start")
-        startStop.contentDescription = if (on) "Stop the PC link" else "Start the PC link"
+        ui.stylePill(startStop, when { locked -> "Unlock"; on -> "Stop"; else -> "Start" }, color(R.color.fab), color(R.color.on_fab),
+            if (locked) R.drawable.ic_lock else R.drawable.ic_power) { togglePcLink() }
+        startStop.contentDescription = when { locked -> "Unlock the PC link"; on -> "Stop the PC link"; else -> "Start the PC link" }
+        lockedStop.visibility = if (locked) View.VISIBLE else View.GONE
 
         val today = LinkStats.days(host, 1).last()
         todayValues[0].text = if (today.linkedMs > 0) duration(today.linkedMs) else "–"

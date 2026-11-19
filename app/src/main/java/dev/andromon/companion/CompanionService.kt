@@ -47,6 +47,12 @@ import kotlin.concurrent.thread
  * phone notifications from [NotifWatch] (`notifications`, default off), and a `ping` every 20 s.
  * While a PC listens, the service doesn't stop for being idle. `rec.session` also stays open:
  * see [recSession].
+ *
+ * Lock: with Settings › PC link › Lock the PC link on ([LinkLock]), each session starts [locked].
+ * Until the person unlocks it on the phone ([UnlockActivity]), only `info` (with `"locked": true`),
+ * `link.hello` and `stop` are answered; everything else, `events` too, gets an error starting with
+ * `locked:` ([LOCKED_ERROR]), and a notification asks the person to unlock. Once unlocked, the
+ * session stays open until the service stops.
  */
 class CompanionService : Service() {
 
@@ -61,9 +67,40 @@ class CompanionService : Service() {
         private const val ROOT_UID = 0
         private const val IDLE_TIMEOUT_MS = 15 * 60 * 1000L
         private const val TAG = "AndromonCompanion"
+        private const val UNLOCK_CHANNEL_ID = "pc_link_unlock"
+        private const val UNLOCK_NOTIFICATION_ID = 7
+
+        /** What a locked link answers to everything but [OPEN_WHILE_LOCKED]. Andromon looks for the `locked:` prefix. */
+        const val LOCKED_ERROR = "locked: The PC link is locked. Unlock it on the phone (Andromon Companion) to continue."
+        /** Answered while locked: the version check, the computer's name for the unlock screen, and disconnecting. */
+        private val OPEN_WHILE_LOCKED = setOf("info", "link.hello", "stop")
 
         @Volatile var running = false
             private set
+
+        /** This session waits for the person to unlock it (only meaningful while [running]). */
+        @Volatile var locked = false
+            private set
+
+        /** A computer asked for something while the session was locked. */
+        @Volatile var waiting = false
+            private set
+
+        @Volatile private var instance: CompanionService? = null
+
+        /**
+         * The person entered their PIN or used their fingerprint ([UnlockActivity]), or turned the
+         * lock off: the running session opens and stays open until the link stops.
+         */
+        fun unlock(ctx: Context) {
+            if (!locked) return
+            locked = false
+            waiting = false
+            Handler(Looper.getMainLooper()).post {
+                instance?.onUnlocked()
+                stateListener?.invoke()
+            }
+        }
 
         /** Called on the main thread when [running] changes; the status screen sets it while visible. */
         var stateListener: (() -> Unit)? = null
@@ -108,6 +145,8 @@ class CompanionService : Service() {
 
     override fun onCreate() {
         super.onCreate()
+        instance = this
+        if (!running) locked = LinkLock.enabled(this) // what the first notification says; settled in onStartCommand
         goForeground() // within 5 s of startForegroundService(), even when the start is then refused
     }
 
@@ -126,6 +165,11 @@ class CompanionService : Service() {
             return START_NOT_STICKY
         }
         if (!running) {
+            // A new session: locked when the lock is on, unless the person just unlocked it to press Start.
+            locked = LinkLock.enabled(this) && !LinkLock.takeUnlockedStart()
+            waiting = false
+            lastAsked = 0
+            refreshNotification()
             startServer()
             running = true
             stateListener?.invoke()
@@ -137,6 +181,10 @@ class CompanionService : Service() {
 
     override fun onDestroy() {
         running = false
+        locked = false
+        waiting = false
+        if (instance === this) instance = null
+        getSystemService(NotificationManager::class.java).cancel(UNLOCK_NOTIFICATION_ID)
         // Free the socket's name, or turning the link on again in the same run fails with "Address
         // already in use". Closing alone doesn't end a waiting accept(), so wake it with one
         // connection first (the accept loop sees [closing] and drops it).
@@ -165,6 +213,20 @@ class CompanionService : Service() {
         nm.createNotificationChannel(
             NotificationChannel(CHANNEL_ID, "PC connection", NotificationManager.IMPORTANCE_LOW)
         )
+        val notification = ongoingNotification()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE)
+        } else {
+            startForeground(NOTIFICATION_ID, notification)
+        }
+    }
+
+    /** The ongoing notification again, after the session locked or opened. */
+    private fun refreshNotification() {
+        runCatching { getSystemService(NotificationManager::class.java).notify(NOTIFICATION_ID, ongoingNotification()) }
+    }
+
+    private fun ongoingNotification(): Notification {
         val stop = PendingIntent.getService(
             this, 0,
             Intent(this, CompanionService::class.java).setAction(ACTION_STOP),
@@ -173,20 +235,70 @@ class CompanionService : Service() {
         val open = PendingIntent.getActivity(
             this, 0, Intent(this, MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE,
         )
-        val notification = Notification.Builder(this, CHANNEL_ID)
-            .setSmallIcon(android.R.drawable.stat_notify_sync)
-            .setContentTitle("Connected to Andromon")
-            .setContentText("Andromon on your computer can read messages, contacts and call log") // over USB or Wi‑Fi
+        val b = Notification.Builder(this, CHANNEL_ID)
             .setContentIntent(open)
             .setOngoing(true)
-            .addAction(Notification.Action.Builder(null, "Stop", stop).build())
-            .addAction(Links.clipAction(this))
-            .build()
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE)
+        if (locked) {
+            b.setSmallIcon(R.drawable.ic_lock)
+                .setContentTitle("PC link is locked")
+                .setContentText("Andromon on your computer can't read anything until you unlock it")
+                .addAction(Notification.Action.Builder(null, "Unlock", unlockIntent()).build())
+                .addAction(Notification.Action.Builder(null, "Stop", stop).build())
         } else {
-            startForeground(NOTIFICATION_ID, notification)
+            b.setSmallIcon(android.R.drawable.stat_notify_sync)
+                .setContentTitle("Connected to Andromon")
+                .setContentText("Andromon on your computer can read messages, contacts and call log") // over USB or Wi‑Fi
+                .addAction(Notification.Action.Builder(null, "Stop", stop).build())
+                .addAction(Links.clipAction(this))
         }
+        return b.build()
+    }
+
+    private fun unlockIntent(): PendingIntent = PendingIntent.getActivity(
+        this, 7, UnlockActivity.intent(this, UnlockActivity.Mode.UNLOCK).addFlags(
+            Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK),
+        PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+    )
+
+    @Volatile private var lastAsked = 0L
+
+    /**
+     * A computer asked for something while locked: say so on the PC link screen and ask the person,
+     * with a heads-up notification, to unlock. Posted again (at most every 2 minutes) if they
+     * swiped it away while the computer keeps asking.
+     */
+    private fun askToUnlock() {
+        val first = !waiting
+        waiting = true
+        if (first) main.post { stateListener?.invoke() }
+        val now = System.currentTimeMillis()
+        val nm = getSystemService(NotificationManager::class.java)
+        val showing = runCatching { nm.activeNotifications.any { it.id == UNLOCK_NOTIFICATION_ID } }.getOrDefault(false)
+        if (showing || (lastAsked != 0L && now - lastAsked < 120_000)) return
+        lastAsked = now
+        nm.createNotificationChannel(
+            NotificationChannel(UNLOCK_CHANNEL_ID, "PC link unlock", NotificationManager.IMPORTANCE_HIGH).apply {
+                description = "Asks for your PIN or fingerprint when a computer wants to use the locked PC link"
+            }
+        )
+        val bio = LinkLock.biometricOn(this)
+        runCatching {
+            nm.notify(UNLOCK_NOTIFICATION_ID, Notification.Builder(this, UNLOCK_CHANNEL_ID)
+                .setSmallIcon(R.drawable.ic_lock)
+                .setContentTitle("Andromon wants to connect")
+                .setContentText(if (bio) "Tap to unlock with your PIN or fingerprint" else "Tap to unlock with your PIN")
+                .setContentIntent(unlockIntent())
+                .setCategory(Notification.CATEGORY_STATUS)
+                .setOnlyAlertOnce(true)
+                .setTimeoutAfter(10 * 60_000L)
+                .build())
+        }
+    }
+
+    /** Main thread: the session opened ([unlock]). */
+    private fun onUnlocked() {
+        getSystemService(NotificationManager::class.java).cancel(UNLOCK_NOTIFICATION_ID)
+        refreshNotification()
     }
 
     private fun startServer() {
@@ -267,28 +379,37 @@ class CompanionService : Service() {
             val request = JSONObject(line)
             response.put("id", request.opt("id"))
             val method = request.getString("method")
-            LinkStats.call(this, method) // the PC link screen's activity list and Stats › PC link
-            if (method == "events") {
-                val params = request.optJSONObject("params") ?: JSONObject()
-                keepOpen { streamEvents(sock, params) }
-                return
-            }
-            if (method == "rec.session") {
-                val id = request.opt("id")
-                val params = request.optJSONObject("params") ?: JSONObject()
-                keepOpen { recSession(sock, id, params) }
-                return
-            }
-            if (method == "stop") {
-                stopAfter = true
-                response.put("result", true)
+            val lockedNow = locked
+            if (lockedNow && method != "stop") askToUnlock()
+            if (lockedNow && method !in OPEN_WHILE_LOCKED) {
+                // Nothing is read: not counted in the activity list either.
+                response.put("error", LOCKED_ERROR)
             } else {
-                busy.incrementAndGet()
-                try {
-                    response.put("result", Api(this).call(method, request.optJSONObject("params") ?: JSONObject()))
-                } finally {
-                    busy.decrementAndGet()
-                    lastActivity = System.currentTimeMillis()
+                LinkStats.call(this, method) // the PC link screen's activity list and Stats › PC link
+                if (method == "events") {
+                    val params = request.optJSONObject("params") ?: JSONObject()
+                    keepOpen { streamEvents(sock, params) }
+                    return
+                }
+                if (method == "rec.session") {
+                    val id = request.opt("id")
+                    val params = request.optJSONObject("params") ?: JSONObject()
+                    keepOpen { recSession(sock, id, params) }
+                    return
+                }
+                if (method == "stop") {
+                    stopAfter = true
+                    response.put("result", true)
+                } else {
+                    busy.incrementAndGet()
+                    try {
+                        val result = Api(this).call(method, request.optJSONObject("params") ?: JSONObject())
+                        if (method == "info") (result as? JSONObject)?.put("locked", lockedNow)
+                        response.put("result", result)
+                    } finally {
+                        busy.decrementAndGet()
+                        lastActivity = System.currentTimeMillis()
+                    }
                 }
             }
         } catch (e: SecurityException) {
@@ -392,13 +513,14 @@ class CompanionService : Service() {
 /**
  * Andromon on the PC asks, before it starts the link over adb, whether the person stopped it here
  * (`am broadcast -n dev.andromon.companion/.LinkStateReceiver`). The answer is the broadcast's
- * result data: "paused", "on" or "off". DUMP (manifest) keeps other apps from asking.
+ * result data: "paused", "locked" (on, waiting for the person to unlock it), "on" or "off". DUMP (manifest) keeps other apps from asking.
  */
 class LinkStateReceiver : android.content.BroadcastReceiver() {
     override fun onReceive(ctx: Context, intent: Intent) {
         resultCode = 1
         resultData = when {
             Prefs.linkPaused(ctx) -> "paused"
+            CompanionService.running && CompanionService.locked -> "locked"
             CompanionService.running -> "on"
             else -> "off"
         }

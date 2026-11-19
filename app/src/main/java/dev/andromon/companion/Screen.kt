@@ -31,6 +31,8 @@ internal abstract class Screen(protected val host: MainActivity) {
     open fun onLeave() {}
     open fun onPermissionsResult() {}
     open fun onActivityResult(requestCode: Int) {}
+    /** Same, for screens that need the result code (the PC link lock's PIN pad returns RESULT_OK). */
+    open fun onActivityResult(requestCode: Int, resultCode: Int) = onActivityResult(requestCode)
     /** Back was pressed. Return true when the screen used it (e.g. to leave a sub-page); false goes back a screen. */
     open fun onBack(): Boolean = false
     /** Its bottom-bar item was tapped while it is open; the host also scrolls to the top. */

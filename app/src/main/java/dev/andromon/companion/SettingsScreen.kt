@@ -34,6 +34,10 @@ internal class SettingsScreen(host: MainActivity) : Screen(host) {
     private lateinit var motionSwitch: Switch
     private lateinit var blurSwitch: Switch
     private lateinit var linkSwitch: Switch
+    private lateinit var lockRow: UiRows.Row
+    private lateinit var changePinRow: UiRows.Row
+    private lateinit var biometricRow: UiRows.Row
+    private lateinit var lockNote: TextView
     private lateinit var largeValue: TextView
     private lateinit var rulesValue: TextView
     private lateinit var dataSwitch: Switch
@@ -51,6 +55,10 @@ internal class SettingsScreen(host: MainActivity) : Screen(host) {
     companion object {
         /** Page to open the next time Settings is shown (a link from another screen, or the page that was open before a redraw). */
         var pending: String? = null
+        /** The PC link lock's PIN pad (UnlockActivity): choose a PIN, check it before turning the lock off, change it. */
+        private const val REQ_LOCK_ON = 7311
+        private const val REQ_LOCK_OFF = 7312
+        private const val REQ_CHANGE_PIN = 7313
     }
 
     private val pages = mutableListOf<Page>()
@@ -109,7 +117,7 @@ internal class SettingsScreen(host: MainActivity) : Screen(host) {
             }, ui.lp(top = 12))
         }
 
-        page("link", R.drawable.ic_usb, "PC link", "When the link starts, and its history") {
+        page("link", R.drawable.ic_usb, "PC link", "When the link starts, its lock and its history") {
             addView(ui.glassCard(6) {
                 linkSwitch = switchRow(R.drawable.ic_usb, "Start when the app opens",
                     "Andromon can still start the link over USB when this is off") { on ->
@@ -124,6 +132,23 @@ internal class SettingsScreen(host: MainActivity) : Screen(host) {
                         .show()
                 }.text = ""
             }, ui.lp(top = 20))
+            // The PC link lock (LinkLock.kt): a PIN, or a fingerprint or face, before a computer reads anything.
+            addView(ui.section("Lock"), ui.lp(top = 26))
+            addView(ui.glassCard(6) {
+                val rows = UiRows(host, ui)
+                lockRow = rows.switch(this, R.drawable.ic_lock, "Lock the PC link",
+                    "Ask for your PIN or fingerprint before a computer can read anything") { on -> setLinkLock(on) }
+                changePinRow = rows.value(this, R.drawable.ic_key, "Change PIN", "Asks for your current PIN or fingerprint first") {
+                    host.startActivityForResult(UnlockActivity.intent(host, UnlockActivity.Mode.CHANGE), REQ_CHANGE_PIN)
+                }
+                biometricRow = rows.switch(this, R.drawable.ic_fingerprint, "Use fingerprint or face",
+                    "Unlock without typing the PIN. The PIN always works too.") { on ->
+                    LinkLock.setBiometric(host, on)
+                    refresh()
+                }
+                lockNote = rows.note(this, "Each time the link starts, it stays locked until you unlock it on this phone. " +
+                    "It then stays open until the link stops: Stop, 15 idle minutes or a restart.")
+            }, ui.lp(top = 12))
         }
 
         page("tools", R.drawable.ic_broom, "Tools", "Cleaner rules, speed tests and automation") {
@@ -243,6 +268,7 @@ internal class SettingsScreen(host: MainActivity) : Screen(host) {
         motionSwitch.isChecked = Prefs.reduceMotionPref(host)
         blurSwitch.isChecked = PrivacyBlur.enabled(host)
         linkSwitch.isChecked = Prefs.startLinkOnOpen(host)
+        refreshLock()
         largeValue.text = sizeLabel(Prefs.largeFileMb(host))
         val rules = Prefs.CLEANING_RULES
         rulesValue.text = "${rules.count { Prefs.ruleOn(host, it.first) }} of ${rules.size} on"
@@ -252,6 +278,31 @@ internal class SettingsScreen(host: MainActivity) : Screen(host) {
         state(usageValue, Cleaner.hasUsageAccess(host))
         state(notifyValue, Build.VERSION.SDK_INT < 33 ||
             host.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED)
+    }
+
+    private fun refreshLock() {
+        val on = LinkLock.enabled(host)
+        lockRow.switch?.isChecked = on
+        changePinRow.view.visibility = if (on) View.VISIBLE else View.GONE
+        lockNote.visibility = changePinRow.view.visibility
+        // Shown when the phone has a fingerprint reader or face unlock; greyed until one is set up.
+        biometricRow.view.visibility = if (on && LinkLock.biometricHardware(host)) View.VISIBLE else View.GONE
+        val ready = LinkLock.biometricReady(host)
+        biometricRow.switch?.isChecked = ready && LinkLock.biometricChosen(host)
+        biometricRow.available(ready, ui, why = "Set up a fingerprint or face in Android's settings first",
+            normal = "Unlock without typing the PIN. The PIN always works too.")
+    }
+
+    /** On: choose a PIN first. Off: only after the PIN or fingerprint. */
+    private fun setLinkLock(on: Boolean) {
+        if (on) host.startActivityForResult(UnlockActivity.intent(host, UnlockActivity.Mode.SET), REQ_LOCK_ON)
+        else host.startActivityForResult(UnlockActivity.intent(host, UnlockActivity.Mode.VERIFY, "Turn the lock off",
+            "Enter your PIN. Computers can then read this phone's data without it."), REQ_LOCK_OFF)
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int) {
+        if (requestCode == REQ_LOCK_OFF && resultCode == android.app.Activity.RESULT_OK) LinkLock.turnOff(host)
+        if (requestCode in REQ_LOCK_ON..REQ_CHANGE_PIN) refreshLock()
     }
 
     private fun state(v: TextView, on: Boolean) {
@@ -397,6 +448,8 @@ internal class SettingsScreen(host: MainActivity) : Screen(host) {
             "• If the app crashes, the technical details stay on this phone until you share or delete them.\n\n" +
             "• The Cleaner and the Apps screen work on the phone itself. Nothing is deleted or uninstalled " +
             "until you confirm.\n\n" +
+            "• With Settings › PC link › Lock the PC link on, a computer can read nothing until you unlock the link " +
+            "on the phone. The PIN itself is never saved, only a salted hash of it, which isn't backed up.\n\n" +
             "• Settings are stored only on this phone.")
 
     private fun showAutomation() = textDialog("Automation",

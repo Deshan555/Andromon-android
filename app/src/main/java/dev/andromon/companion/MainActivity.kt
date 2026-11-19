@@ -302,7 +302,7 @@ class MainActivity : Activity() {
 
     @Deprecated("Framework callback")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        screens[current].onActivityResult(requestCode)
+        screens[current].onActivityResult(requestCode, resultCode)
     }
 
     /** Pre-Android 13 back handling; newer versions use [updateBackHandling]. */
