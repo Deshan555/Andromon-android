@@ -294,12 +294,26 @@ internal class TransferScreen(host: MainActivity) : Screen(host) {
             ReceiveService.stop(host)
             return
         }
+        // Accept/Decline while the app is in the background come as notifications. Refused for good (or
+        // turned off in Android's settings): say so and offer the settings instead of starting silently
+        // without them; "Not now" starts anyway.
+        if (!Perms.granted(host, Perms.NOTIFICATIONS) && Perms.opensSettings(host, Perms.NOTIFICATIONS)) {
+            Perms.ensure(host, Perms.NOTIFICATIONS,
+                "Requests to send you files appear as notifications, so you can accept or decline them while the app is in the background.",
+                onSkip = { startReceive(skipNotifications = true) })
+            return
+        }
+        startReceive(skipNotifications = false)
+    }
+
+    private fun startReceive(skipNotifications: Boolean) {
         val ask = buildList {
-            if (Build.VERSION.SDK_INT >= 33) add(Manifest.permission.POST_NOTIFICATIONS) // Accept/Decline while in the background
+            if (Build.VERSION.SDK_INT >= 33 && !skipNotifications) add(Manifest.permission.POST_NOTIFICATIONS) // Accept/Decline while in the background
             if (Build.VERSION.SDK_INT < 29) add(Manifest.permission.WRITE_EXTERNAL_STORAGE)
         }.filter { host.checkSelfPermission(it) != PackageManager.PERMISSION_GRANTED }
         if (ask.isNotEmpty()) {
             startAfterPermission = true
+            ask.forEach { Prefs.setAskedPermission(host, it) } // so a refusal for good is recognised next time (Perms.blocked)
             host.requestPermissions(ask.toTypedArray(), 2)
         } else {
             ReceiveService.start(host)

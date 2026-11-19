@@ -440,6 +440,8 @@ Numbered steps in a card, one instruction per step in plain words, the current s
 
 Explain first, in the screen: what the access is for, in one sentence, with a pill button that opens the system dialog or the right Settings page. Never show a system permission dialog on screen open. If the person declines, the feature's row stays, greyed, with the reason and a way to grant it later.
 
+`Perms.kt` holds each access the app uses (what it is for, its state, and how to ask: Android's dialog, or the right Settings page for special access and for permissions refused for good). At the point of use, `Perms.ensure(activity, access, why)` returns true when it is allowed, or shows the one-sentence explanation with **Allow** / **Not now**. The welcome tour's **Allow what you'll use** page lists `Perms.TOUR` with each state and an **Allow** pill, re-read in `onResume`; nothing on it is required.
+
 ---
 
 ## 12. States: loading, empty, error, unavailable

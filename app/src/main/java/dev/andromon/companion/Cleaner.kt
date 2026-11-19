@@ -59,7 +59,9 @@ internal object Cleaner {
         val mode = if (Build.VERSION.SDK_INT >= 29)
             ops.unsafeCheckOpNoThrow(AppOpsManager.OPSTR_GET_USAGE_STATS, Process.myUid(), ctx.packageName)
         else ops.checkOpNoThrow(AppOpsManager.OPSTR_GET_USAGE_STATS, Process.myUid(), ctx.packageName)
-        return mode == AppOpsManager.MODE_ALLOWED
+        // Left at its default, the op follows the permission (granted over adb with pm grant), as in Android's Settings.
+        return mode == AppOpsManager.MODE_ALLOWED || (mode == AppOpsManager.MODE_DEFAULT &&
+            ctx.checkSelfPermission(Manifest.permission.PACKAGE_USAGE_STATS) == PackageManager.PERMISSION_GRANTED)
     }
 
     /**

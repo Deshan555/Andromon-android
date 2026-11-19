@@ -212,9 +212,9 @@ internal class SaverScreen(host: MainActivity) : Screen(host) {
     }
 
     private fun alertsChanged(turnedOn: Boolean) {
-        if (turnedOn && Build.VERSION.SDK_INT >= 33 &&
-            host.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED)
-            host.requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 71)
+        // The alerts are notifications: explain and ask, also when notifications were turned off in Android's settings.
+        if (turnedOn) Perms.ensure(host, Perms.NOTIFICATIONS,
+            "Charging alerts arrive as notifications. Allow notifications so the battery-full and temperature alerts can appear.")
         PowerWatch.sync(host); PowerWatch.refreshNotification(host)
         refresh()
     }

@@ -40,19 +40,19 @@ internal class PcLinkScreen(host: MainActivity) : Screen(host) {
     override val navIcon = R.drawable.ic_desktop
     override val navColor = R.color.bg
 
+    /** The runtime permissions behind what the computer reads (names and asking: [Perms]). */
     private val wanted = buildList {
         add(Manifest.permission.READ_SMS); add(Manifest.permission.SEND_SMS)
         add(Manifest.permission.READ_CONTACTS); add(Manifest.permission.WRITE_CONTACTS)
         add(Manifest.permission.READ_CALL_LOG)
+        add(Manifest.permission.READ_CALENDAR)
+        add(Manifest.permission.READ_PHONE_STATE) // call alerts on the computer
+        addAll(Perms.MEDIA.permissions) // Photos and Music tabs
         if (Build.VERSION.SDK_INT >= 33) add(Manifest.permission.POST_NOTIFICATIONS)
     }
 
     private val permissionNames = mapOf(
-        Manifest.permission.READ_SMS to "Read messages",
-        Manifest.permission.SEND_SMS to "Send messages",
-        Manifest.permission.READ_CONTACTS to "Read contacts",
-        Manifest.permission.WRITE_CONTACTS to "Add contacts",
-        Manifest.permission.READ_CALL_LOG to "Read call log",
+        Manifest.permission.READ_PHONE_STATE to "See incoming calls (call alerts)",
         "android.permission.POST_NOTIFICATIONS" to "Show the connection notification",
     )
 
@@ -491,11 +491,17 @@ internal class PcLinkScreen(host: MainActivity) : Screen(host) {
     // ---------- data access ----------
 
     /** Asked before and refused with "don't ask again" (or blocked by Android): only App info can allow it now. */
-    private fun blocked(p: String) = Prefs.askedPermission(host, p) && !host.shouldShowRequestPermissionRationale(p)
+    private fun blocked(p: String) = Perms.blocked(host, p)
 
     private fun ask(ps: List<String>) {
         ps.forEach { Prefs.setAskedPermission(host, it) }
         host.requestPermissions(ps.toTypedArray(), 1)
+    }
+
+    /** Media access is also covered by All files access (see Media.canRead). */
+    private fun missingPermissions(): List<String> {
+        val media = Perms.granted(host, Perms.MEDIA)
+        return wanted.filter { host.checkSelfPermission(it) != PackageManager.PERMISSION_GRANTED && !(media && it in Perms.MEDIA.permissions) }
     }
 
     private fun openAppInfo() {
@@ -503,16 +509,22 @@ internal class PcLinkScreen(host: MainActivity) : Screen(host) {
     }
 
     private fun refreshPermissions() {
-        val missing = wanted.filter { host.checkSelfPermission(it) != PackageManager.PERMISSION_GRANTED }
+        val missing = missingPermissions()
         val askable = missing.filterNot(::blocked)
-        permSub.text = "${wanted.size - missing.size} of ${wanted.size} allowed"
+        // Phone notifications on the computer: Android's Notification access, a Settings page of its own.
+        val notifAccess = Perms.granted(host, Perms.NOTIFICATION_ACCESS)
+        val total = wanted.size + 1
+        permSub.text = "${total - missing.size - (if (notifAccess) 0 else 1)} of $total allowed"
         when {
-            missing.isEmpty() -> ui.stylePill(permPill, "All set", color(R.color.good_bg), color(R.color.ink), R.drawable.ic_check)
+            missing.isEmpty() && notifAccess -> ui.stylePill(permPill, "All set", color(R.color.good_bg), color(R.color.ink), R.drawable.ic_check)
             askable.isNotEmpty() -> ui.stylePill(permPill, "Allow", color(R.color.fab), color(R.color.on_fab)) { ask(askable) }
+            missing.isEmpty() -> ui.stylePill(permPill, "Allow", color(R.color.fab), color(R.color.on_fab)) {
+                Perms.ensure(host, Perms.NOTIFICATION_ACCESS)
+            }
             else -> ui.stylePill(permPill, "App info", color(R.color.fab), color(R.color.on_fab)) { openAppInfo() }
         }
         permList.removeAllViews()
-        if (missing.isEmpty()) return
+        if (missing.isEmpty() && notifAccess) return
         for (p in wanted) {
             val ok = p !in missing
             val stuck = !ok && blocked(p)
@@ -522,7 +534,7 @@ internal class PcLinkScreen(host: MainActivity) : Screen(host) {
                 addView(ui.iconView(if (ok) R.drawable.ic_check else R.drawable.ic_dot_empty,
                     color(if (ok) R.color.good else R.color.ink_faint)), ui.lp(w = ui.dp(18), h = ui.dp(18)))
                 addView(ui.text(14f, color(R.color.ink)) {
-                    text = permissionNames[p] ?: p.substringAfterLast('.')
+                    text = permissionNames[p] ?: Perms.label(p)
                 }, ui.lp(w = 0, weight = 1f, start = 12))
                 if (!ok) {
                     addView(ui.text(13f, color(R.color.ink), ui.medium) { text = if (stuck) "App info" else "Allow" }, ui.lp(w = WRAP_CONTENT, start = 8))
@@ -531,6 +543,18 @@ internal class PcLinkScreen(host: MainActivity) : Screen(host) {
                 }
             })
         }
+        permList.addView(ui.row {
+            background = if (notifAccess) null else ui.pressable(ui.rounded(android.graphics.Color.TRANSPARENT, 16))
+            setPadding(ui.dp(4), ui.dp(8), ui.dp(4), ui.dp(8))
+            addView(ui.iconView(if (notifAccess) R.drawable.ic_check else R.drawable.ic_dot_empty,
+                color(if (notifAccess) R.color.good else R.color.ink_faint)), ui.lp(w = ui.dp(18), h = ui.dp(18)))
+            addView(ui.text(14f, color(R.color.ink)) { text = "Phone notifications (Notification access)" }, ui.lp(w = 0, weight = 1f, start = 12))
+            if (!notifAccess) {
+                addView(ui.text(13f, color(R.color.ink), ui.medium) { text = "Allow" }, ui.lp(w = WRAP_CONTENT, start = 8))
+                addView(ui.iconView(R.drawable.ic_chevron_right, color(R.color.ink_faint)), ui.lp(w = ui.dp(18), h = ui.dp(18), start = 2))
+                setOnClickListener { Perms.ensure(host, Perms.NOTIFICATION_ACCESS) }
+            }
+        })
         val notes = ArrayList<String>()
         if (missing.any(::blocked)) notes += "Android won't ask again for some of these. Allow them in App info › Permissions."
         val restricted = listOf(Manifest.permission.READ_SMS, Manifest.permission.SEND_SMS, Manifest.permission.READ_CALL_LOG)

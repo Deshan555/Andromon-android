@@ -30,18 +30,20 @@ import android.window.OnBackInvokedDispatcher
 import kotlin.math.abs
 
 /**
- * The welcome tour, shown once on the first start (MainActivity opens it; Settings › About can show
- * it again). Six pages with the mascot: what the app is, the link to the computer, the phone-care
- * tools, Wi‑Fi transfer, privacy, and "you're all set". Swipe or use Next; Skip, Back on the first
- * page or Get started end it. Nothing is asked for here: each feature asks for its own permission
- * when it is first used.
+ * The welcome tour, shown once on the first start (MainActivity opens it after the splash; Settings ›
+ * About can show it again). Seven pages: what the app is, the link to the computer, the phone-care
+ * tools, Wi‑Fi transfer, privacy, the permissions in one place, and "you're all set". Swipe or use
+ * Next; Skip, Back on the first page or Get started end it. The permissions page ([Perms.TOUR]) shows
+ * each access with its state and an Allow button; nothing there is required, and each feature still
+ * asks for its own access when it is first used.
  *
  * Haptics: a light tick when the page changes, a click on the buttons and a confirm on Get started.
  * performHapticFeedback follows the phone's own touch-feedback setting and needs no permission.
  */
 class OnboardingActivity : Activity() {
 
-    private class Page(val art: Int, val title: String, val body: String, val brand: Boolean = false, val artLabel: String)
+    private class Page(val art: Int, val title: String, val body: String, val brand: Boolean = false, val artLabel: String,
+                       val perms: Boolean = false)
 
     private val pages = listOf(
         Page(R.drawable.brand_wordmark, "Welcome to Andromon Companion",
@@ -60,6 +62,9 @@ class OnboardingActivity : Activity() {
         Page(R.drawable.onboard_privacy, "Private by design",
             "No account, no ads and no analytics. Stop the PC link whenever you like, and turn on Blur personal data in Settings to keep screenshots safe to share.",
             artLabel = "The Andromon robot looking through a magnifying glass"),
+        Page(0, "Allow what you'll use",
+            "Nothing here is required. You can skip this page: each feature asks when you first use it.",
+            artLabel = "", perms = true),
         Page(R.drawable.onboard_ready, "You're all set",
             "Plug the phone into a computer running Andromon, or start with the tools. You can see this tour again in Settings › About.",
             artLabel = "The Andromon robot giving a thumbs up"),
@@ -144,6 +149,7 @@ class OnboardingActivity : Activity() {
     // ---------- pages ----------
 
     private fun pageView(p: Page): View {
+        if (p.perms) return permsView(p)
         val art = FrameLayout(this).apply {
             background = if (p.brand) ui.rounded(ui.color(R.color.splash_bg), 32) else ui.hero(32)
             addView(ImageView(this@OnboardingActivity).apply {
@@ -178,6 +184,85 @@ class OnboardingActivity : Activity() {
         }
     }
 
+    // ---------- permissions page ----------
+
+    private class PermRow(val access: Perms.Access, val state: TextView, val allow: TextView)
+    private val permRows = mutableListOf<PermRow>()
+
+    /** The accesses the app uses, each with what it is for, its state and Allow. */
+    private fun permsView(p: Page): View {
+        permRows.clear()
+        val card = ui.glassCard(6)
+        Perms.TOUR.forEachIndexed { i, a ->
+            val state = ui.text(12f, ui.color(R.color.ink_soft), ui.medium)
+            val allow = ui.smallPill("Allow", filled = true) { haptic(TAP); Perms.ask(this, a) }.apply {
+                contentDescription = "Allow ${a.title}"
+            }
+            permRows += PermRow(a, state, allow)
+            if (i > 0) card.addView(View(this).apply { setBackgroundColor(ui.color(R.color.line)) },
+                LinearLayout.LayoutParams(-1, 1).apply { marginStart = ui.dp(56); marginEnd = ui.dp(10) })
+            card.addView(ui.row {
+                gravity = Gravity.CENTER_VERTICAL
+                setPadding(ui.dp(10), ui.dp(12), ui.dp(10), ui.dp(12))
+                addView(ui.chipIcon(a.icon), ui.lp(w = ui.dp(34), h = ui.dp(34)))
+                addView(ui.column {
+                    addView(ui.text(15f, ui.color(R.color.ink), ui.medium) { text = a.title })
+                    addView(ui.text(13f, ui.color(R.color.ink_soft)) {
+                        text = a.why
+                        setLineSpacing(ui.dp(2).toFloat(), 1f)
+                    }, ui.lp(top = 2))
+                    addView(state, ui.lp(top = 4))
+                }, ui.lp(w = 0, weight = 1f, start = 12))
+                addView(allow, ui.lp(w = ViewGroup.LayoutParams.WRAP_CONTENT, start = 10))
+            })
+        }
+        val content = ui.column {
+            addView(ui.text(30f, ui.color(R.color.ink), ui.light) {
+                text = p.title
+                letterSpacing = -0.02f
+                setLineSpacing(0f, 0.95f)
+                if (Build.VERSION.SDK_INT >= 28) isAccessibilityHeading = true
+            }, ui.lp(top = 8))
+            addView(ui.text(16f, ui.color(R.color.ink_soft)) {
+                text = p.body
+                setLineSpacing(ui.dp(3).toFloat(), 1f)
+            }, ui.lp(top = 14))
+            addView(card, ui.lp(top = 20))
+            addView(ui.text(13f, ui.color(R.color.ink_soft)) {
+                text = "The microphone, the camera and installing apps are asked for when you use the feature that needs them. " +
+                    "You can change all of this later in Android's settings for the app."
+                setLineSpacing(ui.dp(2).toFloat(), 1f)
+            }, ui.lp(top = 14))
+        }
+        refreshPerms()
+        return ScrollView(this).apply {
+            isVerticalScrollBarEnabled = false
+            isFillViewport = true
+            addView(content)
+        }
+    }
+
+    /** Re-reads each access (after Android's dialog, or back from a Settings page). */
+    private fun refreshPerms() {
+        for (r in permRows) {
+            val on = Perms.granted(this, r.access)
+            r.state.text = when {
+                on -> "Allowed"
+                Perms.partly(this, r.access) -> "Partly allowed"
+                else -> "Not allowed"
+            }
+            r.state.setTextColor(ui.color(if (on) R.color.good else R.color.ink_soft))
+            r.allow.visibility = if (on) View.GONE else View.VISIBLE
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        refreshPerms()
+    }
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) = refreshPerms()
+
     /** Shows page [i]; [dir] 1 slides in from the right, -1 from the left, 0 without motion. */
     private fun show(i: Int, dir: Int) {
         index = i
@@ -200,7 +285,7 @@ class OnboardingActivity : Activity() {
         view.post { view.sendAccessibilityEvent(android.view.accessibility.AccessibilityEvent.TYPE_VIEW_FOCUSED) }
     }
 
-    /** Opens page [i]; [feel] gives the page-change tick (off when a button tap already gave its click). */
+    /** Opens page [i]; [feel] gives the page-change tick (off when a button tap already gave its own). */
     private fun go(i: Int, feel: Boolean = true) {
         if (i !in pages.indices || i == index) return
         if (feel) haptic(TICK)
