@@ -1,0 +1,1 @@
+Version 1.0.5 (build 11). Settings › About can check for a newer version once a day or on request, and installs it when you agree.
