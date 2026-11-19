@@ -31,11 +31,12 @@ import kotlin.math.abs
 
 /**
  * The welcome tour, shown once on the first start (MainActivity opens it after the splash; Settings ›
- * About can show it again). Seven pages: what the app is, the link to the computer, the phone-care
- * tools, Wi‑Fi transfer, privacy, the permissions in one place, and "you're all set". Swipe or use
- * Next; Skip, Back on the first page or Get started end it. The permissions page ([Perms.TOUR]) shows
- * each access with its state and an Allow button; nothing there is required, and each feature still
- * asks for its own access when it is first used.
+ * About can show it again). Eight pages: what the app is, the link to the computer, the phone-care
+ * tools, Wi‑Fi transfer, privacy, the permissions in one place, the PC link lock, and "you're all
+ * set". Swipe or use Next; Skip, Back on the first page or Get started end it. The permissions page
+ * ([Perms.TOUR]) shows each access with its state and an Allow button; nothing there is required, and
+ * each feature still asks for its own access when it is first used. The lock page offers Set up PIN
+ * ([UnlockActivity], the same steps as Settings › PC link › Lock the PC link); it is optional too.
  *
  * Haptics: a light tick when the page changes, a click on the buttons and a confirm on Get started.
  * performHapticFeedback follows the phone's own touch-feedback setting and needs no permission.
@@ -43,7 +44,7 @@ import kotlin.math.abs
 class OnboardingActivity : Activity() {
 
     private class Page(val art: Int, val title: String, val body: String, val brand: Boolean = false, val artLabel: String,
-                       val perms: Boolean = false)
+                       val perms: Boolean = false, val lock: Boolean = false)
 
     private val pages = listOf(
         Page(R.drawable.brand_wordmark, "Welcome to Andromon Companion",
@@ -65,6 +66,10 @@ class OnboardingActivity : Activity() {
         Page(0, "Allow what you'll use",
             "Nothing here is required. You can skip this page: each feature asks when you first use it.",
             artLabel = "", perms = true),
+        Page(R.drawable.onboard_privacy, "Protect the PC link",
+            "Ask for a 4-digit PIN or your fingerprint before a computer can read anything from this phone. " +
+                "Optional: you can also set it up later in Settings › PC link.",
+            artLabel = "The Andromon robot looking through a magnifying glass", lock = true),
         Page(R.drawable.onboard_ready, "You're all set",
             "Plug the phone into a computer running Andromon, or start with the tools. You can see this tour again in Settings › About.",
             artLabel = "The Andromon robot giving a thumbs up"),
@@ -75,6 +80,9 @@ class OnboardingActivity : Activity() {
     private lateinit var dots: LinearLayout
     private lateinit var next: ImageView
     private lateinit var skip: TextView
+    /** The lock page's Set up PIN pill and the "PIN set" line that replaces it. */
+    private var lockPill: TextView? = null
+    private var lockDone: TextView? = null
     private var index = 0
     private var shown: View? = null
     private var backCallback: Any? = null
@@ -179,6 +187,25 @@ class OnboardingActivity : Activity() {
                 setLineSpacing(ui.dp(3).toFloat(), 1f)
                 ellipsize = TextUtils.TruncateAt.END
             }, ui.lp(top = 14))
+            if (p.lock) {
+                val pill = ui.pill("Set up PIN", ui.color(R.color.fab), ui.color(R.color.on_fab), R.drawable.ic_lock) {
+                    haptic(TAP)
+                    @Suppress("DEPRECATION")
+                    startActivityForResult(UnlockActivity.intent(this@OnboardingActivity, UnlockActivity.Mode.SET), REQ_PIN)
+                }
+                val done = ui.text(15f, ui.color(R.color.ink), ui.medium) {
+                    text = "PIN set"
+                    compoundDrawablePadding = ui.dp(8)
+                    gravity = Gravity.CENTER_VERTICAL
+                    val check = ui.icon(R.drawable.ic_check, ui.color(R.color.good)).apply { setBounds(0, 0, ui.dp(20), ui.dp(20)) }
+                    setCompoundDrawablesRelative(check, null, null, null)
+                    minHeight = ui.dp(42)
+                }
+                lockPill = pill; lockDone = done
+                addView(pill, ui.lp(w = ViewGroup.LayoutParams.WRAP_CONTENT, top = 22))
+                addView(done, ui.lp(w = ViewGroup.LayoutParams.WRAP_CONTENT, top = 22))
+                refreshLock()
+            }
         }
         return ScrollView(this).apply {
             isVerticalScrollBarEnabled = false
@@ -262,6 +289,16 @@ class OnboardingActivity : Activity() {
     override fun onResume() {
         super.onResume()
         refreshPerms()
+        refreshLock()
+    }
+
+    // ---------- lock page ----------
+
+    /** "PIN set" once the PC link lock is on (also when it was set up before this tour). */
+    private fun refreshLock() {
+        val on = LinkLock.enabled(this)
+        lockPill?.visibility = if (on) View.GONE else View.VISIBLE
+        lockDone?.visibility = if (on) View.VISIBLE else View.GONE
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) = refreshPerms()
@@ -394,6 +431,8 @@ class OnboardingActivity : Activity() {
         private const val TAP = HapticFeedbackConstants.CONTEXT_CLICK
         /** Get started: a stronger, confirming feel. */
         private val CONFIRM = if (Build.VERSION.SDK_INT >= 30) HapticFeedbackConstants.CONFIRM else HapticFeedbackConstants.LONG_PRESS
+
+        private const val REQ_PIN = 1
 
         /** Opens the tour (from MainActivity on the first start, or Settings › About). */
         fun open(ctx: Context) = ctx.startActivity(Intent(ctx, OnboardingActivity::class.java))
