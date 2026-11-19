@@ -17,8 +17,8 @@ android {
         minSdk = 26          // Android 8.0: foreground-service start API used by the PC
         targetSdk = 36
         // Keep in sync with COMPANION_VERSION in pc/src/app.js
-        versionCode = 34
-        versionName = "0.34.0"
+        versionCode = 35
+        versionName = "0.35.0"
     }
 
     // Release signing. The release workflow (.github/workflows/android.yml), or anyone building by
