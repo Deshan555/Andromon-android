@@ -200,8 +200,11 @@ class UnlockActivity : Activity() {
             gravity = Gravity.CENTER_HORIZONTAL
             visibility = View.GONE
             addView(ui.action("Use fingerprint", R.drawable.ic_fingerprint) { haptic(HapticFeedbackConstants.VIRTUAL_KEY); enrolBiometric() })
-            addView(ui.pill("Not now", ui.color(R.color.glass_strong), ui.color(R.color.ink)) { haptic(HapticFeedbackConstants.VIRTUAL_KEY); done() },
-                ui.lp(top = 12))
+            // Same size as "Use fingerprint" above; only the colour marks it as the secondary choice.
+            addView(ui.pill("Not now", ui.color(R.color.glass_strong), ui.color(R.color.ink)) { haptic(HapticFeedbackConstants.VIRTUAL_KEY); done() }.apply {
+                textSize = 16f
+                minHeight = ui.dp(56)
+            }, ui.lp(top = 12))
         }
 
         val content = ui.column {
