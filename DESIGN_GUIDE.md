@@ -319,7 +319,7 @@ All built by `Ui` (`host.ui`) unless noted. Use these before writing a new view.
 | Pill button | `ui.pill("Stop", color(R.color.fab), color(R.color.on_fab)) { … }` | Secondary actions and per-row actions. 42dp. |
 | Small pill | `ui.smallPill("Clear", filled = false, icon) { … }` | 36dp, 13sp. Actions in a card header or a section heading ("See all", "Refresh", "How"). Quiet (`glass_strong`) by default; `filled` for the one action that matters in that card. Also the Stats segment chips. |
 | Quiet pill | `ui.pill("Details", color(R.color.glass_strong), color(R.color.ink)) { … }` | Lower-priority action next to a filled one. |
-| Badge | `ui.pill("Estimate", color(R.color.chip), color(R.color.ink))` | No `onClick`: a non-interactive label. |
+| Badge | `ui.pill("Estimate", color(R.color.chip), color(R.color.ink))` | No `onClick`: a non-interactive label. Use rarely: only for a state the person needs that nothing else on the screen says (the PC link's Linked / Ready / Off, a test's Passed / Failed). If the hero, a heading or the row's own text already says it, leave the badge out; a setting or a status that must stay is plain text (13 to 14sp, Medium on the hero, `ink_soft` in a row). |
 | Header button | `ui.circleButton(icon, description) { … }` | Icon-only action. The description is required. |
 | Switch | `ui.toggle { on -> … }` | Ink track when on, `ink_faint` when off. |
 | Checkbox | `ui.setCheck(imageView, checked)` | Round: filled check or empty ring. For multi-select lists. |

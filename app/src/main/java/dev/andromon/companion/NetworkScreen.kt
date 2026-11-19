@@ -36,7 +36,7 @@ internal class NetworkScreen(host: MainActivity) : Screen(host) {
     private lateinit var gauge: Ring
     private lateinit var kind: TextView
     private lateinit var detail: TextView
-    private lateinit var internetPill: TextView
+    private lateinit var internet: TextView
     private lateinit var rows: LinearLayout
 
     private lateinit var speedValue: TextView
@@ -99,8 +99,8 @@ internal class NetworkScreen(host: MainActivity) : Screen(host) {
         })
         detail = ui.text(15f, color(R.color.ink))
         addView(detail, ui.lp(top = 14))
-        internetPill = ui.pill("", 0, 0).apply { textSize = 13f; minHeight = ui.dp(32); typeface = ui.medium }
-        addView(internetPill, ui.lp(w = WRAP_CONTENT, top = 12))
+        internet = ui.text(14f, color(R.color.ink), ui.medium) // "Internet works": plain words, not a badge
+        addView(internet, ui.lp(top = 6))
         rows = ui.column {
             background = ui.rounded(color(R.color.glass_strong), 18)
             setPadding(ui.dp(16), ui.dp(6), ui.dp(16), ui.dp(16))
@@ -118,14 +118,10 @@ internal class NetworkScreen(host: MainActivity) : Screen(host) {
         detail.text = info.detail
         detail.visibility = if (info.detail.isEmpty()) View.GONE else View.VISIBLE
         when {
-            !info.connected -> internetPill.visibility = View.GONE
-            info.validated -> {
-                internetPill.visibility = View.VISIBLE
-                ui.stylePill(internetPill, "Internet works", color(R.color.good_bg), color(R.color.good), R.drawable.ic_check)
-            }
+            !info.connected -> internet.visibility = View.GONE
             else -> {
-                internetPill.visibility = View.VISIBLE
-                ui.stylePill(internetPill, "No internet access", color(R.color.peach_tile), color(R.color.danger))
+                internet.visibility = View.VISIBLE
+                internet.text = if (info.validated) "Internet works" else "No internet access"
             }
         }
         rows.removeAllViews()

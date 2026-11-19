@@ -41,7 +41,6 @@ internal class TransferScreen(host: MainActivity) : Screen(host) {
     override val navIcon = R.drawable.ic_transfer
     override val navColor = R.color.bg
 
-    private lateinit var statusPill: TextView
     private lateinit var hero: LinearLayout
     private lateinit var heroDot: View
     private lateinit var heroLabel: TextView
@@ -91,9 +90,6 @@ internal class TransferScreen(host: MainActivity) : Screen(host) {
 
     override fun build(): View = ui.column {
         val (bar, _) = ui.topBar("Transfer", host::goHome)
-        statusPill = ui.smallPill("")
-        bar.removeViewAt(bar.childCount - 1) // the empty action slot: the status pill takes its place
-        bar.addView(statusPill, ui.lp(w = WRAP_CONTENT, start = 8))
         addView(bar)
         pageSub = ui.subtitle("Files between this phone and your computer over Wi‑Fi")
         addView(pageSub, ui.lp(top = 6))
@@ -127,7 +123,6 @@ internal class TransferScreen(host: MainActivity) : Screen(host) {
         modeSet = true
         sendMode = send
         selectMode(if (send) 1 else 0)
-        statusPill.visibility = if (send) View.INVISIBLE else View.VISIBLE
         receiveBody.visibility = if (send) View.GONE else View.VISIBLE
         sendPanel.view.visibility = if (send) View.VISIBLE else View.GONE
         if (send) sendPanel.onShow() else sendPanel.onHide()
@@ -378,8 +373,6 @@ internal class TransferScreen(host: MainActivity) : Screen(host) {
         addressRow.visibility = if (on && addr != null) View.VISIBLE else View.GONE
         addressValue.text = if (WifiReceive.port == WifiServer.PORT) "$addr" else "$addr:${WifiReceive.port}"
         ui.setLabel(toggle, if (on || starting) "Turn off receiving" else "Turn on receiving")
-        if (on) ui.stylePill(statusPill, "On", color(R.color.good_bg), color(R.color.good), R.drawable.ic_check)
-        else ui.stylePill(statusPill, if (starting) "Starting" else "Off", color(R.color.surface), color(R.color.ink_soft))
         val link = WifiServer.wifiLink(host)
         linkRow.visibility = if (link != null) View.VISIBLE else View.GONE
         if (link != null) {

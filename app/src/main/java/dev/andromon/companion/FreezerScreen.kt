@@ -319,10 +319,9 @@ internal class FreezerScreen(host: MainActivity) : Screen(host) {
             addView(ui.text(15f, color(R.color.ink), ui.medium) { text = app.label; maxLines = 1; ellipsize = TextUtils.TruncateAt.END })
             addView(ui.text(12f, color(R.color.ink_soft)) { text = app.why(days); maxLines = 2; ellipsize = TextUtils.TruncateAt.END }, ui.lp(top = 3))
         }, ui.lp(w = 0, weight = 1f, start = 14))
-        addView(ui.pill(app.mode.label, color(if (app.pending) R.color.fab else R.color.glass_strong),
-            color(if (app.pending) R.color.on_fab else R.color.ink)).apply {
-            minHeight = ui.dp(32); textSize = 12f; setPadding(ui.dp(12), 0, ui.dp(12), 0)
-        }, ui.lp(w = WRAP_CONTENT, start = 8))
+        // The app's setting, as plain words: the list's headings already say which apps will be frozen.
+        addView(ui.text(12f, color(R.color.ink_soft), ui.medium) { text = app.mode.label; maxLines = 1 },
+            ui.lp(w = WRAP_CONTENT, start = 8))
         contentDescription = "${app.label}, ${app.mode.label}, ${app.why(days)}"
         setOnClickListener { appMenu(app) }
     }

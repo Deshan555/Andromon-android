@@ -55,7 +55,7 @@ internal class MemoryScreen(host: MainActivity) : Screen(host) {
     private lateinit var ring: Ring
     private lateinit var pct: TextView
     private lateinit var big: TextView
-    private lateinit var statusPill: TextView
+    private lateinit var status: TextView
     private lateinit var chart: LineChart
     private lateinit var available: Ui.Stat
     private lateinit var swap: Ui.Stat
@@ -108,8 +108,8 @@ internal class MemoryScreen(host: MainActivity) : Screen(host) {
                         FrameLayout.LayoutParams(ui.dp(30), ui.dp(30), Gravity.CENTER))
                 }, ui.lp(w = ui.dp(118), h = ui.dp(118), start = 8))
             })
-            statusPill = ui.pill("", 0, 0).apply { textSize = 13f; minHeight = ui.dp(34); typeface = ui.medium }
-            addView(statusPill, ui.lp(w = WRAP_CONTENT, top = 14))
+            status = ui.text(14f, color(R.color.ink), ui.medium) // "Normal · plenty of free memory": plain words, not a badge
+            addView(status, ui.lp(top = 14))
         }, ui.lp(top = 24))
 
         addView(ui.row {
@@ -408,13 +408,12 @@ internal class MemoryScreen(host: MainActivity) : Screen(host) {
         val (swapTotal, swapFree) = readSwap()
         swap.value.text = if (swapTotal > 0) sizeParts(swapTotal - swapFree).let { ui.withUnit(it.first, it.second) } else "Off"
 
-        val (note, _, fg) = when {
-            m.lowMemory -> Triple("Low · Android is closing apps", R.color.peach_tile, R.color.danger)
-            fraction < 0.7f -> Triple("Normal · plenty of free memory", R.color.good_bg, R.color.good)
-            fraction < 0.85f -> Triple("Busy · memory is fairly full", R.color.yellow_tile, R.color.ink)
-            else -> Triple("Full · Android may close background apps", R.color.peach_tile, R.color.danger)
+        status.text = when {
+            m.lowMemory -> "Low · Android is closing apps"
+            fraction < 0.7f -> "Normal · plenty of free memory"
+            fraction < 0.85f -> "Busy · memory is fairly full"
+            else -> "Full · Android may close background apps"
         }
-        ui.stylePill(statusPill, note, color(R.color.glass_strong), color(fg))
     }
 
     /** SwapTotal / SwapFree from /proc/meminfo, in bytes (zRAM on most phones). */
