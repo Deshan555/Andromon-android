@@ -12,6 +12,7 @@ import android.os.Build
 import android.os.Bundle
 import android.text.TextUtils
 import android.view.GestureDetector
+import android.view.HapticFeedbackConstants
 import android.view.Gravity
 import android.view.MotionEvent
 import android.view.View
@@ -34,6 +35,9 @@ import kotlin.math.abs
  * tools, Wi‑Fi transfer, privacy, and "you're all set". Swipe or use Next; Skip, Back on the first
  * page or Get started end it. Nothing is asked for here: each feature asks for its own permission
  * when it is first used.
+ *
+ * Haptics: a light tick when the page changes, a click on the buttons and a confirm on Get started.
+ * performHapticFeedback follows the phone's own touch-feedback setting and needs no permission.
  */
 class OnboardingActivity : Activity() {
 
@@ -94,11 +98,14 @@ class OnboardingActivity : Activity() {
             setPadding(ui.dp(14), 0, ui.dp(14), 0)
             background = ui.pressable(ui.rounded(Color.TRANSPARENT, 50))
             contentDescription = "Skip the tour"
-            setOnClickListener { finishTour() }
+            setOnClickListener { haptic(TAP); finishTour() }
         }
         stage = FrameLayout(this)
         dots = ui.row { gravity = Gravity.CENTER_VERTICAL }
-        next = ui.action("Next", R.drawable.ic_arrow_right) { if (index < pages.lastIndex) go(index + 1) else finishTour() }
+        next = ui.action("Next", R.drawable.ic_arrow_right) {
+            if (index < pages.lastIndex) { haptic(TAP); go(index + 1, feel = false) }
+            else { haptic(CONFIRM); finishTour() }
+        }
 
         val column = ui.column {
             addView(ui.row {
@@ -193,10 +200,16 @@ class OnboardingActivity : Activity() {
         view.post { view.sendAccessibilityEvent(android.view.accessibility.AccessibilityEvent.TYPE_VIEW_FOCUSED) }
     }
 
-    private fun go(i: Int) {
+    /** Opens page [i]; [feel] gives the page-change tick (off when a button tap already gave its click). */
+    private fun go(i: Int, feel: Boolean = true) {
         if (i !in pages.indices || i == index) return
+        if (feel) haptic(TICK)
         show(i, if (i > index) 1 else -1)
     }
+
+    // ---------- haptics ----------
+
+    private fun haptic(kind: Int) { window.decorView.performHapticFeedback(kind) }
 
     private fun renderControls() {
         val last = index == pages.lastIndex
@@ -284,6 +297,16 @@ class OnboardingActivity : Activity() {
     }
 
     companion object {
+        /** Light tick for a page change (a segment tick on Android 14+). */
+        private val TICK = if (Build.VERSION.SDK_INT >= 34) HapticFeedbackConstants.SEGMENT_TICK else HapticFeedbackConstants.CLOCK_TICK
+        /**
+         * A button tap: a tick, lighter than [CONFIRM]. (VIRTUAL_KEY would feel the same as CONFIRM: on
+         * Android 11 to 13 both are the system's standard click.)
+         */
+        private const val TAP = HapticFeedbackConstants.CONTEXT_CLICK
+        /** Get started: a stronger, confirming feel. */
+        private val CONFIRM = if (Build.VERSION.SDK_INT >= 30) HapticFeedbackConstants.CONFIRM else HapticFeedbackConstants.LONG_PRESS
+
         /** Opens the tour (from MainActivity on the first start, or Settings › About). */
         fun open(ctx: Context) = ctx.startActivity(Intent(ctx, OnboardingActivity::class.java))
     }
