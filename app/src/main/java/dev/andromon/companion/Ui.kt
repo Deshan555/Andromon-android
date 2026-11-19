@@ -713,6 +713,12 @@ internal class Ring(ctx: Context) : View(ctx) {
                 start()
             }
         }
+    /** Sets [fraction] without animating (a figure refreshed in place). */
+    fun jumpTo(v: Float) {
+        fraction = v
+        animator?.cancel(); animator = null
+        shown = fraction; invalidate()
+    }
     /** Spinning arc while something is being measured. */
     var busy = false
         set(v) { field = v; if (v) postInvalidateOnAnimation() else invalidate() }

@@ -3,17 +3,26 @@
 
 package dev.andromon.companion
 
+import android.animation.Animator
+import android.animation.AnimatorListenerAdapter
+import android.animation.ValueAnimator
 import android.app.ActivityManager
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import android.os.SystemClock
+import android.text.TextUtils
 import android.view.Gravity
+import android.view.MotionEvent
 import android.view.View
+import android.view.ViewConfiguration
+import android.view.accessibility.AccessibilityManager
+import android.view.animation.DecelerateInterpolator
 import android.widget.FrameLayout
-import android.widget.HorizontalScrollView
-import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
 import android.widget.TextView
+import kotlin.math.abs
 
 /**
  * Tools (the bottom bar's middle item; "Home" in earlier versions): a hero card that rotates
@@ -21,24 +30,25 @@ import android.widget.TextView
  */
 internal class ToolsScreen(host: MainActivity) : Screen(host) {
 
+    private companion object {
+        /** How long the hero card shows one reading before moving on to the next. */
+        const val HERO_STEP_MS = 10_000L
+    }
+
     override val name = "Tools"
     override val navIcon = R.drawable.ic_grid
     override val navColor = R.color.bg
 
     private lateinit var greetSub: TextView
-    private lateinit var scoreText: TextView
-    private lateinit var scoreSub: TextView
-    private lateinit var ring: Ring
-    private lateinit var ringText: TextView
-    private lateinit var issueList: LinearLayout
-    private lateinit var heroIcon: ImageView
-    private lateinit var heroTitle: TextView
-    private lateinit var heroDots: TextView
-    private lateinit var ringBox: FrameLayout
-    private lateinit var ringLabel: TextView
-    private var heroIndex = -1
-    private var heroScreen: String? = "Cleaner"
-    private lateinit var heroOpen: View
+    private lateinit var heroCard: View
+    private lateinit var heroStage: FrameLayout
+    private lateinit var heroDots: LinearLayout
+    /** The reading on the hero card, by position and by name (the list can grow or shrink between refreshes). */
+    private var heroIndex = 0
+    private var heroTitle: String? = null
+    private var heroAnim: ValueAnimator? = null
+    private var heroVisible = false
+    private var heroTouched = false
     private var appCounts: Pair<Int, Int>? = null // user apps, system apps (counted off the main thread)
 
     /** One reading the hero card can show: a headline figure, a line under it and, where it helps, a ring. */
@@ -60,7 +70,8 @@ internal class ToolsScreen(host: MainActivity) : Screen(host) {
         addView(ui.topBar("Tools", host::goHome).first)
         greetSub = ui.subtitle()
         addView(greetSub, ui.lp(top = 6))
-        addView(healthCard(), ui.lp(top = 20))
+        heroCard = healthCard()
+        addView(heroCard, ui.lp(top = 20))
         addView(storageCard(), ui.lp(top = 12))
         addView(ui.section("All tools"), ui.lp(top = 26))
         addView(tiles(), ui.lp(top = 12))
@@ -68,7 +79,7 @@ internal class ToolsScreen(host: MainActivity) : Screen(host) {
     }
 
     override fun onShow() {
-        heroIndex = -1 // a different reading on the hero card each time Tools opens
+        heroVisible = true
         refresh()
         loadStorage()
         // Counted like the Apps screen counts them, so both say the same number.
@@ -80,51 +91,87 @@ internal class ToolsScreen(host: MainActivity) : Screen(host) {
     // ---------- sections ----------
 
     /**
-     * The hero card. It shows one reading at a time from [heroStats], picked at random whenever Home
-     * opens; a tap anywhere on it shows another, and the arrow opens the screen behind the reading.
+     * The hero card. It shows one reading at a time from [heroStats], moving on to the next every
+     * [HERO_STEP_MS] like a carousel: the reading slides out to the left and the next one in from the
+     * right while the card stays put. A swipe goes forward or back, a tap goes forward, and the arrow
+     * opens the screen behind the reading. It holds still while touched, while Tools is hidden and
+     * while a screen reader is exploring by touch; with reduce motion on, readings change in place.
      */
-    private fun healthCard() = ui.heroCard(16) {
-        addView(ui.row {
-            gravity = Gravity.CENTER_VERTICAL
-            heroIcon = ui.chipIcon(R.drawable.ic_shield)
-            addView(heroIcon)
-            heroTitle = ui.text(15f, color(R.color.ink), ui.medium) { maxLines = 1 }
-            addView(heroTitle, ui.lp(w = 0, weight = 1f, start = 10))
-            heroOpen = ui.circleButton(R.drawable.ic_arrow_up_right, "Open", 36) { heroScreen?.let { host.show(it) } }
-            addView(heroOpen)
+    private fun healthCard(): View = HeroFrame().apply {
+        background = ui.hero(26)
+        clipToOutline = true // pages slide out under the rounded corners
+        addView(ui.column {
+            heroStage = FrameLayout(context)
+            addView(heroStage)
+            heroDots = ui.row { gravity = Gravity.CENTER; importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO }
+            addView(heroDots, ui.lp(h = ui.dp(6), top = 14))
+            addView(ui.spacer(), ui.lp(h = ui.dp(16)))
         })
-        addView(ui.row {
-            gravity = Gravity.CENTER_VERTICAL
-            minimumHeight = ui.dp(120) // same height with or without the ring, so the page doesn't jump
-            addView(ui.column {
-                scoreText = ui.text(50f, color(R.color.ink), ui.regular) { text = "–"; letterSpacing = -0.03f; maxLines = 1 }
-                addView(scoreText)
-                scoreSub = ui.text(13f, color(R.color.ink), ui.medium) { maxLines = 2 }
-                addView(scoreSub, ui.lp(top = 8))
-            }, ui.lp(w = 0, weight = 1f))
-            ringBox = FrameLayout(context).apply {
-                ring = Ring(context).apply {
-                    strokeDp = 16f
-                    colors(color(R.color.glass_strong), color(R.color.ink), color(R.color.ink))
-                }
-                addView(ring, FrameLayout.LayoutParams(-1, -1))
-                addView(ui.column {
-                    gravity = Gravity.CENTER
-                    ringText = ui.text(20f, color(R.color.ink), ui.medium) { gravity = Gravity.CENTER; text = "–" }
-                    addView(ringText, ui.lp(w = WRAP_CONTENT))
-                    ringLabel = ui.text(12f, color(R.color.ink)) { gravity = Gravity.CENTER }
-                    addView(ringLabel, ui.lp(w = WRAP_CONTENT, top = 2))
-                }, FrameLayout.LayoutParams(-2, -2, Gravity.CENTER))
-            }
-            addView(ringBox, ui.lp(w = ui.dp(120), h = ui.dp(120), start = 8))
-        }, ui.lp(top = 14))
-        issueList = ui.column()
-        addView(issueList)
-        heroDots = ui.text(11f, color(R.color.ink_soft)) { gravity = Gravity.CENTER }
-        addView(heroDots, ui.lp(top = 12))
         isClickable = true
-        contentDescription = "Phone stats. Tap for another."
-        setOnClickListener { heroIndex = -1; showHero() }
+        setOnClickListener { stepHero(+1) }
+    }
+
+    /** The hero card's frame: watches every touch to hold the carousel still, and turns a sideways drag into a swipe. */
+    private inner class HeroFrame : FrameLayout(host) {
+        private val slop = ViewConfiguration.get(host).scaledTouchSlop
+        private var downX = 0f
+        private var downY = 0f
+        private var dragging = false
+
+        override fun dispatchTouchEvent(e: MotionEvent): Boolean {
+            when (e.actionMasked) {
+                MotionEvent.ACTION_DOWN -> { heroTouched = true; scheduleHero() }
+                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> { heroTouched = false; scheduleHero() }
+            }
+            return super.dispatchTouchEvent(e)
+        }
+
+        /** True once the finger has moved sideways more than it has up or down. */
+        private fun track(e: MotionEvent): Boolean {
+            when (e.actionMasked) {
+                MotionEvent.ACTION_DOWN -> { downX = e.x; downY = e.y; dragging = false }
+                MotionEvent.ACTION_MOVE -> if (!dragging) {
+                    val dx = abs(e.x - downX); val dy = abs(e.y - downY)
+                    if (dx > slop && dx > dy) { dragging = true; parent?.requestDisallowInterceptTouchEvent(true) }
+                }
+            }
+            return dragging
+        }
+
+        override fun onInterceptTouchEvent(e: MotionEvent) = track(e)
+
+        override fun onTouchEvent(e: MotionEvent): Boolean {
+            val wasDragging = dragging
+            if (!track(e)) return super.onTouchEvent(e)
+            if (!wasDragging) super.onTouchEvent(MotionEvent.obtain(e).apply { action = MotionEvent.ACTION_CANCEL })
+            val dx = e.x - downX
+            val page = heroStage.getChildAt(heroStage.childCount - 1)
+            when (e.actionMasked) {
+                MotionEvent.ACTION_MOVE -> if (!Prefs.reduceMotion(host) && heroAnim == null) page?.translationX = dx
+                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                    dragging = false
+                    val far = e.actionMasked == MotionEvent.ACTION_UP && abs(dx) > ui.dp(48)
+                    if (far) stepHero(if (dx < 0) +1 else -1)
+                    else page?.animate()?.translationX(0f)?.setDuration(180)?.start()
+                }
+            }
+            return true
+        }
+    }
+
+    private val heroHandler = Handler(Looper.getMainLooper())
+    private val heroTick = Runnable { stepHero(+1) }
+
+    /** (Re)starts the 10-second wait for the next reading, or stops it while the carousel should hold still. */
+    private fun scheduleHero() {
+        heroHandler.removeCallbacks(heroTick)
+        val exploring = host.getSystemService(AccessibilityManager::class.java)?.isTouchExplorationEnabled == true
+        if (heroVisible && !heroTouched && !exploring) heroHandler.postDelayed(heroTick, HERO_STEP_MS)
+    }
+
+    override fun onHide() {
+        heroVisible = false
+        scheduleHero()
     }
 
     /** Every reading the hero card can show, from what the phone reports right now. */
@@ -138,7 +185,7 @@ internal class ToolsScreen(host: MainActivity) : Screen(host) {
             0 -> "All good · no issues found"
             1 -> "1 thing to check"
             else -> "${issues.size} things to check"
-        }, issues.firstOrNull()?.screen ?: "Cleaner", usedPct / 100f, ui.percent(usedPct), "Storage used", issues)
+        }, issues.firstOrNull()?.screen ?: "Cleaner", usedPct / 100f, ui.percent(usedPct), "storage used", issues)
         out += HeroStat(R.drawable.ic_sd, "Storage used", ui.percent(usedPct), "${fmtSize(total - free)} of ${fmtSize(total)}",
             "Storage", usedPct / 100f, size(free), "free")
         out += HeroStat(R.drawable.ic_storage, "Free space", size(free), "left on internal storage", "Cleaner",
@@ -191,34 +238,101 @@ internal class ToolsScreen(host: MainActivity) : Screen(host) {
         return out
     }
 
-    /** Fills the hero card: keeps the current reading (with fresh numbers), or picks a new one at random. */
-    private fun showHero() {
+    /** Shows the reading [step] places on from the current one (0 refreshes its numbers in place), sliding unless reduce motion is on. */
+    private fun stepHero(step: Int) {
         val stats = heroStats()
-        val shown = heroTitle.text.toString()
-        var i = stats.indexOfFirst { it.title == shown }.takeIf { heroIndex >= 0 } ?: -1
-        if (i < 0) {
-            val others = stats.indices.filter { stats[it].title != shown }
-            i = others.random()
-        }
+        val at = stats.indexOfFirst { it.title == heroTitle }.takeIf { it >= 0 } ?: heroIndex.coerceIn(0, stats.size - 1)
+        val i = Math.floorMod(at + step, stats.size)
         heroIndex = i
         val s = stats[i]
-        heroScreen = s.screen
-        heroOpen.visibility = if (s.screen == null) View.INVISIBLE else View.VISIBLE
-        heroOpen.contentDescription = s.screen?.let { "Open $it" }
-        heroIcon.setImageDrawable(ui.icon(s.icon, color(R.color.ink)))
-        heroTitle.text = s.title
-        scoreText.textSize = when { s.value.length <= 6 -> 50f; s.value.length <= 9 -> 40f; else -> 30f }
-        scoreText.text = s.value
-        scoreSub.text = s.sub
-        ringBox.visibility = if (s.ring == null) View.GONE else View.VISIBLE
-        s.ring?.let { ring.fraction = it; ringText.text = s.ringValue; ringLabel.text = s.ringLabel }
-        issueList.removeAllViews()
+        heroTitle = s.title
+        val page = heroPage(s, animateRing = step != 0)
+        val old = heroStage.getChildAt(heroStage.childCount - 1)
+        heroAnim?.end()
+        if (old == null || step == 0 || Prefs.reduceMotion(host) || heroStage.width == 0) {
+            heroStage.removeAllViews()
+            heroStage.addView(page, FrameLayout.LayoutParams(-1, -2))
+        } else slideHero(old, page, if (step > 0) 1 else -1)
+        heroDots.removeAllViews()
+        for (k in stats.indices) heroDots.addView(ui.spacer().apply {
+            background = ui.rounded(color(R.color.ink), 3)
+            alpha = if (k == i) 1f else 0.25f
+        }, ui.lp(w = ui.dp(if (k == i) 16 else 6), h = ui.dp(6), start = if (k == 0) 0 else 6))
+        heroCard.contentDescription = "${s.title}, ${s.value}, ${s.sub}. Reading ${i + 1} of ${stats.size}. Tap for the next."
+        scheduleHero()
+    }
+
+    /** [old] slides out one way while [page] slides in from the other; the card's height follows smoothly. */
+    private fun slideHero(old: View, page: View, dir: Int) {
+        val w = heroStage.width.toFloat()
+        val fromH = heroStage.height
+        page.measure(View.MeasureSpec.makeMeasureSpec(heroStage.width, View.MeasureSpec.EXACTLY), View.MeasureSpec.UNSPECIFIED)
+        val toH = page.measuredHeight
+        val startX = old.translationX
+        page.translationX = dir * w
+        heroStage.addView(page, FrameLayout.LayoutParams(-1, -2))
+        heroStage.layoutParams = heroStage.layoutParams.apply { height = fromH }
+        heroAnim = ValueAnimator.ofFloat(0f, 1f).apply {
+            duration = 420
+            interpolator = DecelerateInterpolator(1.6f)
+            addUpdateListener {
+                val t = it.animatedValue as Float
+                old.translationX = startX + (-dir * w - startX) * t
+                page.translationX = dir * w * (1 - t)
+                if (fromH != toH) heroStage.layoutParams = heroStage.layoutParams.apply { height = (fromH + (toH - fromH) * t).toInt() }
+            }
+            addListener(object : AnimatorListenerAdapter() {
+                override fun onAnimationEnd(a: Animator) {
+                    heroStage.removeView(old)
+                    page.translationX = 0f
+                    heroStage.layoutParams = heroStage.layoutParams.apply { height = FrameLayout.LayoutParams.WRAP_CONTENT }
+                    if (heroAnim === a) heroAnim = null
+                }
+            })
+            start()
+        }
+    }
+
+    /** One reading, as the hero card shows it: icon and name, the figure, a line under it and, where it helps, a ring. */
+    private fun heroPage(s: HeroStat, animateRing: Boolean): View = ui.column {
+        setPadding(ui.dp(16), ui.dp(16), ui.dp(16), 0)
+        importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+        addView(ui.row {
+            addView(ui.chipIcon(s.icon))
+            addView(ui.text(15f, color(R.color.ink), ui.medium) { text = s.title; maxLines = 1; ellipsize = TextUtils.TruncateAt.END },
+                ui.lp(w = 0, weight = 1f, start = 10))
+            addView(ui.circleButton(R.drawable.ic_arrow_up_right, s.screen?.let { "Open $it" } ?: "Open", 36) {
+                s.screen?.let { host.show(it) }
+            }.apply { if (s.screen == null) visibility = View.INVISIBLE })
+        })
+        addView(ui.row {
+            minimumHeight = ui.dp(128) // same height with or without the ring, so the page doesn't jump
+            addView(ui.column {
+                addView(ui.text(when { s.value.length <= 6 -> 50f; s.value.length <= 9 -> 40f; else -> 30f },
+                    color(R.color.ink), ui.regular) { text = s.value; letterSpacing = -0.03f; maxLines = 1 })
+                addView(ui.text(13f, color(R.color.ink), ui.medium) { text = s.sub; maxLines = 2 }, ui.lp(top = 8))
+            }, ui.lp(w = 0, weight = 1f))
+            s.ring?.let { f ->
+                addView(FrameLayout(context).apply {
+                    addView(Ring(context).apply {
+                        strokeDp = 16f
+                        colors(color(R.color.glass_strong), color(R.color.ink), color(R.color.ink))
+                        if (animateRing) fraction = f else jumpTo(f)
+                    }, FrameLayout.LayoutParams(-1, -1))
+                    addView(ui.column {
+                        gravity = Gravity.CENTER
+                        addView(ui.text(20f, color(R.color.ink), ui.medium) { gravity = Gravity.CENTER; text = s.ringValue }, ui.lp(w = WRAP_CONTENT))
+                        addView(ui.text(12f, color(R.color.ink)) { gravity = Gravity.CENTER; text = s.ringLabel; maxWidth = ui.dp(84); maxLines = 2 },
+                            ui.lp(w = WRAP_CONTENT, top = 2))
+                    }, FrameLayout.LayoutParams(-2, -2, Gravity.CENTER))
+                }, ui.lp(w = ui.dp(128), h = ui.dp(128), start = 8))
+            }
+        }, ui.lp(top = 14))
         for (issue in s.issues.take(3)) {
             val (row, value) = ui.listPill(R.drawable.ic_warning, issue.text) { host.show(issue.screen) }
             value.text = if (issue.screen == "Cleaner") "Clean" else "Open"
-            issueList.addView(row, ui.lp(top = 10))
+            addView(row, ui.lp(top = 10))
         }
-        heroDots.text = "${i + 1} of ${stats.size} · tap for another"
     }
 
     /** Storage split into numbers; the arrow opens the folder sizes, the line below the Cleaner. */
@@ -282,7 +396,7 @@ internal class ToolsScreen(host: MainActivity) : Screen(host) {
             score >= 80 -> "Your phone is in good shape."
             else -> "Your phone could use a tidy-up."
         }
-        showHero()
+        stepHero(0)
 
         memTile.sub.text = "${(Phone.memoryUsed(host) * 100).toInt()}% of RAM in use"
         val b = Phone.battery(host)
