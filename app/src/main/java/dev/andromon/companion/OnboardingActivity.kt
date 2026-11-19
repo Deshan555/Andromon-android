@@ -73,7 +73,7 @@ class OnboardingActivity : Activity() {
     private lateinit var ui: Ui
     private lateinit var stage: FrameLayout
     private lateinit var dots: LinearLayout
-    private lateinit var next: TextView
+    private lateinit var next: ImageView
     private lateinit var skip: TextView
     private var index = 0
     private var shown: View? = null
@@ -107,9 +107,13 @@ class OnboardingActivity : Activity() {
         }
         stage = FrameLayout(this)
         dots = ui.row { gravity = Gravity.CENTER_VERTICAL }
-        next = ui.action("Next", R.drawable.ic_arrow_right) {
-            if (index < pages.lastIndex) { haptic(TAP); go(index + 1, feel = false) }
-            else { haptic(CONFIRM); finishTour() }
+        // A round black button with just an arrow (a check on the last page); its name is read aloud.
+        next = ui.roundIcon(64, ui.color(R.color.fab), R.drawable.ic_arrow_right, ui.color(R.color.on_fab), 26).apply {
+            background = ui.pressable(ui.circle(ui.color(R.color.fab)))
+            setOnClickListener {
+                if (index < pages.lastIndex) { haptic(TAP); go(index + 1, feel = false) }
+                else { haptic(CONFIRM); finishTour() }
+            }
         }
 
         val column = ui.column {
@@ -122,7 +126,7 @@ class OnboardingActivity : Activity() {
                 gravity = Gravity.CENTER_VERTICAL
                 setPadding(ui.dp(4), ui.dp(12), 0, ui.dp(16))
                 addView(dots, ui.lp(w = 0, weight = 1f))
-                addView(next, ui.lp(w = ViewGroup.LayoutParams.WRAP_CONTENT))
+                addView(next, ui.lp(w = ui.dp(64), h = ui.dp(64)))
             })
         }
         val root = FrameLayout(this).apply {
@@ -151,7 +155,6 @@ class OnboardingActivity : Activity() {
     private fun pageView(p: Page): View {
         if (p.perms) return permsView(p)
         val art = FrameLayout(this).apply {
-            background = if (p.brand) ui.rounded(ui.color(R.color.splash_bg), 32) else ui.hero(32)
             addView(ImageView(this@OnboardingActivity).apply {
                 setImageResource(p.art)
                 scaleType = ImageView.ScaleType.FIT_CENTER
@@ -298,7 +301,7 @@ class OnboardingActivity : Activity() {
 
     private fun renderControls() {
         val last = index == pages.lastIndex
-        ui.setLabel(next, if (last) "Get started" else "Next")
+        next.setImageDrawable(ui.icon(if (last) R.drawable.ic_check else R.drawable.ic_arrow_right, ui.color(R.color.on_fab)))
         next.contentDescription = if (last) "Get started" else "Next page"
         skip.visibility = if (last) View.INVISIBLE else View.VISIBLE
         dots.removeAllViews()
