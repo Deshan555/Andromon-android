@@ -79,6 +79,7 @@ internal class FreezerScreen(host: MainActivity) : Screen(host) {
             })
             count = ui.text(50f, color(R.color.ink), ui.regular) { text = "–"; letterSpacing = -0.03f }
             addView(count, ui.lp(top = 12))
+            ui.loading(count, true)
             countSub = ui.text(14f, color(R.color.ink), ui.medium) { setLineSpacing(ui.dp(2).toFloat(), 1f) }
             addView(countSub, ui.lp(top = 4))
             freezeBtn = ui.action("Freeze now", R.drawable.ic_snow) { freezeNow(null) }
@@ -248,11 +249,17 @@ internal class FreezerScreen(host: MainActivity) : Screen(host) {
     private fun load() {
         if (loading) return
         loading = true
-        if (apps.isEmpty()) listNote.text = "Loading apps…"
+        if (apps.isEmpty()) {
+            listNote.text = ""
+            list.removeAllViews()
+            list.addView(ui.skeletonList(6, 42, bg = color(R.color.surface), gapDp = 8), ui.lp(top = 14))
+        }
         background({ Privileged.active(host) to Freezer.load(host) }) { r ->
             loading = false
             val (how, loaded) = r.getOrNull() ?: run {
                 listNote.text = "Couldn't load the apps: ${r.exceptionOrNull()?.message}"
+                list.removeAllViews()
+                ui.loading(count, false)
                 return@background
             }
             active = how
@@ -264,6 +271,7 @@ internal class FreezerScreen(host: MainActivity) : Screen(host) {
 
     private fun render() {
         val pending = apps.count { it.pending }
+        ui.loading(count, false)
         count.text = "$pending"
         countSub.text = when {
             apps.isEmpty() -> ""

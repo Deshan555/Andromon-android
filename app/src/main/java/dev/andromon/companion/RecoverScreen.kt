@@ -112,6 +112,7 @@ internal class RecoverScreen(host: MainActivity) : Screen(host) {
         status.text = "Looking through your storage…"
         recoverPill.visibility = View.GONE
         list.removeAllViews()
+        list.addView(ui.skeletonList(5, 48, bg = color(R.color.surface), gapDp = 8, squareIcon = true), ui.lp(top = 12))
         val own = Recovery.folder().path
         background({
             val roots = Cleaner.volumes(host).mapNotNull { it.dir }

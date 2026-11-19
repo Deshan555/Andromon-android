@@ -95,8 +95,9 @@ internal class AppsScreen(host: MainActivity) : Screen(host) {
             chips.values.forEachIndexed { i, chip -> addView(chip, ui.lp(w = 0, weight = 1f, start = if (i == 0) 0 else 8)) }
         }, ui.lp(top = 16))
         addView(ui.row {
-            count = ui.text(22f, color(R.color.ink), ui.light) { text = "Loading apps…"; letterSpacing = -0.02f }
+            count = ui.text(22f, color(R.color.ink), ui.light) { letterSpacing = -0.02f }
             addView(count, ui.lp(w = 0, weight = 1f))
+            ui.loading(count, true) // the number of apps, once they are read
             sortPill = ui.pill("", color(R.color.surface), color(R.color.ink), R.drawable.ic_expand) { pickSort() }
                 .apply { textSize = 13f; minHeight = ui.dp(36) }
             addView(sortPill, ui.lp(w = WRAP_CONTENT, start = 8))
@@ -116,6 +117,7 @@ internal class AppsScreen(host: MainActivity) : Screen(host) {
             addView(uninstall, ui.lp(w = 0, weight = 1f, start = 10))
         }
         addView(actions, ui.lp(top = 16))
+        render() // filter chips, sort order and placeholder rows until the apps are read
     }
 
     override fun onShow() {
@@ -182,12 +184,13 @@ internal class AppsScreen(host: MainActivity) : Screen(host) {
         }
         ui.setLabel(sortPill, sort.label)
         val shown = visible()
-        count.text = if (loading && apps.isEmpty()) "Loading apps…" else "${shown.size} apps"
+        ui.loading(count, !loaded)
+        count.text = "${shown.size} apps"
         list.removeAllViews()
+        if (!loaded) list.addView(ui.skeletonList(8, 42, trailing = false))
         for (app in shown.take(MAX_ROWS)) list.addView(appRow(app))
         if (shown.size > MAX_ROWS) list.addView(note("Showing the first $MAX_ROWS. Search to find others."))
         if (shown.isEmpty() && loaded) list.addView(note("No apps match."))
-        list.visibility = if (loaded) View.VISIBLE else View.GONE
         updateActions()
     }
 

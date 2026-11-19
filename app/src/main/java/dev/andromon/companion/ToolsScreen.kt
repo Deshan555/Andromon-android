@@ -345,6 +345,7 @@ internal class ToolsScreen(host: MainActivity) : Screen(host) {
         val (nums, values) = ui.numbers(listOf("Apps", "Media", "Docs", "Free"))
         storageValues = values
         addView(nums, ui.lp(top = 20))
+        values.forEach { ui.loading(it, true) } // worked out in the background
         val (free, _) = ui.listPill(R.drawable.ic_broom, "Free up space with the Cleaner") { host.show("Cleaner") }
         addView(free, ui.lp(top = 18))
     }
@@ -411,6 +412,7 @@ internal class ToolsScreen(host: MainActivity) : Screen(host) {
             val main = Cleaner.volumes(host).first()
             main to StorageBreakdown.of(host, main.total, main.free)
         }) { r ->
+            storageValues.forEach { ui.loading(it, false) }
             val (main, parts) = r.getOrNull() ?: return@background
             fun bytes(name: String) = parts.firstOrNull { it.name == name }?.bytes
             fun show(v: TextView, b: Long?) {

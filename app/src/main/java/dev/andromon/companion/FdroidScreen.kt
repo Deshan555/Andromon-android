@@ -371,6 +371,11 @@ internal class FdroidScreen(host: MainActivity) : Screen(host) {
         ui.setLabel(sortPill, s.label)
         val offset = shown
         ui.setEnabled(more, false)
+        if (reset) {
+            list.removeAllViews()
+            list.addView(ui.skeletonList(6, 48, bg = color(R.color.surface), gapDp = 8), ui.lp(top = 8))
+            ui.loading(count, true)
+        }
         background({
             if (t == Tab.MINE) {
                 val mine = Fdroid.onPhone(host).filter { q.isEmpty() || it.app.name.contains(q, ignoreCase = true) || it.app.pkg.contains(q, ignoreCase = true) }
@@ -385,6 +390,7 @@ internal class FdroidScreen(host: MainActivity) : Screen(host) {
         }) { r ->
             if (my != token) return@background
             ui.setEnabled(more, true)
+            ui.loading(count, false)
             loaded = true
             if (reset) list.removeAllViews()
             val page = r.getOrNull()

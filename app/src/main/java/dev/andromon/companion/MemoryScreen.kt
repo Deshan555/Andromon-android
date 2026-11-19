@@ -174,6 +174,7 @@ internal class MemoryScreen(host: MainActivity) : Screen(host) {
         val shown = if (showSystem) running else running.filter { !it.system }
         appsList.removeAllViews()
         for (app in shown) appsList.addView(appRow(app), ui.lp(top = 8))
+        if (shown.isEmpty() && loading) appsList.addView(ui.skeletonList(4, 42, bg = color(R.color.surface), gapDp = 8), ui.lp(top = 8))
         if (shown.isEmpty() && !loading) appsList.addView(ui.text(14f, color(R.color.ink_soft)) {
             text = if (showSystem) "Nothing is running." else "No downloaded apps are in memory right now."
             setPadding(ui.dp(12), ui.dp(16), ui.dp(12), ui.dp(16))
@@ -268,6 +269,7 @@ internal class MemoryScreen(host: MainActivity) : Screen(host) {
     private fun loadApps(keepNote: Boolean = false) {
         if (loading || helper == null) return
         loading = true
+        if (running.isEmpty()) renderApps() // placeholder rows until the list arrives
         background({ RamManager.load(host) }) { r ->
             loading = false
             val list = r.getOrNull()
@@ -368,7 +370,7 @@ internal class MemoryScreen(host: MainActivity) : Screen(host) {
     private fun showManager(on: Boolean) {
         manager.visibility = if (on) View.VISIBLE else View.GONE
         unlock.visibility = if (on) View.GONE else View.VISIBLE
-        if (on) { appsNote.text = "Loading running apps…"; renderApps() }
+        if (on) { appsNote.text = ""; renderApps() }
     }
 
     private fun openAppInfo(pkg: String) {

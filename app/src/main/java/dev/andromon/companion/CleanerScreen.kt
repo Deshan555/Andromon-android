@@ -280,6 +280,7 @@ internal class CleanerScreen(host: MainActivity) : Screen(host) {
         ringLabel.text = "–"
         resultsCard.visibility = View.VISIBLE
         groupList.removeAllViews()
+        groupList.addView(ui.skeletonList(5, 40, bg = color(R.color.glass_strong), gapDp = 8), ui.lp(top = 8))
         resultsTitle.text = "Scanning…"
         resultsSub.text = ""
         background({
@@ -305,6 +306,7 @@ internal class CleanerScreen(host: MainActivity) : Screen(host) {
                 groups = listOfNotNull(cache) + found.filter { it.items.isNotEmpty() }
                 showResults()
             }.onFailure {
+                groupList.removeAllViews()
                 resultsTitle.text = "Scan failed"
                 resultsSub.text = it.message ?: it.javaClass.simpleName
                 ringValue.text = "Scan failed"; ringLabel.text = "–"

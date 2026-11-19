@@ -6,6 +6,7 @@ package dev.andromon.companion
 import android.content.Intent
 import android.net.Uri
 import android.provider.Settings
+import android.view.Gravity
 import android.view.View
 import android.widget.HorizontalScrollView
 import android.widget.LinearLayout
@@ -40,7 +41,7 @@ internal class StatsScreen(host: MainActivity) : Screen(host) {
     private lateinit var rangeBox: View
     private lateinit var selectRange: (Int) -> Unit
     private lateinit var content: LinearLayout
-    private lateinit var loading: TextView
+    private lateinit var loading: View
 
     companion object {
         /** Segment to show next time Stats opens (the PC link screen's summary opens "PC link"). */
@@ -69,8 +70,9 @@ internal class StatsScreen(host: MainActivity) : Screen(host) {
         }
         rangeBox = range; selectRange = select
         addView(range, ui.lp(top = 12))
-        loading = ui.text(13f, color(R.color.ink_soft)) { text = "Loading…"; visibility = View.GONE }
-        addView(loading, ui.lp(top = 12))
+        // Turns while a segment reloads over the old figures; the first load shows placeholders instead.
+        loading = ui.row { gravity = Gravity.CENTER; visibility = View.GONE; addView(ui.spinner(22), ui.lp(w = ui.dp(22), h = ui.dp(22))) }
+        addView(loading, ui.lp(top = 14))
         content = ui.column()
         addView(content)
     }
@@ -110,12 +112,14 @@ internal class StatsScreen(host: MainActivity) : Screen(host) {
 
     // ---------- loading ----------
 
+    private val PLACEHOLDER = "placeholder"
+
     private fun load() {
         val my = ++token
         val s = segment
         val days = if (week) 7 else 1
-        loading.visibility = View.VISIBLE
-        content.alpha = 0.5f
+        if (content.childCount == 0) placeholder()
+        else if (content.tag != PLACEHOLDER) { loading.visibility = View.VISIBLE; content.alpha = 0.5f }
         if (s != Segment.LINK && s != Segment.BATTERY && !AppStats.hasUsageAccess(host)) {
             show(my) { needsUsageAccess() }
             return
@@ -151,8 +155,23 @@ internal class StatsScreen(host: MainActivity) : Screen(host) {
         if (my != token) return
         loading.visibility = View.GONE
         content.alpha = 1f
+        content.tag = null
         content.removeAllViews()
         content.fill()
+    }
+
+    /** What the page looks like while its first figures load: the hero with a turning circle, then placeholder rows. */
+    private fun placeholder() {
+        content.tag = PLACEHOLDER
+        content.addView(ui.heroCard(18) {
+            addView(ui.row {
+                addView(ui.skeleton(circle = true), ui.lp(w = ui.dp(34), h = ui.dp(34)))
+                addView(ui.skeleton(), ui.lp(w = ui.dp(140), h = ui.dp(12), start = 10))
+            })
+            addView(ui.spinner(36), ui.lp(w = ui.dp(36), h = ui.dp(36), top = 22))
+            addView(ui.skeleton(), ui.lp(w = ui.dp(190), h = ui.dp(10), top = 18))
+        }, ui.lp(top = 20))
+        content.addView(ui.glassCard(6) { addView(ui.skeletonList(6, 40, lines = 3)) }, ui.lp(top = 12))
     }
 
     // ---------- shared parts ----------

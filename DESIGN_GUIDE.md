@@ -450,7 +450,7 @@ Every screen and every card that loads data handles all of these.
 
 | State | What to show |
 |---|---|
-| **Not yet loaded** | `–` in value fields. No skeletons, no layout shift when values arrive. |
+| **Not yet loaded** | A list that is still loading shows placeholder rows shaped like the real ones: `ui.skeletonList(count, iconDp, lines, trailing, bg)` (grey blocks with a soft highlight sweeping across, still with reduce motion). A figure that fills in later: `ui.loading(textView, true)` swaps it for a placeholder of the same height (a turning `ui.spinner()` for a big headline figure, a shimmering bar for a small one), and `ui.loading(textView, false)` brings it back. No “Loading…” text, no layout shift when values arrive. |
 | **Working** | `Ring.busy = true` for a headline measure; otherwise change the button label ("Checking…") and disable it. Work runs through `Screen.background { … }`, never on the main thread. |
 | **Empty** | One sentence in a card saying what is true and, if useful, what to do: "No large files found." Not a blank card and not an illustration. `ui.emptyCard()` or `UiRows.note()` inside the list's card. |
 | **Not enough data** | "Not enough data yet", with when to expect it if known. |

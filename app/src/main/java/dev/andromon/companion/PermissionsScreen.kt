@@ -290,7 +290,7 @@ internal class PermissionsScreen(host: MainActivity) : Screen(host) {
             }
         }
         body.removeAllViews()
-        if (!loaded) { body.addView(note("Reading app permissions…")); return }
+        if (!loaded) { body.addView(ui.glassCard(6) { addView(ui.skeletonList(8, 40)) }); return }
         val g = open
         if (g == null) renderOverview() else renderGroup(g)
     }

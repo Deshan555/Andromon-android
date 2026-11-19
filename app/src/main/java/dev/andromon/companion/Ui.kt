@@ -508,6 +508,90 @@ internal class Ui(private val ctx: Context) {
         return card to label
     }
 
+    // ---------- loading ----------
+
+    /** A grey placeholder block with a soft highlight sweeping across it (still with reduce motion). */
+    fun skeleton(radiusDp: Number = 6, circle: Boolean = false) = Skeleton(ctx).apply {
+        colors(color(R.color.chip), color(R.color.glass_strong))
+        radius = dp(radiusDp).toFloat()
+        this.circle = circle
+    }
+
+    /**
+     * Placeholder for one list row while its data loads, shaped like the real row: an icon, a title bar
+     * and shorter lines under it, and a short figure at the end when [trailing]. [bg] gives the row its
+     * own rounded fill (rows that sit on their own); [seed] varies the bar lengths from row to row.
+     */
+    fun skeletonRow(iconDp: Int = 40, lines: Int = 2, trailing: Boolean = true, bg: Int? = null, seed: Int = 0,
+                    squareIcon: Boolean = false) = row {
+        if (bg != null) background = rounded(bg, 18)
+        setPadding(dp(10), dp(10), dp(10), dp(10))
+        importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS
+        if (iconDp > 0) addView(skeleton(iconDp * 0.3f, circle = !squareIcon), lp(w = dp(iconDp), h = dp(iconDp)))
+        val widths = floatArrayOf(0.62f, 0.45f, 0.72f, 0.54f, 0.66f)
+        addView(column {
+            for (k in 0 until lines) {
+                val f = if (k == 0) widths[seed % widths.size] else widths[(seed + 2 * k + 1) % widths.size] * 0.8f
+                addView(row {
+                    addView(skeleton(), lp(w = 0, h = dp(if (k == 0) 12 else 9), weight = f))
+                    addView(spacer(), lp(w = 0, h = 1, weight = 1f - f))
+                }, lp(top = if (k == 0) 0 else 9))
+            }
+        }, lp(w = 0, weight = 1f, start = if (iconDp > 0) 14 else 0))
+        if (trailing) addView(skeleton(), lp(w = dp(40), h = dp(12), start = 12))
+    }
+
+    /** [count] placeholder rows (see [skeletonRow]), for a list that is still loading. Read out as "Loading". */
+    fun skeletonList(count: Int, iconDp: Int = 40, lines: Int = 2, trailing: Boolean = true, bg: Int? = null,
+                     gapDp: Int = 0, squareIcon: Boolean = false) = column {
+        contentDescription = "Loading"
+        repeat(count) { i ->
+            addView(skeletonRow(iconDp, lines, trailing, bg, i, squareIcon), lp(top = if (i == 0) 0 else gapDp))
+        }
+    }
+
+    /** A small turning progress circle, for a figure that is still being worked out. */
+    fun spinner(sizeDp: Number = 22) = Ring(ctx).apply {
+        strokeDp = (sizeDp.toFloat() / 7f).coerceAtLeast(2.5f)
+        colors(color(R.color.chip), color(R.color.ink), color(R.color.ink))
+        busy = true
+        contentDescription = "Loading"
+    }
+
+    private val placeholders = WeakHashMap<TextView, View>()
+
+    /**
+     * While [on], [value] (a figure that fills in later, in a LinearLayout) is swapped for a placeholder
+     * of the same height: a turning circle for a big headline figure, a shimmering bar for a small one.
+     */
+    fun loading(value: TextView, on: Boolean) {
+        val parent = value.parent as? LinearLayout ?: return
+        val shown = placeholders[value]
+        if (!on) {
+            if (shown != null) { parent.removeView(shown); placeholders.remove(value) }
+            value.visibility = View.VISIBLE
+            return
+        }
+        if (shown != null) return
+        val lh = value.lineHeight
+        val big = value.textSize >= dp(30)
+        val gravity = (value.gravity and Gravity.HORIZONTAL_GRAVITY_MASK) or Gravity.CENTER_VERTICAL
+        val holder = android.widget.FrameLayout(ctx).apply {
+            if (big) {
+                val size = (lh * 0.62f).toInt().coerceAtMost(dp(40))
+                addView(spinner().apply { strokeDp = (size / density / 8f).coerceAtLeast(3f) },
+                    android.widget.FrameLayout.LayoutParams(size, size, gravity))
+            } else addView(skeleton(), android.widget.FrameLayout.LayoutParams(dp(if (value.textSize >= dp(20)) 64 else 48),
+                (lh * 0.55f).toInt(), gravity))
+        }
+        val vlp = value.layoutParams as? LinearLayout.LayoutParams
+        val hlp = if (vlp != null) LinearLayout.LayoutParams(vlp).apply { height = lh } else lp(h = lh)
+        if (hlp.width == LinearLayout.LayoutParams.WRAP_CONTENT) hlp.width = if (big) lh else dp(64)
+        parent.addView(holder, parent.indexOfChild(value) + 1, hlp)
+        value.visibility = View.GONE
+        placeholders[value] = holder
+    }
+
     /**
      * One app (or group) in a statistics list: icon, name, the figure on the right, a bar for its
      * share and a line under it ("23% · 14 opens"). Tappable when [onClick] is set.
@@ -564,6 +648,50 @@ internal class Scallop(private val fill: Int, private val lobes: Int = 9) : Draw
     override fun setAlpha(alpha: Int) { p.alpha = alpha }
     override fun setColorFilter(cf: ColorFilter?) { p.colorFilter = cf }
     @Deprecated("Framework API") override fun getOpacity() = PixelFormat.TRANSLUCENT
+}
+
+/**
+ * A loading placeholder: a rounded grey block (or circle) with a soft highlight sweeping across. All
+ * blocks on screen share one sweep, measured in screen coordinates, so a list shimmers as one piece.
+ * With reduce motion on it stays still.
+ */
+internal class Skeleton(ctx: Context) : View(ctx) {
+    var radius = 0f
+        set(v) { field = v; invalidate() }
+    var circle = false
+        set(v) { field = v; invalidate() }
+    private val base = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val shine = Paint(Paint.ANTI_ALIAS_FLAG)
+    private var shineColor = 0
+    private val still = Prefs.reduceMotion(ctx)
+    private val rect = RectF()
+    private val at = IntArray(2)
+    private val move = Matrix()
+    private val screen = resources.displayMetrics.widthPixels.toFloat()
+
+    init { importantForAccessibility = IMPORTANT_FOR_ACCESSIBILITY_NO }
+
+    fun colors(baseColor: Int, highlight: Int) {
+        base.color = baseColor; shineColor = highlight; shine.shader = null; invalidate()
+    }
+
+    override fun onDraw(canvas: Canvas) {
+        rect.set(0f, 0f, width.toFloat(), height.toFloat())
+        val r = if (circle) minOf(width, height) / 2f else minOf(radius, height / 2f)
+        canvas.drawRoundRect(rect, r, r, base)
+        if (still) return
+        val band = screen * 0.6f
+        val shader = shine.shader ?: LinearGradient(0f, 0f, band, 0f,
+            intArrayOf(shineColor and 0xFFFFFF, shineColor, shineColor and 0xFFFFFF), floatArrayOf(0f, 0.5f, 1f),
+            Shader.TileMode.CLAMP).also { shine.shader = it }
+        getLocationOnScreen(at)
+        // One sweep every 1.5 s from off the left edge to off the right, then a short rest.
+        val t = (android.os.SystemClock.uptimeMillis() % 1500L) / 1200f
+        move.setTranslate(-band + (screen + band) * t - at[0], 0f)
+        shader.setLocalMatrix(move)
+        canvas.drawRoundRect(rect, r, r, shine)
+        postInvalidateOnAnimation()
+    }
 }
 
 /** Rounded progress bar. */

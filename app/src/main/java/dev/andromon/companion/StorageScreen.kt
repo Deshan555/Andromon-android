@@ -151,6 +151,7 @@ internal class StorageScreen(host: MainActivity) : Screen(host) {
                 addView(hint, ui.lp(top = 6))
             }, ui.lp(top = 12))
             list = ui.card(color(R.color.surface), 6)
+            list.addView(ui.skeletonList(6, 40, lines = 3, squareIcon = true))
             addView(list, ui.lp(top = 12))
         }
         addView(content)
@@ -244,7 +245,7 @@ internal class StorageScreen(host: MainActivity) : Screen(host) {
         renderCrumbs()
         title.text = if (node.parent == null) s.volume.name else node.file.name
         list.removeAllViews()
-        list.addView(note("Reading folder…"))
+        list.addView(ui.skeletonList(6, 40, lines = 3, squareIcon = true))
         updateSummary()
         host.scrollToTop()
         if (!node.claimed.get()) s.start(node) // measure what's on screen first
@@ -356,12 +357,10 @@ internal class StorageScreen(host: MainActivity) : Screen(host) {
                 addView(ui.text(14f, color(R.color.ink), ui.medium) {
                     text = r.name; maxLines = 1; ellipsize = TextUtils.TruncateAt.MIDDLE
                 }, ui.lp(w = 0, weight = 1f))
-                addView(ui.text(13f, color(R.color.ink), ui.medium) {
-                    text = when {
-                        r.dir?.unreadable == true -> "–"
-                        r.size == null -> "Measuring…"
-                        else -> fmtSize(r.size)
-                    }
+                if (r.size == null && r.dir?.unreadable != true) // still being measured
+                    addView(ui.spinner(16), ui.lp(w = ui.dp(16), h = ui.dp(16), start = 8))
+                else addView(ui.text(13f, color(R.color.ink), ui.medium) {
+                    text = if (r.dir?.unreadable == true) "–" else fmtSize(r.size ?: 0L)
                 }, ui.lp(w = WRAP_CONTENT, start = 8))
             })
             addView(Meter(context).apply {
