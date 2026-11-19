@@ -90,10 +90,12 @@ Turn the Wi‑Fi connection off when you are done; it also switches itself off w
 ![Tools](screenshots/tools.png)
 
 - Two tabs at the top: **Dashboard** shows how the phone is doing, **All tools** lists every tool as a tile. Tools opens on the tab you used last.
-- The line under **Tools** sums up the phone's state ("Your phone is in great shape"). It comes from free storage, free memory and battery condition. When something costs points, it is listed on the green card with a link to the screen that helps.
-- The **green card** shows one fact at a time (health, storage, memory, battery, uptime, network, installed apps, screen, Android version); tap it for the next. The arrow at its top right opens the screen that says more, when there is one.
-- **Storage** shows what apps, media and documents use, and how much is free. The arrow opens the Storage screen (folder sizes); **Free up space with the Cleaner** opens the Cleaner.
-- Under it, **Memory**, **Battery** and **Network** at a glance; tap one to open it.
+- The line under **Tools** sums up the phone's state ("Your phone is in great shape"). It comes from free storage, free memory and battery condition.
+- **Dashboard** is all charts:
+  - three rings: **Health** (out of 100; tap it for the Cleaner), **Memory** (RAM in use) and **Battery** (charge level); tap one to open its screen;
+  - **Storage**: a donut of apps, media, documents, the rest and free space, with the sizes; the arrow opens folder sizes;
+  - **Battery, last 24 hours**: the charge level as a line (until a day has been recorded it starts at the first reading);
+  - **Screen time, last 7 days**: a bar per day (needs usage access; the card offers it).
 - On **All tools**, each **tile** opens a tool and shows its current state (for example "46% of RAM in use").
 
 ## 6. Cleaner

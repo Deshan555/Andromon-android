@@ -3,78 +3,55 @@
 
 package dev.andromon.companion
 
-import android.animation.Animator
-import android.animation.AnimatorListenerAdapter
-import android.animation.ValueAnimator
-import android.app.ActivityManager
-import android.os.Build
-import android.os.Handler
-import android.os.Looper
-import android.os.SystemClock
-import android.text.TextUtils
+import android.content.Intent
+import android.provider.Settings
 import android.view.Gravity
-import android.view.MotionEvent
 import android.view.View
-import android.view.ViewConfiguration
-import android.view.accessibility.AccessibilityManager
-import android.view.animation.DecelerateInterpolator
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
 import android.widget.TextView
-import kotlin.math.abs
+import java.time.format.TextStyle
+import java.util.Locale
 
 /**
- * Tools (the bottom bar's middle item; "Home" in earlier versions): a hero card that rotates
- * through the phone's readings, storage at a glance and a tile for every tool.
+ * Tools (the bottom bar's middle item): two tabs. Dashboard shows how the phone is doing, in charts
+ * only: rings for health, memory and battery, a storage donut, the battery over the last 24 hours and
+ * screen time over the last 7 days. All tools has a tile for every tool.
  */
 internal class ToolsScreen(host: MainActivity) : Screen(host) {
-
-    private companion object {
-        /** How long the hero card shows one reading before moving on to the next. */
-        const val HERO_STEP_MS = 10_000L
-    }
 
     override val name = "Tools"
     override val navIcon = R.drawable.ic_grid
     override val navColor = R.color.bg
 
     private lateinit var greetSub: TextView
-    private lateinit var heroCard: View
-    private lateinit var heroStage: FrameLayout
-    private lateinit var heroDots: LinearLayout
-    /** The reading on the hero card, by position and by name (the list can grow or shrink between refreshes). */
-    private var heroIndex = 0
-    private var heroTitle: String? = null
-    private var heroAnim: ValueAnimator? = null
-    private var heroVisible = false
-    private var heroTouched = false
-    private var appCounts: Pair<Int, Int>? = null // user apps, system apps (counted off the main thread)
-
-    /** One reading the hero card can show: a headline figure, a line under it and, where it helps, a ring. */
-    private class HeroStat(
-        /** The screen the arrow opens, or null when no screen says more about this reading. */
-        val icon: Int, val title: String, val value: CharSequence, val sub: String, val screen: String?,
-        val ring: Float? = null, val ringValue: CharSequence = "", val ringLabel: String = "",
-        val issues: List<Phone.Issue> = emptyList(),
-    )
-
-    private lateinit var storageSub: TextView
-    private lateinit var storageValues: List<TextView>
-
     private lateinit var dashboard: LinearLayout
     private lateinit var allTools: LinearLayout
     private var selectTab: (Int) -> Unit = {}
     private var tab = 0
-    private lateinit var quickMem: Ui.Stat
-    private lateinit var quickBattery: Ui.Stat
-    private lateinit var quickNet: Ui.Stat
+
+    /** A small ring with the figure inside and a caption under it. */
+    private class Gauge(val box: View, val ring: Ring, val value: TextView, val sub: TextView)
+    private lateinit var healthGauge: Gauge
+    private lateinit var memGauge: Gauge
+    private lateinit var batteryGauge: Gauge
+
+    private lateinit var storageDonut: Ring
+    private lateinit var storageUsed: TextView
+    private lateinit var storageSub: TextView
+    private lateinit var storageLegend: LinearLayout
+
+    private lateinit var batteryChart: LineChart
+    private lateinit var batterySub: TextView
+    private lateinit var batteryFrom: TextView
+
+    private lateinit var screenCard: LinearLayout
 
     private lateinit var memTile: Ui.Tile
     private lateinit var batteryTile: Ui.Tile
     private lateinit var netTile: Ui.Tile
 
-    /** Two tabs: Dashboard (how the phone is doing) and All tools (every tool as a tile). */
     override fun build(): View = ui.column {
         addView(ui.topBar("Tools", host::goHome).first)
         greetSub = ui.subtitle()
@@ -84,10 +61,11 @@ internal class ToolsScreen(host: MainActivity) : Screen(host) {
         tabs.contentDescription = "Dashboard or all tools"
         addView(tabs, ui.lp(top = 20))
         dashboard = ui.column {
-            heroCard = healthCard()
-            addView(heroCard)
-            addView(storageCard(), ui.lp(top = 12))
-            addView(quickStats(), ui.lp(top = 12))
+            addView(gauges())
+            addView(storageChart(), ui.lp(top = 12))
+            addView(batteryGraph(), ui.lp(top = 12))
+            screenCard = ui.glassCard(16)
+            addView(screenCard, ui.lp(top = 12))
         }
         addView(dashboard, ui.lp(top = 16))
         allTools = ui.column { addView(tiles()) }
@@ -104,296 +82,127 @@ internal class ToolsScreen(host: MainActivity) : Screen(host) {
         allTools.visibility = if (i == 1) View.VISIBLE else View.GONE
         if (remember) Prefs.setToolsTab(host, i)
         if (changed && remember) host.scrollToTop()
-        scheduleHero() // the carousel only moves while the Dashboard is showing
-    }
-
-    /** Memory, battery and network at a glance; each opens its screen. */
-    private fun quickStats(): View {
-        quickMem = ui.stat(color(R.color.surface), R.drawable.ic_memory, "Memory")
-        quickBattery = ui.stat(color(R.color.surface), R.drawable.ic_battery, "Battery")
-        quickNet = ui.stat(color(R.color.surface), R.drawable.ic_wifi, "Network")
-        return ui.row {
-            listOf(quickMem to "Memory", quickBattery to "Battery", quickNet to "Network").forEachIndexed { i, (st, screen) ->
-                st.box.background = ui.pressable(ui.rounded(color(R.color.surface), 22))
-                st.box.setOnClickListener { host.show(screen) }
-                st.box.contentDescription = null
-                addView(st.box, ui.lp(w = 0, weight = 1f, start = if (i == 0) 0 else 10))
-            }
-        }
     }
 
     override fun onShow() {
-        heroVisible = true
         refresh()
         loadStorage()
-        // Counted like the Apps screen counts them, so both say the same number.
-        if (appCounts == null) background({ AppTools.countApps(host) }) { r -> appCounts = r.getOrNull() }
+        loadCharts()
     }
 
-    override fun onPermissionsResult() = refresh()
+    override fun onPermissionsResult() { refresh(); loadCharts() }
 
-    // ---------- sections ----------
+    // ---------- dashboard ----------
 
-    /**
-     * The hero card. It shows one reading at a time from [heroStats], moving on to the next every
-     * [HERO_STEP_MS] like a carousel: the reading slides out to the left and the next one in from the
-     * right while the card stays put. A swipe goes forward or back, a tap goes forward, and the arrow
-     * opens the screen behind the reading. It holds still while touched, while Tools is hidden and
-     * while a screen reader is exploring by touch; with reduce motion on, readings change in place.
-     */
-    private fun healthCard(): View = HeroFrame().apply {
-        background = ui.hero(26)
-        clipToOutline = true // pages slide out under the rounded corners
-        addView(ui.column {
-            heroStage = FrameLayout(context)
-            addView(heroStage)
-            heroDots = ui.row { gravity = Gravity.CENTER; importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO }
-            addView(heroDots, ui.lp(h = ui.dp(6), top = 14))
-            addView(ui.spacer(), ui.lp(h = ui.dp(16)))
-        })
-        isClickable = true
-        setOnClickListener { stepHero(+1) }
-    }
-
-    /** The hero card's frame: watches every touch to hold the carousel still, and turns a sideways drag into a swipe. */
-    private inner class HeroFrame : FrameLayout(host) {
-        private val slop = ViewConfiguration.get(host).scaledTouchSlop
-        private var downX = 0f
-        private var downY = 0f
-        private var dragging = false
-
-        override fun dispatchTouchEvent(e: MotionEvent): Boolean {
-            when (e.actionMasked) {
-                MotionEvent.ACTION_DOWN -> { heroTouched = true; scheduleHero() }
-                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> { heroTouched = false; scheduleHero() }
-            }
-            return super.dispatchTouchEvent(e)
-        }
-
-        /** True once the finger has moved sideways more than it has up or down. */
-        private fun track(e: MotionEvent): Boolean {
-            when (e.actionMasked) {
-                MotionEvent.ACTION_DOWN -> { downX = e.x; downY = e.y; dragging = false }
-                MotionEvent.ACTION_MOVE -> if (!dragging) {
-                    val dx = abs(e.x - downX); val dy = abs(e.y - downY)
-                    if (dx > slop && dx > dy) { dragging = true; parent?.requestDisallowInterceptTouchEvent(true) }
-                }
-            }
-            return dragging
-        }
-
-        override fun onInterceptTouchEvent(e: MotionEvent) = track(e)
-
-        override fun onTouchEvent(e: MotionEvent): Boolean {
-            val wasDragging = dragging
-            if (!track(e)) return super.onTouchEvent(e)
-            if (!wasDragging) super.onTouchEvent(MotionEvent.obtain(e).apply { action = MotionEvent.ACTION_CANCEL })
-            val dx = e.x - downX
-            val page = heroStage.getChildAt(heroStage.childCount - 1)
-            when (e.actionMasked) {
-                MotionEvent.ACTION_MOVE -> if (!Prefs.reduceMotion(host) && heroAnim == null) page?.translationX = dx
-                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
-                    dragging = false
-                    val far = e.actionMasked == MotionEvent.ACTION_UP && abs(dx) > ui.dp(48)
-                    if (far) stepHero(if (dx < 0) +1 else -1)
-                    else page?.animate()?.translationX(0f)?.setDuration(180)?.start()
-                }
-            }
-            return true
-        }
-    }
-
-    private val heroHandler = Handler(Looper.getMainLooper())
-    private val heroTick = Runnable { stepHero(+1) }
-
-    /** (Re)starts the 10-second wait for the next reading, or stops it while the carousel should hold still. */
-    private fun scheduleHero() {
-        heroHandler.removeCallbacks(heroTick)
-        val exploring = host.getSystemService(AccessibilityManager::class.java)?.isTouchExplorationEnabled == true
-        if (heroVisible && tab == 0 && !heroTouched && !exploring) heroHandler.postDelayed(heroTick, HERO_STEP_MS)
-    }
-
-    override fun onHide() {
-        heroVisible = false
-        scheduleHero()
-    }
-
-    /** Every reading the hero card can show, from what the phone reports right now. */
-    private fun heroStats(): List<HeroStat> {
-        val out = mutableListOf<HeroStat>()
-        fun size(bytes: Long) = sizeParts(bytes).let { (n, u) -> ui.withUnit(n, u) }
-        val (total, free) = Phone.storage()
-        val usedPct = ((total - free) * 100 / total).toInt()
-        val (score, issues) = Phone.health(host)
-        out += HeroStat(R.drawable.ic_shield, "Phone health", ui.percent(score), when (issues.size) {
-            0 -> "All good · no issues found"
-            1 -> "1 thing to check"
-            else -> "${issues.size} things to check"
-        }, issues.firstOrNull()?.screen ?: "Cleaner", usedPct / 100f, ui.percent(usedPct), "storage used", issues)
-        out += HeroStat(R.drawable.ic_sd, "Storage used", ui.percent(usedPct), "${fmtSize(total - free)} of ${fmtSize(total)}",
-            "Storage", usedPct / 100f, size(free), "free")
-        out += HeroStat(R.drawable.ic_storage, "Free space", size(free), "left on internal storage", "Cleaner",
-            free.toFloat() / total, ui.percent(100 - usedPct), "free")
-
-        val mem = ActivityManager.MemoryInfo().also { host.getSystemService(ActivityManager::class.java).getMemoryInfo(it) }
-        val memPct = ((mem.totalMem - mem.availMem) * 100 / mem.totalMem).toInt()
-        out += HeroStat(R.drawable.ic_memory, "Memory in use", ui.percent(memPct),
-            "${fmtSize(mem.totalMem - mem.availMem)} of ${fmtSize(mem.totalMem)}", "Memory", memPct / 100f, size(mem.availMem), "free")
-        out += HeroStat(R.drawable.ic_memory, "Free memory", size(mem.availMem),
-            if (mem.lowMemory) "Android says memory is low" else "available to apps right now", "Memory",
-            mem.availMem.toFloat() / mem.totalMem, ui.percent(100 - memPct), "free")
-
-        val b = Phone.battery(host)
-        val power = if (b.charging) "Charging" + (b.plugged?.let { " · $it" } ?: "") else "On battery"
-        out += HeroStat(R.drawable.ic_battery, "Battery", ui.percent(b.level), power, "Battery", b.level / 100f,
-            b.tempC?.let { ui.withUnit("%.0f".format(it), "°C") } ?: b.healthText, if (b.tempC != null) "temperature" else "condition")
-        b.tempC?.let { t ->
-            out += HeroStat(R.drawable.ic_thermo, "Battery temperature", ui.withUnit("%.1f".format(t), "°C"),
-                if (b.hot) "Hot · let the phone cool down" else "Normal", "Battery", (t / 50f).coerceIn(0f, 1f), ui.percent(b.level), "charge")
-        }
-        out += HeroStat(R.drawable.ic_leaf, "Battery condition", b.healthText,
-            b.cycles?.let { "$it charge cycles" } ?: "as Android reports it", "Battery", b.level / 100f, ui.percent(b.level), "charge")
-        b.voltageMv?.let { mv ->
-            out += HeroStat(R.drawable.ic_bolt, "Battery voltage", ui.withUnit("%.2f".format(mv / 1000f), "V"),
-                listOfNotNull(b.technology, power).joinToString(" · "), "Battery")
-        }
-
-        val up = SystemClock.elapsedRealtime() / 60_000
-        val upText = when {
-            up >= 1440 -> ui.withUnit("${up / 1440}d ${up % 1440 / 60}h", "")
-            up >= 60 -> ui.withUnit("${up / 60}h ${up % 60}m", "")
-            else -> ui.withUnit("$up", "min")
-        }
-        out += HeroStat(R.drawable.ic_timer, "Uptime", upText,
-            if (up >= 7 * 1440) "since the last restart · a restart can help" else "since the last restart", null)
-
-        val net = NetTools.info(host)
-        out += HeroStat(net.icon, "Network", net.kind, if (net.connected) net.detail else "Not connected", "Network")
-        out += HeroStat(R.drawable.ic_desktop, "PC link", if (CompanionService.running) "Ready" else "Paused",
-            if (CompanionService.running) "Andromon can connect over USB or Wi‑Fi" else "Turn it on to use Andromon", "PC link")
-        appCounts?.let { (user, system) ->
-            out += HeroStat(R.drawable.ic_apps, "Installed apps", ui.withUnit("$user", "apps"), "plus $system that came with the phone", "Apps")
-        }
-        @Suppress("DEPRECATION") val mode = host.windowManager.defaultDisplay.mode
-        out += HeroStat(R.drawable.ic_image, "Screen", "${mode.physicalWidth}×${mode.physicalHeight}",
-            "%.0f Hz · %d dpi".format(mode.refreshRate, host.resources.displayMetrics.densityDpi), "Hardware")
-        out += HeroStat(R.drawable.ic_info, "Android", ui.withUnit(Build.VERSION.RELEASE, "API ${Build.VERSION.SDK_INT}"),
-            Build.VERSION.SECURITY_PATCH.takeIf { it.isNotBlank() }?.let { "Security patch $it" } ?: Build.MODEL, null)
-        return out
-    }
-
-    /** Shows the reading [step] places on from the current one (0 refreshes its numbers in place), sliding unless reduce motion is on. */
-    private fun stepHero(step: Int) {
-        val stats = heroStats()
-        val at = stats.indexOfFirst { it.title == heroTitle }.takeIf { it >= 0 } ?: heroIndex.coerceIn(0, stats.size - 1)
-        val i = Math.floorMod(at + step, stats.size)
-        heroIndex = i
-        val s = stats[i]
-        heroTitle = s.title
-        val page = heroPage(s, animateRing = step != 0)
-        val old = heroStage.getChildAt(heroStage.childCount - 1)
-        heroAnim?.end()
-        if (old == null || step == 0 || Prefs.reduceMotion(host) || heroStage.width == 0) {
-            heroStage.removeAllViews()
-            heroStage.addView(page, FrameLayout.LayoutParams(-1, -2))
-        } else slideHero(old, page, if (step > 0) 1 else -1)
-        heroDots.removeAllViews()
-        for (k in stats.indices) heroDots.addView(ui.spacer().apply {
-            background = ui.rounded(color(R.color.ink), 3)
-            alpha = if (k == i) 1f else 0.25f
-        }, ui.lp(w = ui.dp(if (k == i) 16 else 6), h = ui.dp(6), start = if (k == 0) 0 else 6))
-        heroCard.contentDescription = "${s.title}, ${s.value}, ${s.sub}. Reading ${i + 1} of ${stats.size}. Tap for the next."
-        scheduleHero()
-    }
-
-    /** [old] slides out one way while [page] slides in from the other; the card's height follows smoothly. */
-    private fun slideHero(old: View, page: View, dir: Int) {
-        val w = heroStage.width.toFloat()
-        val fromH = heroStage.height
-        page.measure(View.MeasureSpec.makeMeasureSpec(heroStage.width, View.MeasureSpec.EXACTLY), View.MeasureSpec.UNSPECIFIED)
-        val toH = page.measuredHeight
-        val startX = old.translationX
-        page.translationX = dir * w
-        heroStage.addView(page, FrameLayout.LayoutParams(-1, -2))
-        heroStage.layoutParams = heroStage.layoutParams.apply { height = fromH }
-        heroAnim = ValueAnimator.ofFloat(0f, 1f).apply {
-            duration = 420
-            interpolator = DecelerateInterpolator(1.6f)
-            addUpdateListener {
-                val t = it.animatedValue as Float
-                old.translationX = startX + (-dir * w - startX) * t
-                page.translationX = dir * w * (1 - t)
-                if (fromH != toH) heroStage.layoutParams = heroStage.layoutParams.apply { height = (fromH + (toH - fromH) * t).toInt() }
-            }
-            addListener(object : AnimatorListenerAdapter() {
-                override fun onAnimationEnd(a: Animator) {
-                    heroStage.removeView(old)
-                    page.translationX = 0f
-                    heroStage.layoutParams = heroStage.layoutParams.apply { height = FrameLayout.LayoutParams.WRAP_CONTENT }
-                    if (heroAnim === a) heroAnim = null
-                }
-            })
-            start()
-        }
-    }
-
-    /** One reading, as the hero card shows it: icon and name, the figure, a line under it and, where it helps, a ring. */
-    private fun heroPage(s: HeroStat, animateRing: Boolean): View = ui.column {
-        setPadding(ui.dp(16), ui.dp(16), ui.dp(16), 0)
-        importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
-        addView(ui.row {
-            addView(ui.chipIcon(s.icon))
-            addView(ui.text(15f, color(R.color.ink), ui.medium) { text = s.title; maxLines = 1; ellipsize = TextUtils.TruncateAt.END },
-                ui.lp(w = 0, weight = 1f, start = 10))
-            addView(ui.circleButton(R.drawable.ic_arrow_up_right, s.screen?.let { "Open $it" } ?: "Open", 36) {
-                s.screen?.let { host.show(it) }
-            }.apply { if (s.screen == null) visibility = View.INVISIBLE })
-        })
-        addView(ui.row {
-            minimumHeight = ui.dp(128) // same height with or without the ring, so the page doesn't jump
-            addView(ui.column {
-                addView(ui.text(when { s.value.length <= 6 -> 50f; s.value.length <= 9 -> 40f; else -> 30f },
-                    color(R.color.ink), ui.regular) { text = s.value; letterSpacing = -0.03f; maxLines = 1 })
-                addView(ui.text(13f, color(R.color.ink), ui.medium) { text = s.sub; maxLines = 2 }, ui.lp(top = 8))
-            }, ui.lp(w = 0, weight = 1f))
-            s.ring?.let { f ->
+    /** Health, memory and battery as three rings side by side; each opens the screen that says more. */
+    private fun gauges(): View {
+        fun gauge(title: String, screen: String): Gauge {
+            val ring = Ring(host).apply { strokeDp = 10f; colors(color(R.color.chip), color(R.color.ink), color(R.color.ink)) }
+            val value = ui.text(17f, color(R.color.ink), ui.medium) { gravity = Gravity.CENTER; text = "–" }
+            val sub = ui.text(12f, color(R.color.ink_soft)) { gravity = Gravity.CENTER; maxLines = 1 }
+            val box = ui.column {
+                gravity = Gravity.CENTER_HORIZONTAL
+                background = ui.pressable(ui.rounded(color(R.color.surface), 22))
+                setPadding(ui.dp(8), ui.dp(14), ui.dp(8), ui.dp(12))
                 addView(FrameLayout(context).apply {
-                    addView(Ring(context).apply {
-                        strokeDp = 16f
-                        colors(color(R.color.glass_strong), color(R.color.ink), color(R.color.ink))
-                        if (animateRing) fraction = f else jumpTo(f)
-                    }, FrameLayout.LayoutParams(-1, -1))
-                    addView(ui.column {
-                        gravity = Gravity.CENTER
-                        addView(ui.text(20f, color(R.color.ink), ui.medium) { gravity = Gravity.CENTER; text = s.ringValue }, ui.lp(w = WRAP_CONTENT))
-                        addView(ui.text(12f, color(R.color.ink)) { gravity = Gravity.CENTER; text = s.ringLabel; maxWidth = ui.dp(84); maxLines = 2 },
-                            ui.lp(w = WRAP_CONTENT, top = 2))
-                    }, FrameLayout.LayoutParams(-2, -2, Gravity.CENTER))
-                }, ui.lp(w = ui.dp(128), h = ui.dp(128), start = 8))
+                    addView(ring, FrameLayout.LayoutParams(-1, -1))
+                    addView(value, FrameLayout.LayoutParams(-2, -2, Gravity.CENTER))
+                }, ui.lp(w = ui.dp(78), h = ui.dp(78)))
+                addView(ui.text(13f, color(R.color.ink), ui.medium) { gravity = Gravity.CENTER; text = title }, ui.lp(top = 10))
+                addView(sub, ui.lp(top = 2))
+                setOnClickListener { host.show(screen) }
             }
-        }, ui.lp(top = 14))
-        for (issue in s.issues.take(3)) {
-            val (row, value) = ui.listPill(R.drawable.ic_warning, issue.text) { host.show(issue.screen) }
-            value.text = if (issue.screen == "Cleaner") "Clean" else "Open"
-            addView(row, ui.lp(top = 10))
+            return Gauge(box, ring, value, sub)
+        }
+        healthGauge = gauge("Health", "Cleaner")
+        memGauge = gauge("Memory", "Memory")
+        batteryGauge = gauge("Battery", "Battery")
+        // The health ring is the one figure on lime: the screen's single hero colour.
+        healthGauge.box.background = ui.pressable(ui.hero(22))
+        healthGauge.ring.colors(color(R.color.glass_strong), color(R.color.ink), color(R.color.ink))
+        return ui.row {
+            listOf(healthGauge, memGauge, batteryGauge).forEachIndexed { i, g -> addView(g.box, ui.lp(w = 0, weight = 1f, start = if (i == 0) 0 else 10)) }
         }
     }
 
-    /** Storage split into numbers; the arrow opens the folder sizes, the line below the Cleaner. */
-    private fun storageCard() = ui.card(color(R.color.surface), 16) {
+    /** Storage as a donut: apps, media, documents, the rest, and free space. */
+    private fun storageChart() = ui.glassCard(16) {
         val (head, sub) = ui.cardHeader(R.drawable.ic_sd, "Storage") {
             addView(ui.circleButton(R.drawable.ic_arrow_right, "Open Storage: folder sizes", 36) { host.show("Storage") })
         }
         storageSub = sub
         addView(head)
-        val (nums, values) = ui.numbers(listOf("Apps", "Media", "Docs", "Free"))
-        storageValues = values
-        addView(nums, ui.lp(top = 20))
-        values.forEach { ui.loading(it, true) } // worked out in the background
-        val (free, _) = ui.listPill(R.drawable.ic_broom, "Free up space with the Cleaner") { host.show("Cleaner") }
-        addView(free, ui.lp(top = 18))
+        addView(ui.row {
+            gravity = Gravity.CENTER_VERTICAL
+            addView(FrameLayout(context).apply {
+                storageDonut = Ring(context).apply { strokeDp = 18f; colors(color(R.color.chip), color(R.color.ink), color(R.color.ink)); busy = true }
+                addView(storageDonut, FrameLayout.LayoutParams(-1, -1))
+                addView(ui.column {
+                    gravity = Gravity.CENTER
+                    storageUsed = ui.text(20f, color(R.color.ink), ui.medium) { gravity = Gravity.CENTER; text = "–" }
+                    addView(storageUsed, ui.lp(w = WRAP_CONTENT))
+                    addView(ui.text(12f, color(R.color.ink_soft)) { gravity = Gravity.CENTER; text = "used" }, ui.lp(w = WRAP_CONTENT, top = 2))
+                }, FrameLayout.LayoutParams(-2, -2, Gravity.CENTER))
+            }, ui.lp(w = ui.dp(128), h = ui.dp(128)))
+            storageLegend = ui.column()
+            addView(storageLegend, ui.lp(w = 0, weight = 1f, start = 18))
+        }, ui.lp(top = 16))
     }
 
+    /** Battery level over the last 24 hours, from the app's own battery log. */
+    private fun batteryGraph() = ui.glassCard(16) {
+        val (head, sub) = ui.cardHeader(R.drawable.ic_battery, "Battery, last 24 hours") {
+            addView(ui.circleButton(R.drawable.ic_arrow_right, "Open Battery", 36) { host.show("Battery") })
+        }
+        batterySub = sub
+        addView(head)
+        batteryChart = LineChart(context).apply {
+            slots = 96; floorZero = true; minSpan = 100f; fill = true
+            marker = color(R.color.marker)
+            colors(color(R.color.chart), color(R.color.glass_strong), color(R.color.surface))
+        }
+        addView(batteryChart, ui.lp(h = ui.dp(120), top = 12))
+        addView(ui.row {
+            batteryFrom = ui.text(12f, color(R.color.ink_soft)) { text = "24 h ago" }
+            addView(batteryFrom, ui.lp(w = 0, weight = 1f))
+            addView(ui.text(12f, color(R.color.ink_soft)) { text = "now" }, ui.lp(w = WRAP_CONTENT))
+        }, ui.lp(top = 4))
+    }
+
+    /** Screen time per day for the last 7 days (needs usage access). */
+    private fun fillScreenTime(u: AppStats.Usage?) {
+        screenCard.removeAllViews()
+        val (head, sub) = ui.cardHeader(R.drawable.ic_timer, "Screen time, last 7 days") {
+            addView(ui.circleButton(R.drawable.ic_arrow_right, "Open Stats", 36) { host.show("Stats") })
+        }
+        screenCard.addView(head)
+        if (u == null) {
+            sub.text = "Needs usage access"
+            screenCard.addView(ui.smallPill("Allow usage access") {
+                runCatching { host.startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)) }
+            }, ui.lp(w = WRAP_CONTENT, top = 14))
+            return
+        }
+        val perDay = u.daily.map { it.values[0] }
+        sub.text = "About ${duration((perDay.sum() / 7).toLong())} a day"
+        screenCard.addView(BarChart(host).apply {
+            colors(listOf(color(R.color.green_dot)), color(R.color.chip), color(R.color.ink_soft), color(R.color.ink), color(R.color.line), ui.regular)
+            bars = u.daily.map { listOf((it.values[0] / 60_000).toFloat()) }
+            labels = u.daily.map { it.date.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.getDefault()) }
+            highlight = u.daily.lastIndex
+            contentDescription = "Screen time per day, last 7 days: " + u.daily.joinToString(", ") {
+                "${it.date.dayOfWeek.getDisplayName(TextStyle.FULL, Locale.getDefault())} ${duration(it.values[0].toLong())}"
+            }
+        }, ui.lp(h = ui.dp(140), top = 14))
+    }
+
+
+    private fun duration(ms: Long): String {
+        val m = ms / 60_000
+        return if (m < 60) "$m min" else "${m / 60} h ${m % 60} min"
+    }
+
+    // ---------- all tools ----------
     private fun tiles(): View {
         memTile = ui.tile(color(R.color.surface), "Memory", R.drawable.ic_memory) { host.show("Memory") }
         batteryTile = ui.tile(color(R.color.surface), "Battery", R.drawable.ic_battery) { host.show("Battery") }
@@ -432,6 +241,7 @@ internal class ToolsScreen(host: MainActivity) : Screen(host) {
         text = "Andromon Companion" + (version?.let { " · v$it" } ?: "")
     }
 
+
     // ---------- state ----------
 
     private fun refresh() {
@@ -441,36 +251,85 @@ internal class ToolsScreen(host: MainActivity) : Screen(host) {
             score >= 80 -> "Your phone is in good shape."
             else -> "Your phone could use a tidy-up."
         }
-        stepHero(0)
+        healthGauge.ring.fraction = score / 100f
+        healthGauge.value.text = "$score"
+        healthGauge.sub.text = if (issues.isEmpty()) "No issues" else "${issues.size} to fix"
+        healthGauge.box.contentDescription = "Phone health $score of 100. ${healthGauge.sub.text}"
 
-        memTile.sub.text = "${(Phone.memoryUsed(host) * 100).toInt()}% of RAM in use"
+        val mem = Phone.memoryUsed(host)
+        memGauge.ring.fraction = mem
+        memGauge.value.text = "${(mem * 100).toInt()}%"
+        memGauge.sub.text = "RAM in use"
+        memGauge.box.contentDescription = "Memory: ${(mem * 100).toInt()}% of RAM in use"
+        memTile.sub.text = "${(mem * 100).toInt()}% of RAM in use"
+
         val b = Phone.battery(host)
+        batteryGauge.ring.fraction = b.level / 100f
+        batteryGauge.value.text = "${b.level}%"
+        batteryGauge.sub.text = if (b.charging) "Charging" else b.healthText
+        batteryGauge.box.contentDescription = "Battery ${b.level}%, ${batteryGauge.sub.text}"
         batteryTile.sub.text = "${b.level}% · " + if (b.charging) "charging" else b.healthText.lowercase()
+
         val net = NetTools.info(host)
         netTile.sub.text = if (net.connected) "${net.kind} · connected" else "Not connected"
-        quickMem.value.text = "${(Phone.memoryUsed(host) * 100).toInt()}%"
-        quickBattery.value.text = "${b.level}%"
-        quickNet.value.text = if (net.connected) net.kind else "Off"
-        quickNet.value.textSize = if (quickNet.value.text.length > 6) 18f else 24f
     }
 
-    /** Apps / media / docs / free, worked out off the main thread. */
+    /** The storage donut and legend, worked out off the main thread. */
     private fun loadStorage() {
         background({
             val main = Cleaner.volumes(host).first()
             main to StorageBreakdown.of(host, main.total, main.free)
         }) { r ->
-            storageValues.forEach { ui.loading(it, false) }
+            storageDonut.busy = false
             val (main, parts) = r.getOrNull() ?: return@background
-            fun bytes(name: String) = parts.firstOrNull { it.name == name }?.bytes
-            fun show(v: TextView, b: Long?) {
-                v.text = if (b == null) "–" else sizeParts(b).let { (n, u) -> ui.withUnit(n, u) }
-            }
-            show(storageValues[0], bytes("Apps"))
-            show(storageValues[1], listOfNotNull(bytes("Photos & videos"), bytes("Audio")).takeIf { it.isNotEmpty() }?.sum())
-            show(storageValues[2], bytes("Documents"))
-            show(storageValues[3], main.free)
+            val total = main.total.coerceAtLeast(1)
+            storageDonut.segments = parts.map { it.bytes.toFloat() / total to color(it.color) }
+            storageUsed.text = "${((total - main.free) * 100 / total)}%"
             storageSub.text = "${fmtSize(main.free)} free of ${fmtSize(main.total)}"
+            storageDonut.contentDescription = "Storage: " + parts.joinToString(", ") { "${it.name} ${fmtSize(it.bytes)}" } + ", free ${fmtSize(main.free)}"
+            storageLegend.removeAllViews()
+            (parts.map { Triple(it.name, it.bytes, color(it.color)) } + Triple("Free", main.free, color(R.color.chip))).forEachIndexed { i, (name, bytes, c) ->
+                val (row, dot, text) = ui.dotLabel()
+                dot.background = ui.circle(c)
+                text.text = "$name · ${fmtSize(bytes)}"
+                text.textSize = 13f
+                storageLegend.addView(row, ui.lp(top = if (i == 0) 0 else 6))
+            }
+        }
+    }
+
+    /** The battery graph and the screen-time chart, read off the main thread. */
+    private fun loadCharts() {
+        background({
+            val since = System.currentTimeMillis() - BatteryLog.DAY
+            val samples = BatteryLog.read(host, BatteryLog.DAY).filter { it.time >= since }
+            val usage = if (AppStats.hasUsageAccess(host)) runCatching { AppStats.usage(host, 7) }.getOrNull() else null
+            samples to usage
+        }) { r ->
+            val (samples, usage) = r.getOrNull() ?: (emptyList<BatteryLog.Sample>() to null)
+            // One point per 15 minutes from the first reading (at most 24 hours back) to now, carrying the
+            // last reading forward over gaps, so the line spans the whole chart.
+            val now = System.currentTimeMillis()
+            val step = 15 * 60_000L
+            val start = samples.firstOrNull()?.time ?: now
+            val points = ArrayList<Float>()
+            var j = 0; var last: Float? = null
+            var t = start
+            while (t <= now) {
+                while (j < samples.size && samples[j].time <= t) { last = samples[j].level.toFloat(); j++ }
+                last?.let { points += it }
+                t += step
+            }
+            samples.lastOrNull()?.let { points += it.level.toFloat() }
+            if (points.size == 1) points += points[0]
+            batteryChart.slots = points.size.coerceAtLeast(2)
+            batteryChart.values = points
+            batteryFrom.text = if (now - start >= BatteryLog.DAY - step) "24 h ago"
+                else "since " + java.text.DateFormat.getTimeInstance(java.text.DateFormat.SHORT).format(java.util.Date(start))
+            batterySub.text = if (samples.isEmpty()) "Recording; the graph fills in over the day"
+                else samples.last().let { "${it.level}% now · lowest ${samples.minOf { s -> s.level }}%" }
+            batteryChart.contentDescription = "Battery level over the last 24 hours: " + batterySub.text
+            fillScreenTime(usage)
         }
     }
 }

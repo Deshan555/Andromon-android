@@ -418,7 +418,7 @@ Top bar and subtitle; a hero card with the link's state (status pill, the comput
 
 ### Tools
 
-Top bar and a subtitle with the health verdict, a hero card that rotates through readings (a carousel: every 10 s the reading slides out to the left and the next slides in, page dots under it, swipe for next or previous, paused while touched or hidden, no sliding with reduce motion), the storage card, then "All tools": a two-column grid of tiles, each showing a live value in its subtitle.
+Top bar and a subtitle with the health verdict, then a Dashboard / All tools switch (the same segmented control as Transfer; the tab used last is remembered). Dashboard is charts only: three ring cards (Health on the lime hero gradient, Memory and Battery on surface), a storage donut with a legend, the battery level over the last 24 hours (line chart) and screen time over the last 7 days (bar chart). All tools: a two-column grid of tiles, each showing a live value in its subtitle.
 
 ### Stats
 
