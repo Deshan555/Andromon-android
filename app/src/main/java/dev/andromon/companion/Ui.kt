@@ -695,7 +695,7 @@ internal fun fmtSize(bytes: Long) = sizeParts(bytes).let { "${it.first} ${it.sec
  */
 internal class Ring(ctx: Context) : View(ctx) {
     private val d = resources.displayMetrics.density
-    var strokeDp = 14f
+    var strokeDp = 18f
         set(v) { field = v; invalidate() }
     private var shown = 0f
     private var animator: ValueAnimator? = null

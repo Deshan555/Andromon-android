@@ -100,7 +100,7 @@ internal class MemoryScreen(host: MainActivity) : Screen(host) {
                 }, ui.lp(w = 0, weight = 1f))
                 addView(FrameLayout(context).apply {
                     ring = Ring(context).apply {
-                        strokeDp = 11f
+                        strokeDp = 16f
                         colors(color(R.color.glass_strong), color(R.color.ink), color(R.color.ink))
                     }
                     addView(ring, FrameLayout.LayoutParams(-1, -1))

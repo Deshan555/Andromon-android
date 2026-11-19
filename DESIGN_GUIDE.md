@@ -360,7 +360,7 @@ Button hierarchy on one screen: one `action`, any number of pills, and destructi
 
 | View | Class | Use for | Colours |
 |---|---|---|---|
-| Ring gauge | `Ring` | One fraction of a whole (memory used, health score). 14dp stroke, round ends. | `colors(track, start, end)`: a lime gradient on a `glass_strong` or `chip` track |
+| Ring gauge | `Ring` | One fraction of a whole (memory used, health score). A thick stroke, about a seventh of the diameter (16dp on a 120dp ring, 20dp from 140dp up), round ends. Text inside at 12sp or more, in `ink`. | `colors(track, start, end)`: a lime gradient on a `glass_strong` or `chip` track |
 | Donut | `Ring` with `segments` | A whole split into parts (storage). 2.5° gaps. | Category colours, with a legend |
 | Progress bar | `Meter` | Linear progress or a share of a total inside a row. Height 6 to 10dp. | `colors(track, fill)` |
 | Bar chart | `BarChart` | Values per slot (a day, an app). Bars can stack several values (`colors(stack, …)`, bottom first); 12sp labels under the bars, the `highlight` one (today) in `ink`, the others `ink_soft`. An empty slot shows a short stub. 150dp tall in a card with a header saying the range ("Last 7 days"). | `green_dot` for one series; `cat_blue`, `green_dot`, `cat_yellow` for stacks, with a `dotLabel` legend |

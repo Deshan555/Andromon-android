@@ -135,7 +135,7 @@ internal class CleanerScreen(host: MainActivity) : Screen(host) {
     private fun storageCard() = ui.heroCard(18) {
         addView(ui.row {
             addView(FrameLayout(context).apply {
-                donut = Ring(context).apply { strokeDp = 16f; colors(color(R.color.glass_strong), 0, 0) }
+                donut = Ring(context).apply { strokeDp = 20f; colors(color(R.color.glass_strong), 0, 0) }
                 addView(donut, FrameLayout.LayoutParams(-1, -1))
                 addView(ui.column {
                     gravity = Gravity.CENTER

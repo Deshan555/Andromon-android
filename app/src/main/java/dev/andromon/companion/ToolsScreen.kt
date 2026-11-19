@@ -95,7 +95,7 @@ internal class ToolsScreen(host: MainActivity) : Screen(host) {
         })
         addView(ui.row {
             gravity = Gravity.CENTER_VERTICAL
-            minimumHeight = ui.dp(112) // same height with or without the ring, so the page doesn't jump
+            minimumHeight = ui.dp(120) // same height with or without the ring, so the page doesn't jump
             addView(ui.column {
                 scoreText = ui.text(50f, color(R.color.ink), ui.regular) { text = "–"; letterSpacing = -0.03f; maxLines = 1 }
                 addView(scoreText)
@@ -104,7 +104,7 @@ internal class ToolsScreen(host: MainActivity) : Screen(host) {
             }, ui.lp(w = 0, weight = 1f))
             ringBox = FrameLayout(context).apply {
                 ring = Ring(context).apply {
-                    strokeDp = 10f
+                    strokeDp = 16f
                     colors(color(R.color.glass_strong), color(R.color.ink), color(R.color.ink))
                 }
                 addView(ring, FrameLayout.LayoutParams(-1, -1))
@@ -112,11 +112,11 @@ internal class ToolsScreen(host: MainActivity) : Screen(host) {
                     gravity = Gravity.CENTER
                     ringText = ui.text(20f, color(R.color.ink), ui.medium) { gravity = Gravity.CENTER; text = "–" }
                     addView(ringText, ui.lp(w = WRAP_CONTENT))
-                    ringLabel = ui.text(11f, color(R.color.ink_soft)) { gravity = Gravity.CENTER }
+                    ringLabel = ui.text(12f, color(R.color.ink)) { gravity = Gravity.CENTER }
                     addView(ringLabel, ui.lp(w = WRAP_CONTENT, top = 2))
                 }, FrameLayout.LayoutParams(-2, -2, Gravity.CENTER))
             }
-            addView(ringBox, ui.lp(w = ui.dp(112), h = ui.dp(112), start = 8))
+            addView(ringBox, ui.lp(w = ui.dp(120), h = ui.dp(120), start = 8))
         }, ui.lp(top = 14))
         issueList = ui.column()
         addView(issueList)

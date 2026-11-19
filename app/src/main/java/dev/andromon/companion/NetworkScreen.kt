@@ -144,7 +144,7 @@ internal class NetworkScreen(host: MainActivity) : Screen(host) {
     private fun speedCard() = ui.glassCard(18) {
         addView(FrameLayout(context).apply {
             gauge = Ring(context).apply {
-                strokeDp = 14f
+                strokeDp = 20f
                 colors(color(R.color.glass_strong), color(R.color.ink), color(R.color.ink))
             }
             addView(gauge, FrameLayout.LayoutParams(ui.dp(180), ui.dp(180), Gravity.CENTER))
