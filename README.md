@@ -10,6 +10,8 @@ Users don't install it themselves. Andromon pushes it over USB the first time so
 
 **Using the app?** The [user guide](docs/USER_GUIDE.md) shows every screen with screenshots and explains each option.
 
+**Changing the app?** The [UI and theming guide](docs/UI_GUIDE.md) explains how screens are built, the colours for light and dark mode, type, components and accessibility.
+
 ## Download
 
 - **Andromon Companion (APK):** [Andromon_Releases](https://github.com/Deshan555/Andromon_Releases/releases). Each release has `Andromon-Companion-<version>.apk` under **Assets**, with its SHA-256 in `SHA256SUMS.txt`.
