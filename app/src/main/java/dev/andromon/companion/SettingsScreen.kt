@@ -198,7 +198,7 @@ internal class SettingsScreen(host: MainActivity) : Screen(host) {
             privileged.addTo(this)
         }
 
-        page("about", R.drawable.ic_info, "About", "Version, your data and licences") {
+        page("about", R.drawable.ic_info, "About", "Version, feedback, your data and licences") {
             addView(ui.glassCard(6) {
                 val version = runCatching { host.packageManager.getPackageInfo(host.packageName, 0).versionName }.getOrNull()
                 valueRow(R.drawable.ic_desktop, "Andromon Companion", "Helper app for Andromon on your computer", null).text =
@@ -209,6 +209,9 @@ internal class SettingsScreen(host: MainActivity) : Screen(host) {
                     "Once a day when the app opens. Nothing is installed without asking") { on -> Updates.setAuto(host, on) }
                 valueRow(R.drawable.ic_info, "Welcome tour", "What the app does, in eight pages") { OnboardingActivity.open(host) }.text = ""
                 valueRow(R.drawable.ic_shield, "Your data", "What the app reads and where it goes") { showPrivacy() }.text = ""
+                // Feedback.kt: opens GitHub with the text and versions filled in; nothing is sent from the app.
+                valueRow(R.drawable.ic_bug, "Report a bug", "Something doesn't work? Tell us on GitHub") { Feedback.bug(host) }.text = ""
+                valueRow(R.drawable.ic_message, "Send feedback", "Ideas, likes and dislikes, on GitHub") { Feedback.feedback(host) }.text = ""
                 valueRow(R.drawable.ic_warning, "Crash reports", "Kept on this phone; you decide whether to share one") { CrashReports.show(host) }.text = ""
                 valueRow(R.drawable.ic_lock, "Licence", "Free software under the GNU GPL version 3") { showLicence() }.text = "GPL-3.0"
                 valueRow(R.drawable.ic_file, "Third-party notices", "SD Maid SE, SuperFreezZ, Exodus Privacy, the libraries, Poppins and Lucide icons") { showThirdParty() }.text = ""
